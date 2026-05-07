@@ -1,0 +1,56 @@
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### VS Code ###
+.vscode/
+
+### Eclipse ###
+.project
+.classpath
+.settings/
+bin/
+
+### STS (Spring Tool Suite) ###
+.springBeans
+.sts4-cache/
+
+### Mac / Windows ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+*.log
+
+### Build files ###
+/target/
+/build/
+/out/
+
+### Gradle ###
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+### Maven ###
+.mvn/wrapper/maven-wrapper.jar
+
+### Java ###
+*.class
+
+### Spring Boot ###
+application-local.yml
+application-local.properties
+application-secret.yml
+application-secret.properties
+
+### Environment ###
+.env
+
+### Database ###
+*.db
+*.mv.db
+
+### Generated files ###
+generated/s
