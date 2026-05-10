@@ -35,7 +35,7 @@
 
 ### Database
 
-- **MySQL 8.0**
+- **MySQL**
 
 <br>
 
