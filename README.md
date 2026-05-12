@@ -41,7 +41,7 @@
 
 ## ERD
 
-![ERD](docs/images/v1_erd.png)
+![ERD](docs/images/v1.1.0_erd.png)
 
 <br>
 
