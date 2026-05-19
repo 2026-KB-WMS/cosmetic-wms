@@ -38,6 +38,7 @@ public class Member {
 
     public static Member create(MemberSignUpRequest request) {
         validateEmail(request.email());
+        validatePhoneNumber(request.phoneNumber());
 
         return new Member(
                 request.loginId(),
@@ -53,6 +54,13 @@ public class Member {
         String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
         if (email == null || !Pattern.matches(emailRegex, email)) {
             throw new IllegalArgumentException("올바르지 않은 이메일 형식입니다.");
+        }
+    }
+
+    private static void validatePhoneNumber(String phoneNumber) {
+        String phoneNumberRegex = "^(01[016789]|02|0[3-9][0-9])-(?:\\d{3}|\\d{4})-\\d{4}$";
+        if (phoneNumber == null || !Pattern.matches(phoneNumberRegex, phoneNumber)) {
+            throw new IllegalArgumentException("올바르지 않은 전화번호 형식입니다. (예: 010-1234-5678)");
         }
     }
 }

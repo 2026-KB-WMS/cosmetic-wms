@@ -49,4 +49,23 @@ public class MemberEntityTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("올바르지 않은 이메일 형식입니다.");
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"133245", "01012345678", "02-123-123", "abc-defg-hijk"})
+    void 잘못된_형식의_전화번호를_입력했을_때_예외를_던진다(String invalidPhoneNumber) {
+        // given
+        MemberSignUpRequest request = new MemberSignUpRequest(
+                "admin01",
+                "password123!",
+                Role.ROLE_HQ,
+                "홍길동",
+                "admin@example.com",
+                invalidPhoneNumber
+        );
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> Member.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("올바르지 않은 전화번호 형식입니다. (예: 010-1234-5678)");
+    }
 }
