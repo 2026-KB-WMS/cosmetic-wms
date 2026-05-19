@@ -8,9 +8,15 @@ public class MemberConstants {
     public static final int LOGIN_ID_MIN_LENGTH = 5;
     public static final int LOGIN_ID_MAX_LENGTH = 50;
 
+    public static final int PASSWORD_MIN_LENGTH = 8;
+    public static final int PASSWORD_MAX_LENGTH = 50;
+
     public static final String EMAIL_REGEX =
             "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
 
     public static final String PHONE_NUMBER_REGEX =
             "^(01[016789]|02|0[3-9][0-9])-(?:\\d{3}|\\d{4})-\\d{4}$";
+
+    public static final String PASSWORD_REGEX =
+            "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).*$";
 }
