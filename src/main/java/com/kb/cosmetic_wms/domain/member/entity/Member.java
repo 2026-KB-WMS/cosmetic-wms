@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.member.entity;
 
+import com.kb.cosmetic_wms.domain.member.MemberConstants;
 import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequest;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
 import jakarta.persistence.*;
@@ -52,14 +53,14 @@ public class Member {
     }
 
     private static void validateEmail(String email) {
-        String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
+        String emailRegex = MemberConstants.EMAIL_REGEX;
         if (email == null || !Pattern.matches(emailRegex, email)) {
             throw new IllegalArgumentException("올바르지 않은 이메일 형식입니다.");
         }
     }
 
     private static void validatePhoneNumber(String phoneNumber) {
-        String phoneNumberRegex = "^(01[016789]|02|0[3-9][0-9])-(?:\\d{3}|\\d{4})-\\d{4}$";
+        String phoneNumberRegex = MemberConstants.PHONE_NUMBER_REGEX;
         if (phoneNumber == null || !Pattern.matches(phoneNumberRegex, phoneNumber)) {
             throw new IllegalArgumentException("올바르지 않은 전화번호 형식입니다. (예: 010-1234-5678)");
         }
@@ -68,6 +69,12 @@ public class Member {
     private static void validateLoginId(String loginId) {
         if (loginId == null || loginId.trim().isEmpty()) {
             throw new IllegalArgumentException("로그인 ID는 필수 입력 항목입니다.");
+        }
+        if (loginId.length() > MemberConstants.LOGIN_ID_MAX_LENGTH) {
+            throw new IllegalArgumentException("로그인 ID는 50자를 초과할 수 없습니다.");
+        }
+        if (loginId.length() < MemberConstants.LOGIN_ID_MIN_LENGTH) {
+            throw new IllegalArgumentException("로그인 ID는 5자 이상이어야 합니다.");
         }
     }
 }

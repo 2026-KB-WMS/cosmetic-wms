@@ -87,4 +87,40 @@ public class MemberEntityTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("로그인 ID는 필수 입력 항목입니다.");
     }
+
+    @Test
+    void 로그인_ID가_50자를_초과하면_예외를_던진다() {
+        // given
+        MemberSignUpRequest request = new MemberSignUpRequest(
+                "adminLoginIdThatItsLengthMoreThanFifty12345667890112423",
+                "password123!",
+                Role.ROLE_HQ,
+                "홍길동",
+                "admin@example.com",
+                "010-1234-5678"
+        );
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> Member.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("로그인 ID는 50자를 초과할 수 없습니다.");
+    }
+
+    @Test
+    void 로그인_ID가_5자_미만이면_예외를_던진다() {
+        // given
+        MemberSignUpRequest request = new MemberSignUpRequest(
+                "id",
+                "password123!",
+                Role.ROLE_HQ,
+                "홍길동",
+                "admin@example.com",
+                "010-1234-5678"
+        );
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> Member.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("로그인 ID는 5자 이상이어야 합니다.");
+    }
 }
