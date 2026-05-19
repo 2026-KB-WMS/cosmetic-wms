@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.regex.Pattern;
+
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -35,6 +37,8 @@ public class Member {
     }
 
     public static Member create(MemberSignUpRequest request) {
+        validateEmail(request.email());
+
         return new Member(
                 request.loginId(),
                 request.password(),
@@ -43,5 +47,12 @@ public class Member {
                 request.email(),
                 request.phoneNumber()
         );
+    }
+
+    private static void validateEmail(String email) {
+        String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
+        if (email == null || !Pattern.matches(emailRegex, email)) {
+            throw new IllegalArgumentException("올바르지 않은 이메일 형식입니다.");
+        }
     }
 }
