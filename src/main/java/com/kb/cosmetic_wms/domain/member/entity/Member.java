@@ -39,6 +39,7 @@ public class Member {
     public static Member create(MemberSignUpRequest request) {
         validateEmail(request.email());
         validatePhoneNumber(request.phoneNumber());
+        validateLoginId(request.loginId());
 
         return new Member(
                 request.loginId(),
@@ -61,6 +62,12 @@ public class Member {
         String phoneNumberRegex = "^(01[016789]|02|0[3-9][0-9])-(?:\\d{3}|\\d{4})-\\d{4}$";
         if (phoneNumber == null || !Pattern.matches(phoneNumberRegex, phoneNumber)) {
             throw new IllegalArgumentException("올바르지 않은 전화번호 형식입니다. (예: 010-1234-5678)");
+        }
+    }
+
+    private static void validateLoginId(String loginId) {
+        if (loginId == null || loginId.trim().isEmpty()) {
+            throw new IllegalArgumentException("로그인 ID는 필수 입력 항목입니다.");
         }
     }
 }

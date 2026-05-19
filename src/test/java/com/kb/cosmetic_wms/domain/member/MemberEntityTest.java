@@ -68,4 +68,23 @@ public class MemberEntityTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("올바르지 않은 전화번호 형식입니다. (예: 010-1234-5678)");
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "    "})
+    void 로그인_ID가_비어있거나_공백이면_예외를_던진다(String emptyLoginId) {
+        // given
+        MemberSignUpRequest request = new MemberSignUpRequest(
+                emptyLoginId,
+                "password123!",
+                Role.ROLE_HQ,
+                "홍길동",
+                "admin@example.com",
+                "010-1234-5678"
+        );
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> Member.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("로그인 ID는 필수 입력 항목입니다.");
+    }
 }
