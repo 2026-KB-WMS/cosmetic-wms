@@ -47,7 +47,7 @@ public class MemberEntityTest {
         // when & then
         Assertions.assertThatThrownBy(() -> Member.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("올바르지 않은 이메일 형식입니다.");
+                .hasMessage(MemberConstants.INVALID_EMAIL_MESSAGE);
     }
 
     @ParameterizedTest
@@ -66,7 +66,7 @@ public class MemberEntityTest {
         // when & then
         Assertions.assertThatThrownBy(() -> Member.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("올바르지 않은 전화번호 형식입니다. (예: 010-1234-5678)");
+                .hasMessage(MemberConstants.INVALID_PHONE_NUMBER_MESSAGE);
     }
 
     @ParameterizedTest
@@ -85,14 +85,15 @@ public class MemberEntityTest {
         // when & then
         Assertions.assertThatThrownBy(() -> Member.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("로그인 ID는 필수 입력 항목입니다.");
+                .hasMessage(MemberConstants.LOGIN_ID_REQUIRED_MESSAGE);
     }
 
-    @Test
-    void 로그인_ID가_50자를_초과하면_예외를_던진다() {
+    @ParameterizedTest
+    @ValueSource(strings = {"adminLoginIdThatItsLengthMoreThanFifty12345667890112423", "id"})
+    void 로그인_ID가_5자_이상_50자_이하가_아니면_예외를_던진다(String invalidLengthLoginId) {
         // given
         MemberSignUpRequest request = new MemberSignUpRequest(
-                "adminLoginIdThatItsLengthMoreThanFifty12345667890112423",
+                invalidLengthLoginId,
                 "password123!",
                 Role.ROLE_HQ,
                 "홍길동",
@@ -103,25 +104,7 @@ public class MemberEntityTest {
         // when & then
         Assertions.assertThatThrownBy(() -> Member.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("로그인 ID는 50자를 초과할 수 없습니다.");
-    }
-
-    @Test
-    void 로그인_ID가_5자_미만이면_예외를_던진다() {
-        // given
-        MemberSignUpRequest request = new MemberSignUpRequest(
-                "id",
-                "password123!",
-                Role.ROLE_HQ,
-                "홍길동",
-                "admin@example.com",
-                "010-1234-5678"
-        );
-
-        // when & then
-        Assertions.assertThatThrownBy(() -> Member.create(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("로그인 ID는 5자 이상이어야 합니다.");
+                .hasMessage(MemberConstants.INVALID_LOGIN_ID_LENGTH_MESSAGE);
     }
 
     @ParameterizedTest
@@ -140,15 +123,16 @@ public class MemberEntityTest {
         // when & then
         Assertions.assertThatThrownBy(() -> Member.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("비밀번호는 필수 입력 항목입니다.");
+                .hasMessage(MemberConstants.PASSWORD_REQUIRED_MESSAGE);
     }
 
-    @Test
-    void 비밀번호가_8자_미만이면_예외를_던진다() {
+    @ParameterizedTest
+    @ValueSource(strings = {"pwd", "passwordpasswordpasswordpasswordpasswordpasswordpassword1234!@$%"})
+    void 비밀번호가_8자_미만_50자_초과하면_예외를_던진다(String invalidLengthPassword) {
         // given
         MemberSignUpRequest request = new MemberSignUpRequest(
                 "admin01",
-                "pwd",
+                invalidLengthPassword,
                 Role.ROLE_HQ,
                 "홍길동",
                 "admin@example.com",
@@ -158,7 +142,7 @@ public class MemberEntityTest {
         // when & then
         Assertions.assertThatThrownBy(() -> Member.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("비밀번호는 8자 이상이어야 합니다.");
+                .hasMessage(MemberConstants.INVALID_PASSWORD_LENGTH_MESSAGE);
     }
 
     @Test
@@ -176,24 +160,6 @@ public class MemberEntityTest {
         // when & then
         Assertions.assertThatThrownBy(() -> Member.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("비밀번호는 8~50자의 영문, 숫자, 특수문자를 포함해야 합니다.");
-    }
-
-    @Test
-    void 비밀번호가_50자를_초과하면_예외를_던진다() {
-        // given
-        MemberSignUpRequest request = new MemberSignUpRequest(
-                "admin01",
-                "passwordpasswordpasswordpasswordpasswordpasswordpassword1234!@$%",
-                Role.ROLE_HQ,
-                "홍길동",
-                "admin@example.com",
-                "010-1234-5678"
-        );
-
-        // when & then
-        Assertions.assertThatThrownBy(() -> Member.create(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("비밀번호는 50자를 초과할 수 없습니다.");
+                .hasMessage(MemberConstants.INVALID_PASSWORD_MESSAGE);
     }
 }

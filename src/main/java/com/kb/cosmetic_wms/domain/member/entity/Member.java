@@ -56,41 +56,37 @@ public class Member {
     private static void validateEmail(String email) {
         String emailRegex = MemberConstants.EMAIL_REGEX;
         if (email == null || !Pattern.matches(emailRegex, email)) {
-            throw new IllegalArgumentException("올바르지 않은 이메일 형식입니다.");
+            throw new IllegalArgumentException(MemberConstants.INVALID_EMAIL_MESSAGE);
         }
     }
 
     private static void validatePhoneNumber(String phoneNumber) {
         String phoneNumberRegex = MemberConstants.PHONE_NUMBER_REGEX;
         if (phoneNumber == null || !Pattern.matches(phoneNumberRegex, phoneNumber)) {
-            throw new IllegalArgumentException("올바르지 않은 전화번호 형식입니다. (예: 010-1234-5678)");
+            throw new IllegalArgumentException(MemberConstants.INVALID_PHONE_NUMBER_MESSAGE);
         }
     }
 
     private static void validateLoginId(String loginId) {
         if (loginId == null || loginId.isBlank()) {
-            throw new IllegalArgumentException("로그인 ID는 필수 입력 항목입니다.");
+            throw new IllegalArgumentException(MemberConstants.LOGIN_ID_REQUIRED_MESSAGE);
         }
-        if (loginId.length() > MemberConstants.LOGIN_ID_MAX_LENGTH) {
-            throw new IllegalArgumentException("로그인 ID는 50자를 초과할 수 없습니다.");
-        }
-        if (loginId.length() < MemberConstants.LOGIN_ID_MIN_LENGTH) {
-            throw new IllegalArgumentException("로그인 ID는 5자 이상이어야 합니다.");
+        if (loginId.length() < MemberConstants.LOGIN_ID_MIN_LENGTH ||
+                loginId.length() > MemberConstants.LOGIN_ID_MAX_LENGTH) {
+            throw new IllegalArgumentException(MemberConstants.INVALID_LOGIN_ID_LENGTH_MESSAGE);
         }
     }
 
     private static void validatePassword(String password) {
         if (password == null || password.isBlank()) {
-            throw new IllegalArgumentException("비밀번호는 필수 입력 항목입니다.");
+            throw new IllegalArgumentException(MemberConstants.PASSWORD_REQUIRED_MESSAGE);
         }
-        if (password.length() < MemberConstants.PASSWORD_MIN_LENGTH) {
-            throw new IllegalArgumentException("비밀번호는 8자 이상이어야 합니다.");
-        }
-        if (password.length() > MemberConstants.PASSWORD_MAX_LENGTH) {
-            throw new IllegalArgumentException("비밀번호는 50자를 초과할 수 없습니다.");
+        if (password.length() < MemberConstants.PASSWORD_MIN_LENGTH ||
+                password.length() > MemberConstants.PASSWORD_MAX_LENGTH) {
+            throw new IllegalArgumentException(MemberConstants.INVALID_PASSWORD_LENGTH_MESSAGE);
         }
         if (!Pattern.matches(MemberConstants.PASSWORD_REGEX, password)) {
-            throw new IllegalArgumentException("비밀번호는 8~50자의 영문, 숫자, 특수문자를 포함해야 합니다.");
+            throw new IllegalArgumentException(MemberConstants.INVALID_PASSWORD_MESSAGE);
         }
     }
 }
