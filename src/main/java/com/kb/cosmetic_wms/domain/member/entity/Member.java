@@ -1,7 +1,6 @@
 package com.kb.cosmetic_wms.domain.member.entity;
 
 import com.kb.cosmetic_wms.domain.member.MemberConstants;
-import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequest;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -37,19 +36,26 @@ public class Member {
         this.phoneNumber = phoneNumber;
     }
 
-    public static Member create(MemberSignUpRequest request) {
-        validateEmail(request.email());
-        validatePhoneNumber(request.phoneNumber());
-        validateLoginId(request.loginId());
-        validatePassword(request.password());
+    public static Member create(
+            String loginId,
+            String password,
+            Role role,
+            String memberName,
+            String email,
+            String phoneNumber
+    ) {
+        validateLoginId(loginId);
+        validatePassword(password);
+        validateEmail(email);
+        validatePhoneNumber(phoneNumber);
 
         return new Member(
-                request.loginId(),
-                request.password(),
-                request.role(),
-                request.memberName(),
-                request.email(),
-                request.phoneNumber()
+                loginId,
+                password,
+                role,
+                memberName,
+                email,
+                phoneNumber
         );
     }
 
