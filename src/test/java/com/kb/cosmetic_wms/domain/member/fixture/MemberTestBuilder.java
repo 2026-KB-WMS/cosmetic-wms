@@ -6,7 +6,7 @@ import com.kb.cosmetic_wms.domain.member.enums.Role;
 public class MemberTestBuilder {
     private String loginId = "admin01";
     private String password = "password123!";
-    private Role role = Role.ROLE_HQ;
+    private Role role = Role.ROLE_HEADQUARTERS;
     private String memberName = "홍길동";
     private String email = "admin@example.com";
     private String phoneNumber = "010-1234-5678";

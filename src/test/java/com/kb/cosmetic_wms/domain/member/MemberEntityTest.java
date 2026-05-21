@@ -17,7 +17,7 @@ public class MemberEntityTest {
 
         // then
         Assertions.assertThat(member.getLoginId()).isEqualTo("admin01");
-        Assertions.assertThat(member.getRole()).isEqualTo(Role.ROLE_HQ);
+        Assertions.assertThat(member.getRole()).isEqualTo(Role.ROLE_HEADQUARTERS);
         Assertions.assertThat(member.getMemberName()).isEqualTo("홍길동");
     }
 
