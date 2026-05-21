@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.domain.member;
 
-public class MemberConstants {
+public final class MemberConstants {
 
     private MemberConstants() {
     }
