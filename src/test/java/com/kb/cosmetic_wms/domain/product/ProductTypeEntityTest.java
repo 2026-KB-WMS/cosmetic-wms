@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.domain.product.productType.ProductType;
+import com.kb.cosmetic_wms.domain.product.entity.ProductType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;

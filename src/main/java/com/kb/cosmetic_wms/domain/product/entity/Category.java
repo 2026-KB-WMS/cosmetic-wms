@@ -1,5 +1,6 @@
-package com.kb.cosmetic_wms.domain.product.category;
+package com.kb.cosmetic_wms.domain.product.entity;
 
+import com.kb.cosmetic_wms.domain.product.CategoryConstants;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
