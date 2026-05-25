@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.product;
 
+import com.kb.cosmetic_wms.domain.product.constants.CategoryConstants;
 import com.kb.cosmetic_wms.domain.product.entity.Category;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

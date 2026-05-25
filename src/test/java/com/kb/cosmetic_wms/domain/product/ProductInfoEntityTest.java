@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.product;
 
+import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
 import com.kb.cosmetic_wms.domain.product.entity.ProductInfo;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductInfoTestBuilder;
 import org.junit.jupiter.api.Test;

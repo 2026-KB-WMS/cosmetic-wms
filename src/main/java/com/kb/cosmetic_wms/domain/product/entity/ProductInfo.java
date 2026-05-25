@@ -1,12 +1,13 @@
 package com.kb.cosmetic_wms.domain.product.entity;
 
-import com.kb.cosmetic_wms.domain.product.ProductInfoConstants;
+import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class ProductInfo {

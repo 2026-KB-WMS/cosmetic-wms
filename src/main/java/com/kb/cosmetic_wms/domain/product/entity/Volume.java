@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.domain.product.entity;
 
-import com.kb.cosmetic_wms.domain.product.ProductInfoConstants;
+import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
 import jakarta.persistence.Embeddable;
 
 @Embeddable

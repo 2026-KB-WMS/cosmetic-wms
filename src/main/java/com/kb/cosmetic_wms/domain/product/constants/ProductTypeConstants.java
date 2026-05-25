@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.domain.product;
+package com.kb.cosmetic_wms.domain.product.constants;
 
 import java.util.regex.Pattern;
 
