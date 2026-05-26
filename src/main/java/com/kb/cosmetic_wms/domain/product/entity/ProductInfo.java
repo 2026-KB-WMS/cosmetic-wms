@@ -1,20 +1,17 @@
 package com.kb.cosmetic_wms.domain.product.entity;
 
 import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
-import jakarta.persistence.*;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Entity
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class ProductInfo {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    
     private String skinType;
     private String functionType;
 
