@@ -1,16 +1,17 @@
 package com.kb.cosmetic_wms.domain.product.enums;
 
-public enum TemperatureType {
-    ROOM("상온"),
-    COOL("냉장");
+import lombok.Getter;
 
+@Getter
+public enum TemperatureType {
+    ROOM("R", "상온"),
+    COOL("C", "냉장");
+
+    private final String shortCode;
     private final String description;
 
-    TemperatureType(String description) {
+    TemperatureType(String shortCode, String description) {
+        this.shortCode = shortCode;
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 }

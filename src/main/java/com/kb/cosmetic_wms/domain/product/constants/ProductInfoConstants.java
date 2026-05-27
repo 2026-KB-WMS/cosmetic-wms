@@ -2,7 +2,7 @@ package com.kb.cosmetic_wms.domain.product.constants;
 
 import java.util.List;
 
-public class ProductInfoConstants {
+public final class ProductInfoConstants {
 
     private ProductInfoConstants() {
     }
