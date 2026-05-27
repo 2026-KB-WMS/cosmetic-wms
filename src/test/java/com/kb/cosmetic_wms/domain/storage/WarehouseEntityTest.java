@@ -1,7 +1,13 @@
 package com.kb.cosmetic_wms.domain.storage;
 
+import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
+import com.kb.cosmetic_wms.domain.storage.entity.Section;
 import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
+import com.kb.cosmetic_wms.domain.storage.enums.SectionAllocationStatus;
+import com.kb.cosmetic_wms.domain.storage.enums.SectionQualityStatus;
+import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
+import com.kb.cosmetic_wms.domain.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.domain.storage.fixture.WarehouseTestBuilder;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,6 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class WarehouseEntityTest {
 
@@ -85,5 +92,84 @@ public class WarehouseEntityTest {
                 )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(StorageConstants.INVALID_CAPACITY_MESSAGE);
+    }
+
+    @Test
+    void 추가하려는_섹션들의_최대_수용량_합이_창고_전체_수용_한도를_초과하면_예외를_던진다() {
+        // given
+        Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
+
+        Section section1 = new SectionTestBuilder()
+                .sectionCode("WH01-MID-R-01")
+                .maxCapacity(6000).build();
+        Section section2 = new SectionTestBuilder()
+                .sectionCode("WH01-HIGH-R-01")
+                .maxCapacity(6000).build();
+
+        // when & then
+        warehouse.addSection(section1);
+        assertThatThrownBy(() -> warehouse.addSection(section2))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(StorageConstants.EXCEED_WAREHOUSE_CAPACITY_MESSAGE);
+    }
+
+    @Test
+    void 창고_내에_동일한_코드를_가진_섹션이_이미_존재하면_예외를_던진다() {
+        // given
+        Warehouse warehouse = new WarehouseTestBuilder().build();
+
+        Section section1 = new SectionTestBuilder().sectionCode("WH01-HIGH-R-01").build();
+        Section section2 = new SectionTestBuilder().sectionCode("WH01-HIGH-R-01").build();
+
+        // when & then
+        warehouse.addSection(section1);
+        assertThatThrownBy(() -> warehouse.addSection(section2))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(StorageConstants.DUPLICATE_SECTION_CODE_MESSAGE);
+    }
+
+    @Test
+    void 규격에_맞는_보관_구역들을_추가하면_창고에_정상_등록된다() {
+        // given
+        Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
+
+        Section dockingSection = new SectionTestBuilder()
+                .sectionCode("WH01-DOCK-R-01")
+                .sectionType(SectionType.DOCKING)
+                .qualityStatus(SectionQualityStatus.INSPECTING)
+                .allocationStatus(SectionAllocationStatus.NONE)
+                .maxCapacity(2000).build();
+
+        Section highRotSection = new SectionTestBuilder()
+                .sectionCode("WH01-HIGH-C-01")
+                .sectionType(SectionType.HIGH_ROT)
+                .qualityStatus(SectionQualityStatus.NORMAL)
+                .allocationStatus(SectionAllocationStatus.AVAILABLE)
+                .temperatureType(TemperatureType.COOL)
+                .maxCapacity(5000).build();
+
+        // when
+        warehouse.addSection(dockingSection);
+        warehouse.addSection(highRotSection);
+
+        // then
+        assertThat(warehouse.getSections()).hasSize(2);
+        assertThat(dockingSection.getWarehouse()).isEqualTo(warehouse);
+        assertThat(highRotSection.getWarehouse()).isEqualTo(warehouse);
+    }
+
+    @Test
+    void 추가하려는_섹션들의_용량_합이_창고_전체_한도와_일치하면_예외_없이_정상_등록된다() {
+        // given
+        Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
+        Section section1 = new SectionTestBuilder().sectionCode("WH01-HIGH-R-01").maxCapacity(7000).build();
+        Section section2 = new SectionTestBuilder().sectionCode("WH01-LOW-R-01").maxCapacity(3000).build(); // 합산 딱 10,000
+
+        // when
+        warehouse.addSection(section1);
+
+        // then
+        assertDoesNotThrow(() -> warehouse.addSection(section2));
+        assertThat(warehouse.getSections()).hasSize(2);
     }
 }

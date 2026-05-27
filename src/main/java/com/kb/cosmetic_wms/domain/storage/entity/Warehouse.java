@@ -1,13 +1,13 @@
 package com.kb.cosmetic_wms.domain.storage.entity;
 
 import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -30,6 +30,9 @@ public class Warehouse {
         this.capacity = capacity;
     }
 
+    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<Section> sections = new ArrayList<>();
+
     public static Warehouse create(String warehouseName, String address, String targetTemp, int capacity) {
         validateWarehouseName(warehouseName);
         validateAddress(address);
@@ -37,6 +40,33 @@ public class Warehouse {
         validateCapacity(capacity);
 
         return new Warehouse(warehouseName, address, targetTemp, capacity);
+    }
+
+    public void addSection(Section section) {
+        validateDuplicateSectionCode(section.getSectionCode());
+        validateTotalSectionCapacity(section.getMaxCapacity());
+
+        this.sections.add(section);
+        section.assignWarehouse(this);
+    }
+
+    private void validateDuplicateSectionCode(String sectionCode) {
+        boolean isDuplicate = this.sections.stream()
+                .anyMatch(existingSection -> existingSection.getSectionCode().equals(sectionCode));
+
+        if (isDuplicate) {
+            throw new IllegalArgumentException(StorageConstants.DUPLICATE_SECTION_CODE_MESSAGE);
+        }
+    }
+
+    private void validateTotalSectionCapacity(int newSectionMaxCapacity) {
+        int currentTotalCapacity = this.sections.stream()
+                .mapToInt(Section::getMaxCapacity)
+                .sum();
+
+        if (currentTotalCapacity + newSectionMaxCapacity > this.capacity) {
+            throw new IllegalArgumentException(StorageConstants.EXCEED_WAREHOUSE_CAPACITY_MESSAGE);
+        }
     }
 
     private static void validateWarehouseName(String warehouseName) {
