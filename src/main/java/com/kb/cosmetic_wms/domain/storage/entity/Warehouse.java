@@ -1,6 +1,8 @@
 package com.kb.cosmetic_wms.domain.storage.entity;
 
+import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
+import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -42,12 +44,49 @@ public class Warehouse {
         return new Warehouse(warehouseName, address, targetTemp, capacity);
     }
 
-    public void addSection(Section section) {
-        validateDuplicateSectionCode(section.getSectionCode());
-        validateTotalSectionCapacity(section.getMaxCapacity());
+    // 일반 보관 구역 생성 및 추가 (HIGH_ROT, MID_ROT, LOW_ROT)
+    public Section addStorageSection(
+            String sectionCode, String sectionName, SectionType sectionType,
+            TemperatureType temperatureType, int maxCapacity) {
+
+        validateDuplicateSectionCode(sectionCode);
+        validateTotalSectionCapacity(maxCapacity);
+
+        Section section = Section.createStorageSection(
+                this, sectionCode, sectionName, sectionType, temperatureType, maxCapacity
+        );
 
         this.sections.add(section);
-        section.assignWarehouse(this);
+        return section;
+    }
+
+    // 검수 대기 구역 생성 및 추가 (DOCKING)
+    public Section addDockingSection(
+            String sectionCode, String sectionName, TemperatureType temperatureType, int maxCapacity) {
+
+        validateDuplicateSectionCode(sectionCode);
+        validateTotalSectionCapacity(maxCapacity);
+
+        Section section = Section.createDockingSection(
+                this, sectionCode, sectionName, temperatureType, maxCapacity
+        );
+
+        this.sections.add(section);
+        return section;
+    }
+
+    // 격리/폐기 구역 생성 및 추가 (QUARANTINE)
+    public Section addQuarantineSection(String sectionCode, String sectionName, int maxCapacity) {
+
+        validateDuplicateSectionCode(sectionCode);
+        validateTotalSectionCapacity(maxCapacity);
+
+        Section section = Section.createQuarantineSection(
+                this, sectionCode, sectionName, maxCapacity
+        );
+
+        this.sections.add(section);
+        return section;
     }
 
     private void validateDuplicateSectionCode(String sectionCode) {

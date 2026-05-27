@@ -66,7 +66,7 @@ public class Section {
     }
 
     // 일반 보관 구역 생성 (HIGH_ROT, MID_ROT, LOW_ROT) (품질 상태: NORMAL, 할당 상태: AVAILABLE)
-    public static Section createStorageSection(
+    static Section createStorageSection(
             Warehouse warehouse, String sectionCode, String sectionName,
             SectionType sectionType, TemperatureType temperatureType, int maxCapacity) {
 
@@ -83,7 +83,7 @@ public class Section {
     }
 
     // 검수 대기 구역 생성 (DOCKING) (품질 상태: INSPECTING, 할당 상태: NONE)
-    public static Section createDockingSection(
+    static Section createDockingSection(
             Warehouse warehouse, String sectionCode, String sectionName,
             TemperatureType temperatureType, int maxCapacity) {
 
@@ -100,7 +100,7 @@ public class Section {
     }
 
     // 격리/폐기 구역 생성 (QUARANTINE) (품질 상태: HOLD, 할당 상태: EXCLUDED, 온도 타입: ROOM)
-    public static Section createQuarantineSection(
+    static Section createQuarantineSection(
             Warehouse warehouse, String sectionCode, String sectionName, int maxCapacity) {
 
         return Section.builder()
@@ -114,11 +114,7 @@ public class Section {
                 .maxCapacity(maxCapacity)
                 .build();
     }
-
-    protected void assignWarehouse(Warehouse warehouse) {
-        this.warehouse = warehouse;
-    }
-
+    
     private void validateMaxCapacity(int maxCapacity) {
         if (maxCapacity <= StorageConstants.MIN_CAPACITY_BOUND) {
             throw new IllegalArgumentException(StorageConstants.INVALID_SECTION_MAX_CAPACITY_MESSAGE);

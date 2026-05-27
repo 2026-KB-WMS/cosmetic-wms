@@ -59,23 +59,32 @@ public class SectionTestBuilder {
     }
 
     public Section build() {
-        // 검수 대기 구역일 때
+        // 검수 대기 구역일 때 (DOCKING)
         if (this.sectionType == SectionType.DOCKING) {
-            return Section.createDockingSection(
-                    this.warehouse, this.sectionCode, this.sectionName, this.temperatureType, this.maxCapacity
+            return this.warehouse.addDockingSection(
+                    this.sectionCode,
+                    this.sectionName,
+                    this.temperatureType,
+                    this.maxCapacity
             );
         }
 
-        // 격리/폐기 구역일 때
+        // 격리/폐기 구역일 때 (QUARANTINE)
         if (this.sectionType == SectionType.QUARANTINE) {
-            return Section.createQuarantineSection(
-                    this.warehouse, this.sectionCode, this.sectionName, this.maxCapacity
+            return this.warehouse.addQuarantineSection(
+                    this.sectionCode,
+                    this.sectionName,
+                    this.maxCapacity
             );
         }
 
         // 일반 보관 구역일 때 (HIGH_ROT, MID_ROT, LOW_ROT)
-        return Section.createStorageSection(
-                this.warehouse, this.sectionCode, this.sectionName, this.sectionType, this.temperatureType, this.maxCapacity
+        return this.warehouse.addStorageSection(
+                this.sectionCode,
+                this.sectionName,
+                this.sectionType,
+                this.temperatureType,
+                this.maxCapacity
         );
     }
 }
