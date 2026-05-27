@@ -9,13 +9,11 @@ import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
 import com.kb.cosmetic_wms.domain.storage.fixture.SectionTestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.stream.Stream;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class SectionEntityTest {
@@ -87,51 +85,41 @@ public class SectionEntityTest {
                 .hasMessage(StorageConstants.SECTION_NAME_REQUIRED_MESSAGE);
     }
 
-    @ParameterizedTest(name = "{0} 구역에 품질:{1}, 할당:{2} 조합은 예외가 발생한다")
-    @MethodSource("provideInvalidSectionCombinations")
-    void 규칙에_위배되는_구역_타입과_상태_조합이면_예외를_던진다(
-            SectionType type, SectionQualityStatus quality, SectionAllocationStatus allocation
-    ) {
-        assertThatThrownBy(() ->
-                new SectionTestBuilder()
-                        .sectionType(type)
-                        .qualityStatus(quality)
-                        .allocationStatus(allocation)
-                        .build()
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(StorageConstants.INVALID_SECTION_STATE_COMBINATION_MESSAGE);
+    @ParameterizedTest(name = "{0} 구역을 생성하면 품질은 NORMAL, 할당은 AVAILABLE로 자동 세팅된다")
+    @EnumSource(value = SectionType.class, names = {"HIGH_ROT", "MID_ROT", "LOW_ROT"})
+    void 보관_구역을_생성하면_품질은_NORMAL_할당은_AVAILABLE로_자동_세팅된다(SectionType sectionType) {
+        // given & when
+        Section section = new SectionTestBuilder()
+                .sectionType(sectionType)
+                .build();
+
+        assertThat(section.getSectionType()).isEqualTo(sectionType);
+        assertThat(section.getQualityStatus()).isEqualTo(SectionQualityStatus.NORMAL);
+        assertThat(section.getAllocationStatus()).isEqualTo(SectionAllocationStatus.AVAILABLE);
     }
 
     @Test
-    void 격리_구역의_온도_타입이_COOL이면_예외를_던진다() {
-        assertThatThrownBy(() ->
-                new SectionTestBuilder()
-                        .sectionType(SectionType.QUARANTINE)
-                        .qualityStatus(SectionQualityStatus.HOLD)
-                        .allocationStatus(SectionAllocationStatus.EXCLUDED)
-                        .temperatureType(TemperatureType.COOL)
-                        .build()
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(StorageConstants.QUARANTINE_MUST_BE_ROOM_MESSAGE);
+    void 검수_대기_구역을_생성하면_품질은_INSPECTING_할당은_NONE으로_자동_세팅된다() {
+        // given & when
+        Section section = new SectionTestBuilder()
+                .sectionType(SectionType.DOCKING)
+                .build();
+
+        // then
+        assertThat(section.getQualityStatus()).isEqualTo(SectionQualityStatus.INSPECTING);
+        assertThat(section.getAllocationStatus()).isEqualTo(SectionAllocationStatus.NONE);
     }
 
-    private static Stream<Arguments> provideInvalidSectionCombinations() {
-        return Stream.of(
-                // 1. DOCKING 구역인데 품질이 NORMAL이거나, 할당이 AVAILABLE/EXCLUDED인 경우
-                Arguments.of(SectionType.DOCKING, SectionQualityStatus.NORMAL, SectionAllocationStatus.NONE),
-                Arguments.of(SectionType.DOCKING, SectionQualityStatus.INSPECTING, SectionAllocationStatus.AVAILABLE),
-                Arguments.of(SectionType.DOCKING, SectionQualityStatus.INSPECTING, SectionAllocationStatus.EXCLUDED),
+    @Test
+    void 격리_폐기_구역을_생성하면_품질은_HOLD_할당은_EXCLUDED_온도는_ROOM으로_자동_세팅된다() {
+        // given & when
+        Section section = new SectionTestBuilder()
+                .sectionType(SectionType.QUARANTINE)
+                .build();
 
-                // 2. QUARANTINE(격리) 구역인데 품질이 NORMAL이거나, 할당이 AVAILABLE/NONE인 경우
-                Arguments.of(SectionType.QUARANTINE, SectionQualityStatus.NORMAL, SectionAllocationStatus.EXCLUDED),
-                Arguments.of(SectionType.QUARANTINE, SectionQualityStatus.HOLD, SectionAllocationStatus.AVAILABLE),
-                Arguments.of(SectionType.QUARANTINE, SectionQualityStatus.HOLD, SectionAllocationStatus.NONE),
-
-                // 3. 보관 구역(HIGH, MID, LOW)인데 품질이 INSPECTING이거나 할당이 NONE인 경우
-                Arguments.of(SectionType.HIGH_ROT, SectionQualityStatus.INSPECTING, SectionAllocationStatus.AVAILABLE),
-                Arguments.of(SectionType.MID_ROT, SectionQualityStatus.NORMAL, SectionAllocationStatus.NONE)
-        );
+        // then
+        assertThat(section.getQualityStatus()).isEqualTo(SectionQualityStatus.HOLD);
+        assertThat(section.getAllocationStatus()).isEqualTo(SectionAllocationStatus.EXCLUDED);
+        assertThat(section.getTemperatureType()).isEqualTo(TemperatureType.ROOM);
     }
 }

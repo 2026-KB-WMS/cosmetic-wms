@@ -42,11 +42,11 @@ public class Section {
 
     private int currentCapacity;
 
-    @Builder
-    protected Section(Warehouse warehouse, String sectionCode, String sectionName,
-                      SectionType sectionType, SectionQualityStatus qualityStatus,
-                      SectionAllocationStatus allocationStatus, TemperatureType temperatureType,
-                      int maxCapacity) {
+    @Builder(access = AccessLevel.PRIVATE)
+    private Section(Warehouse warehouse, String sectionCode, String sectionName,
+                    SectionType sectionType, SectionQualityStatus qualityStatus,
+                    SectionAllocationStatus allocationStatus, TemperatureType temperatureType,
+                    int maxCapacity) {
 
         validateMaxCapacity(maxCapacity);
         validateSectionCode(sectionCode);
@@ -63,6 +63,56 @@ public class Section {
         this.temperatureType = temperatureType;
         this.maxCapacity = maxCapacity;
         this.currentCapacity = 0;
+    }
+
+    // 일반 보관 구역 생성 (HIGH_ROT, MID_ROT, LOW_ROT) (품질 상태: NORMAL, 할당 상태: AVAILABLE)
+    public static Section createStorageSection(
+            Warehouse warehouse, String sectionCode, String sectionName,
+            SectionType sectionType, TemperatureType temperatureType, int maxCapacity) {
+
+        return Section.builder()
+                .warehouse(warehouse)
+                .sectionCode(sectionCode)
+                .sectionName(sectionName)
+                .sectionType(sectionType)
+                .qualityStatus(SectionQualityStatus.NORMAL)
+                .allocationStatus(SectionAllocationStatus.AVAILABLE)
+                .temperatureType(temperatureType)
+                .maxCapacity(maxCapacity)
+                .build();
+    }
+
+    // 검수 대기 구역 생성 (DOCKING) (품질 상태: INSPECTING, 할당 상태: NONE)
+    public static Section createDockingSection(
+            Warehouse warehouse, String sectionCode, String sectionName,
+            TemperatureType temperatureType, int maxCapacity) {
+
+        return Section.builder()
+                .warehouse(warehouse)
+                .sectionCode(sectionCode)
+                .sectionName(sectionName)
+                .sectionType(SectionType.DOCKING)
+                .qualityStatus(SectionQualityStatus.INSPECTING)
+                .allocationStatus(SectionAllocationStatus.NONE)
+                .temperatureType(temperatureType)
+                .maxCapacity(maxCapacity)
+                .build();
+    }
+
+    // 격리/폐기 구역 생성 (QUARANTINE) (품질 상태: HOLD, 할당 상태: EXCLUDED, 온도 타입: ROOM)
+    public static Section createQuarantineSection(
+            Warehouse warehouse, String sectionCode, String sectionName, int maxCapacity) {
+
+        return Section.builder()
+                .warehouse(warehouse)
+                .sectionCode(sectionCode)
+                .sectionName(sectionName)
+                .sectionType(SectionType.QUARANTINE)
+                .qualityStatus(SectionQualityStatus.HOLD)
+                .allocationStatus(SectionAllocationStatus.EXCLUDED)
+                .temperatureType(TemperatureType.ROOM)
+                .maxCapacity(maxCapacity)
+                .build();
     }
 
     protected void assignWarehouse(Warehouse warehouse) {
