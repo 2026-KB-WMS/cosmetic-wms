@@ -36,44 +36,31 @@ public class Inventory {
 
     private int availableQuantity;
 
-    @Enumerated(EnumType.STRING)
-    private AllocStatus allocStatus;
-
-    @Enumerated(EnumType.STRING)
-    private QualityStatus qualityStatus;
-
-    @Enumerated(EnumType.STRING)
-    private LocStatus locStatus;
+    @Embedded
+    private InventoryStatusSet statusSet;
 
     private Inventory(Product product, Lot lot, Section section, Warehouse warehouse,
-                      int quantity, int availableQuantity, AllocStatus allocStatus,
-                      QualityStatus qualityStatus, LocStatus locStatus) {
+                      int quantity, int availableQuantity, InventoryStatusSet statusSet) {
         this.product = product;
         this.lot = lot;
         this.section = section;
         this.warehouse = warehouse;
         this.quantity = quantity;
         this.availableQuantity = availableQuantity;
-        this.allocStatus = allocStatus;
-        this.qualityStatus = qualityStatus;
-        this.locStatus = locStatus;
+        this.statusSet = statusSet;
     }
 
     public static Inventory create(Product product, Lot lot, Section section, Warehouse warehouse,
-                                   int quantity, int availableQuantity, AllocStatus allocStatus,
-                                   QualityStatus qualityStatus, LocStatus locStatus) {
+                                   int quantity, int availableQuantity, InventoryStatusSet statusSet) {
 
         validateQuantity(quantity);
         validateAvailableQuantity(quantity, availableQuantity);
-        validateQualityAndAvailableQuantity(qualityStatus, availableQuantity);
-        validateStatusCombination(allocStatus, qualityStatus, locStatus);
-
-        return new Inventory(product, lot, section, warehouse, quantity, availableQuantity,
-                allocStatus, qualityStatus, locStatus);
+        validateAvailableQuantityForQualityStatus(statusSet, availableQuantity);
+        return new Inventory(product, lot, section, warehouse, quantity, availableQuantity, statusSet);
     }
 
     // 출고 할당 메서드 (UNALLOCATED -> ALLOCATED)
-    public void allocate(int allocQuantity) {
+    public Inventory allocate(int allocQuantity) {
         if (allocQuantity <= 0) {
             throw new IllegalArgumentException("할당할 수량은 0보다 커야 합니다.");
         }
@@ -81,37 +68,61 @@ public class Inventory {
             throw new IllegalArgumentException("가용 재고가 부족하여 할당할 수 없습니다.");
         }
 
-        AllocStatus nextAllocStatus = AllocStatus.ALLOCATED;
-        validateStatusCombination(nextAllocStatus, this.qualityStatus, this.locStatus);
+        // 요청 수량이 총 수량과 일치하는 경우
+        if (this.quantity == allocQuantity) {
+            this.availableQuantity = 0;
+            this.statusSet = InventoryStatusSet.of(
+                    AllocStatus.ALLOCATED, this.statusSet.qualityStatus(), this.statusSet.locStatus()
+            );
+            return this;
+        }
 
-        this.allocStatus = nextAllocStatus;
+        this.quantity -= allocQuantity;
         this.availableQuantity -= allocQuantity;
+
+        InventoryStatusSet allocatedStatusSet = InventoryStatusSet.of(
+                AllocStatus.ALLOCATED,
+                this.statusSet.qualityStatus(),
+                this.statusSet.locStatus()
+        );
+
+        return new Inventory(
+                this.product,
+                this.lot,
+                this.section,
+                this.warehouse,
+                allocQuantity,
+                0,
+                allocatedStatusSet
+        );
     }
 
     // 품질 상태 변경 (불량 발견, 검수 완료 등)
-    public void changeQualityStatus(QualityStatus nextQualityStatus) {
-        if (nextQualityStatus == null) {
-            throw new IllegalArgumentException("변경할 품질 상태는 필수입니다.");
-        }
+    public InventoryStatusSet changeQualityStatus(QualityStatus nextQualityStatus) {
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                this.statusSet.allocStatus(), nextQualityStatus, this.statusSet.locStatus()
+        );
 
-        validateStatusCombination(this.allocStatus, nextQualityStatus, this.locStatus);
+        InventoryStatusSet prevStatusSet = this.statusSet;
+        this.statusSet = nextStatusSet;
 
-        this.qualityStatus = nextQualityStatus;
-
-        if (!this.qualityStatus.isNormal()) {
+        if (!this.statusSet.qualityStatus().isNormal()) {
             this.availableQuantity = 0;
         }
+
+        return prevStatusSet;
     }
 
     // 위치/이동 상태 변경
-    public void changeLocStatus(LocStatus nextLocStatus) {
-        if (nextLocStatus == null) {
-            throw new IllegalArgumentException("변경할 위치 상태는 필수입니다.");
-        }
+    public InventoryStatusSet changeLocStatus(LocStatus nextLocStatus) {
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                this.statusSet.allocStatus(), this.statusSet.qualityStatus(), nextLocStatus
+        );
 
-        validateStatusCombination(this.allocStatus, this.qualityStatus, nextLocStatus);
+        InventoryStatusSet prevStatusSet = this.statusSet;
+        this.statusSet = nextStatusSet;
 
-        this.locStatus = nextLocStatus;
+        return prevStatusSet;
     }
 
     private static void validateQuantity(int quantity) {
@@ -126,32 +137,11 @@ public class Inventory {
         }
     }
 
-    private static void validateQualityAndAvailableQuantity(QualityStatus qualityStatus, int availableQuantity) {
-        if (!qualityStatus.isNormal() && availableQuantity > 0) {
+    private static void validateAvailableQuantityForQualityStatus(InventoryStatusSet statusSet, int availableQuantity) {
+        if (!statusSet.qualityStatus().isNormal() && availableQuantity > 0) {
             throw new IllegalArgumentException(
                     String.format("품질 상태가 %s(%s)일 경우 출고 가능 수량은 0이어야 합니다.",
-                            qualityStatus.name(), qualityStatus.getDescription()));
-        }
-    }
-
-    private static void validateStatusCombination(
-            AllocStatus allocStatus, QualityStatus qualityStatus, LocStatus locStatus
-    ) {
-        // 주문 처리 중(ALLOCATED, SHIPPED)인 재고는 무조건 NORMAL 품질이어야 한다.
-        if (allocStatus != AllocStatus.UNALLOCATED && !qualityStatus.isNormal()) {
-            throw new IllegalArgumentException("할당 또는 출고 완료된 재고는 품질 상태가 정상이어야 합니다.");
-        }
-
-        // 창고 간 이동(MOVING)은 오직 아직 주문에 묶이지 않은 UNALLOCATED 상태일 때만 가능하다.
-        if (locStatus == LocStatus.MOVING && allocStatus != AllocStatus.UNALLOCATED) {
-            throw new IllegalArgumentException("이미 가맹점 주문 처리 중인 재고는 창고 간 이동(MOVING)을 할 수 없습니다.");
-        }
-
-        // 창고 간 이동(MOVING)을 하려면 품질이 반드시 NORMAL 이어야 한다.
-        if (locStatus == LocStatus.MOVING && !qualityStatus.isNormal()) {
-            throw new IllegalArgumentException(
-                    String.format("품질 상태가 %s인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다.", qualityStatus.getDescription())
-            );
+                            statusSet.qualityStatus().name(), statusSet.qualityStatus().getDescription()));
         }
     }
 }

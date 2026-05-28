@@ -57,18 +57,60 @@ public class InventoryEntityTest {
     }
 
     @Test
-    void 정상적인_출고_할당_시에_가용_재고가_정상적으로_차감되어야_한다() {
+    void 정상적인_재고에서_일부_수량을_할당하면_원래_재고는_수량이_깎이고_할당된_새로운_재고_객체가_반환된다() {
         // given
-        Inventory inventory = new InventoryTestBuilder()
+        Inventory originalInventory = new InventoryTestBuilder()
                 .quantity(100)
                 .availableQuantity(100)
+                .allocStatus(AllocStatus.UNALLOCATED)
                 .build();
 
         // when
-        inventory.allocate(40);
+        Inventory allocatedInventory = originalInventory.allocate(40);
 
-        // then
-        assertThat(inventory.getAvailableQuantity()).isEqualTo(60);
+        // then 1: 원본 재고는 60개로 깎이고 여전히 미할당(UNALLOCATED) 상태여야 함
+        assertThat(originalInventory.getQuantity()).isEqualTo(60);
+        assertThat(originalInventory.getAvailableQuantity()).isEqualTo(60);
+        assertThat(originalInventory.getStatusSet().allocStatus()).isEqualTo(AllocStatus.UNALLOCATED);
+
+        // then 2: 분할되어 나온 재고는 40개이며 할당됨(ALLOCATED) 상태여야 함
+        assertThat(allocatedInventory.getQuantity()).isEqualTo(40);
+        assertThat(allocatedInventory.getAvailableQuantity()).isEqualTo(0);
+        assertThat(allocatedInventory.getStatusSet().allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
+    }
+
+    @Test
+    void 원래_재고의_가용_수량을_정확히_전부_할당하면_새_객체를_만들지_않고_자신이_ALLOCATED로_변환된다() {
+        // given
+        Inventory inventory = new InventoryTestBuilder()
+                .quantity(50)
+                .availableQuantity(50)
+                .allocStatus(AllocStatus.UNALLOCATED)
+                .build();
+
+        // when
+        Inventory resultInventory = inventory.allocate(50);
+
+        assertThat(resultInventory).isSameAs(inventory);
+        assertThat(inventory.getQuantity()).isEqualTo(50);
+        assertThat(inventory.getAvailableQuantity()).isEqualTo(0);
+        assertThat(inventory.getStatusSet().allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
+    }
+
+    @Test
+    void 가용_재고를_초과하여_할당을_시도하면_예외를_던진다() {
+        // given
+        Inventory inventory = new InventoryTestBuilder()
+                .quantity(50)
+                .availableQuantity(50)
+                .build();
+
+        // when & then
+        assertThatThrownBy(() ->
+                inventory.allocate(60)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("가용 재고가 부족하여 할당할 수 없습니다.");
     }
 
     @ParameterizedTest
@@ -82,27 +124,6 @@ public class InventoryEntityTest {
 
         // then
         assertThat(inventory.getAvailableQuantity()).isEqualTo(0);
-    }
-
-    @Test
-    void 가용재고를_정확히_모두_할당하면_0이되고_추가할당은_실패한다() {
-        // given
-        Inventory inventory = new InventoryTestBuilder()
-                .availableQuantity(50)
-                .build();
-
-        // when
-        inventory.allocate(50);
-
-        // then
-        assertThat(inventory.getAvailableQuantity()).isZero();
-
-        // when & then
-        assertThatThrownBy(() ->
-                inventory.allocate(10)
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("가용 재고가 부족하여 할당할 수 없습니다.");
     }
 
     @ParameterizedTest

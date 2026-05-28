@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.domain.inventory.fixture;
 
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
+import com.kb.cosmetic_wms.domain.inventory.entity.InventoryStatusSet;
 import com.kb.cosmetic_wms.domain.inventory.entity.Lot;
 import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
@@ -21,6 +22,7 @@ public class InventoryTestBuilder {
 
     private int quantity = 100;
     private int availableQuantity = 100;
+
     private AllocStatus allocStatus = AllocStatus.UNALLOCATED;
     private QualityStatus qualityStatus = QualityStatus.NORMAL;
     private LocStatus locStatus = LocStatus.STORED;
@@ -71,6 +73,9 @@ public class InventoryTestBuilder {
     }
 
     public Inventory build() {
+        InventoryStatusSet statusSet = InventoryStatusSet.of(
+                this.allocStatus, this.qualityStatus, this.locStatus);
+
         return Inventory.create(
                 this.product,
                 this.lot,
@@ -78,9 +83,7 @@ public class InventoryTestBuilder {
                 this.warehouse,
                 this.quantity,
                 this.availableQuantity,
-                this.allocStatus,
-                this.qualityStatus,
-                this.locStatus
+                statusSet
         );
     }
 }
