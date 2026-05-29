@@ -52,21 +52,21 @@ public class Lot {
 
     private static void validateDates(LocalDateTime manufacturingDate, LocalDateTime expirationDate) {
         if (manufacturingDate == null || expirationDate == null) {
-            throw new IllegalArgumentException("제조일자와 유통기한은 필수 입력 값입니다.");
+            throw new IllegalArgumentException(LotConstants.DATES_REQUIRED_MESSAGE);
         }
 
         if (manufacturingDate.isAfter(expirationDate)) {
-            throw new IllegalArgumentException("제조일자는 유통기한보다 미래일 수 없습니다.");
+            throw new IllegalArgumentException(LotConstants.INVALID_MANUFACTURE_DATE_MESSAGE);
         }
     }
 
     private static void validateLotNo(String lotNumber) {
         if (lotNumber == null || lotNumber.isBlank()) {
-            throw new IllegalArgumentException("로트 번호는 필수 입력 값입니다.");
+            throw new IllegalArgumentException(LotConstants.LOT_NO_REQUIRED_MESSAGE);
         }
 
         if (!LotConstants.LOT_NO_PATTERN.matcher(lotNumber).matches()) {
-            throw new IllegalArgumentException("올바르지 않은 로트 번호 형식입니다. (규격: [카테고리3자]-[YYMMDD]-[공장2자]-[일련번호4자])");
+            throw new IllegalArgumentException(LotConstants.INVALID_LOT_NO_FORMAT_MESSAGE);
         }
     }
 }

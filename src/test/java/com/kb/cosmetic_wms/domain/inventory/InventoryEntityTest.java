@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.inventory;
 
+import com.kb.cosmetic_wms.domain.inventory.constants.InventoryConstants;
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
 import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
@@ -28,7 +29,7 @@ public class InventoryEntityTest {
                         .build()
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("재고 수량은 음수일 수 없습니다.");
+                .hasMessage(InventoryConstants.INVALID_QUANTITY_MESSAGE);
     }
 
     @Test
@@ -40,7 +41,7 @@ public class InventoryEntityTest {
                         .build()
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("출고 가능 수량은 총 재고 수량을 초과할 수 없습니다.");
+                .hasMessage(InventoryConstants.OVER_AVAILABLE_QUANTITY_MESSAGE);
     }
 
     @ParameterizedTest
@@ -110,7 +111,7 @@ public class InventoryEntityTest {
                 inventory.allocate(60)
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("가용 재고가 부족하여 할당할 수 없습니다.");
+                .hasMessage(InventoryConstants.LACK_OF_AVAILABLE_QUANTITY_MESSAGE);
     }
 
     @ParameterizedTest
@@ -137,7 +138,7 @@ public class InventoryEntityTest {
                 inventory.allocate(invalidQuantity)
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("할당할 수량은 0보다 커야 합니다.");
+                .hasMessage(InventoryConstants.INVALID_ALLOCATE_QUANTITY_MESSAGE);
     }
 
     @ParameterizedTest
@@ -171,7 +172,7 @@ public class InventoryEntityTest {
                 inventory.changeQualityStatus(QualityStatus.HOLD)
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("할당 또는 출고 완료된 재고는 품질 상태가 정상이어야 합니다.");
+                .hasMessageContaining(InventoryConstants.INVALID_STATUS_SET_QUALITY_MESSAGE);
     }
 
     @Test
@@ -186,7 +187,7 @@ public class InventoryEntityTest {
                         inventory.changeLocStatus(LocStatus.MOVING)
                 )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("이미 가맹점 주문 처리 중인 재고는 창고 간 이동(MOVING)을 할 수 없습니다.");
+                .hasMessageContaining(InventoryConstants.INVALID_STATUS_SET_ALLOC_MOVING_MESSAGE);
     }
 
     @ParameterizedTest
@@ -224,25 +225,25 @@ public class InventoryEntityTest {
                 inventory.allocate(10)
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이미 가맹점 주문 처리 중인 재고는 창고 간 이동(MOVING)을 할 수 없습니다.");
+                .hasMessage(InventoryConstants.INVALID_STATUS_SET_ALLOC_MOVING_MESSAGE);
     }
 
     private static Stream<Arguments> provideInvalidStatusCombinations() {
         return Stream.of(
                 Arguments.of(AllocStatus.ALLOCATED, QualityStatus.DISCARD_SCHEDULED, LocStatus.STORED,
-                        "할당 또는 출고 완료된 재고는 품질 상태가 정상이어야 합니다."),
+                        InventoryConstants.INVALID_STATUS_SET_QUALITY_MESSAGE),
                 Arguments.of(AllocStatus.SHIPPED, QualityStatus.INSPECTING, LocStatus.STORED,
-                        "할당 또는 출고 완료된 재고는 품질 상태가 정상이어야 합니다."),
+                        InventoryConstants.INVALID_STATUS_SET_QUALITY_MESSAGE),
 
                 Arguments.of(AllocStatus.SHIPPED, QualityStatus.NORMAL, LocStatus.MOVING,
-                        "이미 가맹점 주문 처리 중인 재고는 창고 간 이동(MOVING)을 할 수 없습니다."),
+                        InventoryConstants.INVALID_STATUS_SET_ALLOC_MOVING_MESSAGE),
                 Arguments.of(AllocStatus.ALLOCATED, QualityStatus.NORMAL, LocStatus.MOVING,
-                        "이미 가맹점 주문 처리 중인 재고는 창고 간 이동(MOVING)을 할 수 없습니다."),
+                        InventoryConstants.INVALID_STATUS_SET_ALLOC_MOVING_MESSAGE),
 
                 Arguments.of(AllocStatus.UNALLOCATED, QualityStatus.INSPECTING, LocStatus.MOVING,
-                        "검수 대기/중인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다."),
+                        "창고 간 이동(MOVING)이 불가능합니다."),
                 Arguments.of(AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.MOVING,
-                        "출고 금지인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다.")
+                        "창고 간 이동(MOVING)이 불가능합니다.")
         );
     }
 }
