@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.inventory;
 
+import com.kb.cosmetic_wms.domain.inventory.constants.LotConstants;
 import com.kb.cosmetic_wms.domain.inventory.entity.Lot;
 import com.kb.cosmetic_wms.domain.inventory.enums.LotStatus;
 import com.kb.cosmetic_wms.domain.inventory.fixture.LotTestBuilder;
@@ -31,7 +32,7 @@ public class LotEntityTest {
                                 .build()
                 )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("제조일자는 유통기한보다 미래일 수 없습니다.");
+                .hasMessage(LotConstants.INVALID_MANUFACTURE_DATE_MESSAGE);
     }
 
     @ParameterizedTest
@@ -43,6 +44,6 @@ public class LotEntityTest {
                                 .build()
                 )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("올바르지 않은 로트 번호 형식입니다. (규격: [카테고리3자]-[YYMMDD]-[공장2자]-[일련번호4자])");
+                .hasMessage(LotConstants.INVALID_LOT_NO_FORMAT_MESSAGE);
     }
 }

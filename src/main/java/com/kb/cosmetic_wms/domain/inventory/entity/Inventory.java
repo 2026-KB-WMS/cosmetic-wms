@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.inventory.entity;
 
+import com.kb.cosmetic_wms.domain.inventory.constants.InventoryConstants;
 import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.QualityStatus;
@@ -62,10 +63,10 @@ public class Inventory {
     // 출고 할당 메서드 (UNALLOCATED -> ALLOCATED)
     public Inventory allocate(int allocQuantity) {
         if (allocQuantity <= 0) {
-            throw new IllegalArgumentException("할당할 수량은 0보다 커야 합니다.");
+            throw new IllegalArgumentException(InventoryConstants.INVALID_ALLOCATE_QUANTITY_MESSAGE);
         }
         if (this.availableQuantity < allocQuantity) {
-            throw new IllegalArgumentException("가용 재고가 부족하여 할당할 수 없습니다.");
+            throw new IllegalArgumentException(InventoryConstants.LACK_OF_AVAILABLE_QUANTITY_MESSAGE);
         }
 
         // 요청 수량이 총 수량과 일치하는 경우
@@ -127,20 +128,20 @@ public class Inventory {
 
     private static void validateQuantity(int quantity) {
         if (quantity < 0) {
-            throw new IllegalArgumentException("재고 수량은 음수일 수 없습니다.");
+            throw new IllegalArgumentException(InventoryConstants.INVALID_QUANTITY_MESSAGE);
         }
     }
 
     private static void validateAvailableQuantity(int quantity, int availableQuantity) {
         if (quantity < availableQuantity) {
-            throw new IllegalArgumentException("출고 가능 수량은 총 재고 수량을 초과할 수 없습니다.");
+            throw new IllegalArgumentException(InventoryConstants.OVER_AVAILABLE_QUANTITY_MESSAGE);
         }
     }
 
     private static void validateAvailableQuantityForQualityStatus(InventoryStatusSet statusSet, int availableQuantity) {
         if (!statusSet.qualityStatus().isNormal() && availableQuantity > 0) {
             throw new IllegalArgumentException(
-                    String.format("품질 상태가 %s(%s)일 경우 출고 가능 수량은 0이어야 합니다.",
+                    String.format(InventoryConstants.INVALID_QUALITY_AVAILABLE_QUANTITY_MESSAGE,
                             statusSet.qualityStatus().name(), statusSet.qualityStatus().getDescription()));
         }
     }
