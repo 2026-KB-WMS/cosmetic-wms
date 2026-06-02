@@ -98,32 +98,115 @@ public class Inventory {
         );
     }
 
-    // 품질 상태 변경 (불량 발견, 검수 완료 등)
-    public InventoryStatusSet changeQualityStatus(QualityStatus nextQualityStatus) {
-        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
-                this.statusSet.allocStatus(), nextQualityStatus, this.statusSet.locStatus()
-        );
-
-        InventoryStatusSet prevStatusSet = this.statusSet;
-        this.statusSet = nextStatusSet;
-
-        if (!this.statusSet.qualityStatus().isNormal()) {
-            this.availableQuantity = 0;
+    // 할당 취소
+    public Inventory unallocate(int targetQuantity) {
+        if (this.statusSet.allocStatus() != AllocStatus.ALLOCATED) {
+            throw new IllegalStateException(InventoryConstants.UNALLOCATE_FOR_ALLOCATED_ONLY_MESSAGE);
         }
 
-        return prevStatusSet;
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, this.statusSet.qualityStatus(), this.statusSet.locStatus()
+        );
+        return splitAndChangeStatus(targetQuantity, nextStatusSet);
     }
 
-    // 위치/이동 상태 변경
-    public InventoryStatusSet changeLocStatus(LocStatus nextLocStatus) {
+    // 이동 시작 (보관중 -> 이동중)
+    public Inventory startMoving(int targetQuantity) {
+        if (this.statusSet.allocStatus() == AllocStatus.ALLOCATED) {
+            throw new IllegalStateException(InventoryConstants.START_MOVING_FOR_UNALLOCATED_ONLY_MESSAGE);
+        }
+
         InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
-                this.statusSet.allocStatus(), this.statusSet.qualityStatus(), nextLocStatus
+                this.statusSet.allocStatus(), this.statusSet.qualityStatus(), LocStatus.MOVING
         );
+        return splitAndChangeStatus(targetQuantity, nextStatusSet);
+    }
 
-        InventoryStatusSet prevStatusSet = this.statusSet;
-        this.statusSet = nextStatusSet;
+    // 이동 완료 (이동중 -> 보관중 복귀)
+    public Inventory finishMoving(int targetQuantity) {
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                this.statusSet.allocStatus(), this.statusSet.qualityStatus(), LocStatus.STORED
+        );
+        return splitAndChangeStatus(targetQuantity, nextStatusSet);
+    }
 
-        return prevStatusSet;
+    // 반품/입고 직후 검수 시작 (정상 -> 검수중)
+    public Inventory startInspecting(int targetQuantity) {
+        if (this.statusSet.allocStatus() == AllocStatus.ALLOCATED) {
+            throw new IllegalStateException(InventoryConstants.START_INSPECTING_FOR_UNALLOCATED_ONLY_MESSAGE);
+        }
+
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                this.statusSet.allocStatus(), QualityStatus.INSPECTING, this.statusSet.locStatus()
+        );
+        return splitAndChangeStatus(targetQuantity, nextStatusSet);
+    }
+
+    // 검수 통과 / 보류 해제 (불량/검수중 -> 정상)
+    public Inventory restoreToNormalQuality(int targetQuantity) {
+        if (this.statusSet.allocStatus() == AllocStatus.ALLOCATED) {
+            throw new IllegalStateException(InventoryConstants.CHANGE_QUALITY_FOR_UNALLOCATED_ONLY_MESSAGE);
+        }
+
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                this.statusSet.allocStatus(), QualityStatus.NORMAL, this.statusSet.locStatus()
+        );
+        return splitAndChangeStatus(targetQuantity, nextStatusSet);
+    }
+
+    // 품질 이슈로 인한 출고 금지 (정상 -> HOLD)
+    public Inventory holdForQualityIssue(int targetQuantity) {
+        if (this.statusSet.allocStatus() == AllocStatus.ALLOCATED) {
+            throw new IllegalStateException(InventoryConstants.HOLD_FOR_UNALLOCATED_ONLY_MESSAGE);
+        }
+
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                this.statusSet.allocStatus(), QualityStatus.HOLD, this.statusSet.locStatus()
+        );
+        return splitAndChangeStatus(targetQuantity, nextStatusSet);
+    }
+
+    // 심각한 파손으로 인한 폐기 예정 처리 (-> DISCARD_SCHEDULED)
+    public Inventory scheduleForDiscard(int targetQuantity) {
+        if (this.statusSet.allocStatus() == AllocStatus.ALLOCATED) {
+            throw new IllegalStateException(InventoryConstants.DISCARD_FOR_UNALLOCATED_ONLY_MESSAGE);
+        }
+
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                this.statusSet.allocStatus(), QualityStatus.DISCARD_SCHEDULED, this.statusSet.locStatus()
+        );
+        return splitAndChangeStatus(targetQuantity, nextStatusSet);
+    }
+
+    private Inventory splitAndChangeStatus(int targetQuantity, InventoryStatusSet nextStatusSet) {
+        if (targetQuantity <= 0) {
+            throw new IllegalArgumentException(InventoryConstants.INVALID_QUANTITY_MESSAGE);
+        }
+        if (this.quantity < targetQuantity) {
+            throw new IllegalArgumentException(InventoryConstants.EXCEED_INVENTORY_QUANTITY_MESSAGE);
+        }
+
+        int nextAvailableQuantity = 0;
+        if (nextStatusSet.qualityStatus().isNormal() && nextStatusSet.allocStatus() == AllocStatus.UNALLOCATED) {
+            nextAvailableQuantity = targetQuantity;
+        }
+
+        if (this.quantity == targetQuantity) {
+            this.statusSet = nextStatusSet;
+            this.availableQuantity = nextAvailableQuantity;
+            return this;
+        }
+
+        this.quantity -= targetQuantity;
+
+        if (this.statusSet.qualityStatus().isNormal() && this.statusSet.allocStatus() == AllocStatus.UNALLOCATED) {
+            this.availableQuantity = Math.max(0, this.availableQuantity - targetQuantity);
+        }
+
+        return new Inventory(
+                this.product, this.lot, this.section, this.warehouse,
+                targetQuantity, nextAvailableQuantity, nextStatusSet
+        );
     }
 
     private static void validateQuantity(int quantity) {
