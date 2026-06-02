@@ -23,4 +23,21 @@ public final class InboundConstants {
 
     public static final String INVALID_INBOUND_QUANTITY_MESSAGE =
             "입고 예정 수량은 0보다 커야 합니다.";
+
+    public static final String INBOUND_MASTER_REQUIRED_MESSAGE =
+            "입고 마스터 객체는 필수입니다.";
+    public static final String INBOUND_PRODUCT_REQUIRED_MESSAGE =
+            "입고 상품 정보는 필수입니다.";
+
+    public static final String PUTAWAY_LOT_REQUIRED_MESSAGE =
+            "적재 시 생성된 로트(Lot) 정보는 필수입니다.";
+    public static final String PUTAWAY_SECTION_REQUIRED_MESSAGE =
+            "적재될 섹션 정보는 필수입니다.";
+
+    public static final String INVALID_PUTAWAY_STATUS_MESSAGE =
+            "이미 적재가 완료되었거나 검수가 진행된 품목입니다. (현재 상태: %s)";
+    public static final String INVALID_NORMAL_STATUS_MESSAGE =
+            "검수 중 상태에서만 정상 완료 처리가 가능합니다.";
+    public static final String INVALID_HOLD_STATUS_MESSAGE =
+            "검수 중 상태에서만 검수 보류 처리가 가능합니다.";
 }

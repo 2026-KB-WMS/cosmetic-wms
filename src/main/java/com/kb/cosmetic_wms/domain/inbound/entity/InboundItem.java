@@ -57,12 +57,64 @@ public class InboundItem {
                                      LocalDateTime manufactureDate, LocalDateTime expirationDate
     ) {
         validateQuantity(quantity);
+        validateRequiredFields(inbound, product);
         return new InboundItem(inbound, product, quantity, manufactureDate, expirationDate);
+    }
+
+    public void completePutaway(Lot lot, Section section) {
+        validatePutawayTarget();
+        validatePutawayFields(lot, section);
+
+        this.lot = lot;
+        this.section = section;
+
+        this.inspectionStatus = InspectionStatus.INSPECTING;
+    }
+
+    public void changeToNormal() {
+        if (this.inspectionStatus != InspectionStatus.INSPECTING) {
+            throw new IllegalStateException(InboundConstants.INVALID_NORMAL_STATUS_MESSAGE);
+        }
+        this.inspectionStatus = InspectionStatus.NORMAL;
+    }
+
+    public void changeToHold() {
+        if (this.inspectionStatus != InspectionStatus.INSPECTING) {
+            throw new IllegalStateException(InboundConstants.INVALID_HOLD_STATUS_MESSAGE);
+        }
+        this.inspectionStatus = InspectionStatus.HOLD;
     }
 
     private static void validateQuantity(int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException(InboundConstants.INVALID_INBOUND_QUANTITY_MESSAGE);
+        }
+    }
+
+    private static void validateRequiredFields(Inbound inbound, Product product) {
+        if (inbound == null) {
+            throw new IllegalArgumentException(InboundConstants.INBOUND_MASTER_REQUIRED_MESSAGE);
+        }
+        if (product == null) {
+            throw new IllegalArgumentException(InboundConstants.INBOUND_PRODUCT_REQUIRED_MESSAGE);
+        }
+    }
+
+    private void validatePutawayTarget() {
+        if (this.inspectionStatus != InspectionStatus.WAITING) {
+            throw new IllegalStateException(
+                    String.format(InboundConstants.INVALID_PUTAWAY_STATUS_MESSAGE,
+                            this.inspectionStatus.getDescription())
+            );
+        }
+    }
+
+    private void validatePutawayFields(Lot lot, Section section) {
+        if (lot == null) {
+            throw new IllegalArgumentException(InboundConstants.PUTAWAY_LOT_REQUIRED_MESSAGE);
+        }
+        if (section == null) {
+            throw new IllegalArgumentException(InboundConstants.PUTAWAY_SECTION_REQUIRED_MESSAGE);
         }
     }
 }
