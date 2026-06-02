@@ -20,4 +20,7 @@ public final class InboundConstants {
             "작업이 진행 중인 상태에서만 입고 완료 처리가 가능합니다. (현재 상태: %s)";
     public static final String INVALID_CANCEL_STATUS_MESSAGE =
             "이미 작업이 진행되었거나 완료된 입고 건은 취소할 수 없습니다. (현재 상태: %s)";
+
+    public static final String INVALID_INBOUND_QUANTITY_MESSAGE =
+            "입고 예정 수량은 0보다 커야 합니다.";
 }
