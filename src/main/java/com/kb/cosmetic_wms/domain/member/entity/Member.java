@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.domain.member.entity;
 
 import com.kb.cosmetic_wms.domain.member.MemberConstants;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
+import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import java.util.regex.Pattern;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Member {
+public class Member extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
