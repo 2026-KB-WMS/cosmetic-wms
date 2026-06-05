@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.domain.inventory.entity;
 import com.kb.cosmetic_wms.domain.inventory.constants.LotConstants;
 import com.kb.cosmetic_wms.domain.inventory.enums.LotStatus;
 import com.kb.cosmetic_wms.domain.product.entity.Product;
+import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Lot {
+public class Lot extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

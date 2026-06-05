@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.domain.product.entity;
 
 import com.kb.cosmetic_wms.domain.product.constants.CategoryConstants;
+import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Category {
+public class Category extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

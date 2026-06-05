@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.domain.storage.entity;
 import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
+import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import java.util.List;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Warehouse {
+public class Warehouse extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
