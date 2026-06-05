@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionAllocationStatus;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionQualityStatus;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
+import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Section {
+public class Section extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -114,7 +115,7 @@ public class Section {
                 .maxCapacity(maxCapacity)
                 .build();
     }
-    
+
     private void validateMaxCapacity(int maxCapacity) {
         if (maxCapacity <= StorageConstants.MIN_CAPACITY_BOUND) {
             throw new IllegalArgumentException(StorageConstants.INVALID_SECTION_MAX_CAPACITY_MESSAGE);

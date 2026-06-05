@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.domain.inbound.constants.InboundConstants;
 import com.kb.cosmetic_wms.domain.inbound.enums.InboundStatus;
 import com.kb.cosmetic_wms.domain.partner.entity.Partner;
 import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
+import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Inbound {
+public class Inbound extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
