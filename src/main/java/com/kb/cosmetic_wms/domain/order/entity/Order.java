@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.domain.order.constants.OrderConstants;
 import com.kb.cosmetic_wms.domain.order.enums.OrderStatus;
 import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
 import com.kb.cosmetic_wms.domain.store.entity.Store;
+import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,7 +17,7 @@ import java.util.List;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Order {
+public class Order extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
