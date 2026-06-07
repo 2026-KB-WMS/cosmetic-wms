@@ -4,16 +4,6 @@ import com.kb.cosmetic_wms.domain.inbound.constants.InboundConstants;
 import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
 import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
 import com.kb.cosmetic_wms.domain.inbound.enums.InspectionStatus;
-import com.kb.cosmetic_wms.domain.inventory.entity.Lot;
-import com.kb.cosmetic_wms.domain.inventory.fixture.LotTestBuilder;
-import com.kb.cosmetic_wms.domain.partner.entity.Partner;
-import com.kb.cosmetic_wms.domain.partner.enums.PartnerType;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.fixture.ProductTestBuilder;
-import com.kb.cosmetic_wms.domain.storage.entity.Section;
-import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
-import com.kb.cosmetic_wms.domain.storage.fixture.SectionTestBuilder;
-import com.kb.cosmetic_wms.domain.storage.fixture.WarehouseTestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -25,31 +15,40 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class InboundItemEntityTest {
 
-    private static final Product PRODUCT = new ProductTestBuilder().build();
+    private static final Long PRODUCT_ID = 1L;
+    private static final Long LOT_ID = 10L;
+    private static final Long SECTION_ID = 10L;
+
     private static final int QUANTITY = 100;
     private static final LocalDateTime MANUFACTURE_DATE =
-            LocalDateTime.of(2026, 6, 1, 0, 0);
+            LocalDateTime.now();
     private static final LocalDateTime EXPIRATION_DATE =
-            LocalDateTime.of(2027, 6, 1, 0, 0);
+            LocalDateTime.now().plusYears(3);
+    private static final LocalDateTime INBOUND_DATE =
+            LocalDateTime.now().plusYears(1);
 
     private Inbound createStubInbound() {
-        Warehouse warehouse = new WarehouseTestBuilder().build();
-        Partner partner = Partner.create("본사", PartnerType.HEADQUARTER, "123-45-67890");
-        return Inbound.create(LocalDateTime.of(2030, 6, 1, 0, 0), warehouse, partner);
+        return Inbound.create(INBOUND_DATE, 1L, 1L);
+    }
+
+    private InboundLine createStandardLine() {
+        return new InboundLine(PRODUCT_ID, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
     }
 
     @Test
     void 입고_상세_엔티티는_정상적인_값으로_생성_시_최초_검수_상태가_WAITING_이어야_한다() {
         // given
         Inbound inbound = createStubInbound();
+        InboundLine line = createStandardLine();
 
         // when
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
+        InboundItem inboundItem = inbound.addItem(line);
 
         // then
         assertThat(inboundItem.getInspectionStatus()).isEqualTo(InspectionStatus.WAITING);
-        assertThat(inboundItem.getLot()).isNull();
-        assertThat(inboundItem.getSection()).isNull();
+        assertThat(inboundItem.getProductId()).isEqualTo(PRODUCT_ID);
+        assertThat(inboundItem.getLotId()).isNull();
+        assertThat(inboundItem.getSectionId()).isNull();
     }
 
     @ParameterizedTest
@@ -57,10 +56,9 @@ public class InboundItemEntityTest {
     void 입고_상세_생성_시_예정_수량이_0_이하이면_예외를_던진다(int invalidQuantity) {
         // given
         Inbound inbound = createStubInbound();
+        InboundLine line = new InboundLine(PRODUCT_ID, invalidQuantity, MANUFACTURE_DATE, EXPIRATION_DATE);
 
-        assertThatThrownBy(() ->
-                InboundItem.create(inbound, PRODUCT, invalidQuantity, MANUFACTURE_DATE, EXPIRATION_DATE)
-        )
+        assertThatThrownBy(() -> inbound.addItem(line))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(InboundConstants.INVALID_INBOUND_QUANTITY_MESSAGE);
     }
@@ -69,43 +67,39 @@ public class InboundItemEntityTest {
     void 실물_적재_시_로트와_섹션_정보가_입력되면_검수_상태가_INSPECTING으로_변경된다() {
         // given
         Inbound inbound = createStubInbound();
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
-
-        Lot lot = new LotTestBuilder().build();
-        Section section = new SectionTestBuilder().build();
+        InboundItem inboundItem = inbound.addItem(createStandardLine());
 
         // when
-        inboundItem.completePutaway(lot, section);
+        inboundItem.completePutaway(LOT_ID, SECTION_ID);
 
         // then
         assertThat(inboundItem.getInspectionStatus()).isEqualTo(InspectionStatus.INSPECTING);
-        assertThat(inboundItem.getLot()).isEqualTo(lot);
-        assertThat(inboundItem.getSection()).isEqualTo(section);
+        assertThat(inboundItem.getLotId()).isEqualTo(LOT_ID);
+        assertThat(inboundItem.getSectionId()).isEqualTo(SECTION_ID);
     }
 
     @Test
     void 검수_대기_상태가_아닌_상품을_실물_적재_시도하면_예외를_던진다() {
         // given
         Inbound inbound = createStubInbound();
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
+        InboundItem inboundItem = inbound.addItem(createStandardLine());
 
-        Lot lot = new LotTestBuilder().build();
-        Section section = new SectionTestBuilder().build();
-
-        inboundItem.completePutaway(lot, section);
+        inboundItem.completePutaway(LOT_ID, SECTION_ID);
 
         // when & then
-        assertThatThrownBy(() -> inboundItem.completePutaway(lot, section))
+        assertThatThrownBy(() -> inboundItem.completePutaway(LOT_ID, SECTION_ID))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("이미 적재가 완료되었거나 검수가 진행된 품목입니다.");
+                .hasMessageContaining(String.format(
+                        InboundConstants.INVALID_PUTAWAY_STATUS_MESSAGE,
+                        InspectionStatus.INSPECTING.getDescription()));
     }
 
     @Test
     void 검수_중_상태에서는_품질_판정_결과에_따라_NORMAL_상태로_완료된다() {
         // given
         Inbound inbound = createStubInbound();
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
-        inboundItem.completePutaway(new LotTestBuilder().build(), new SectionTestBuilder().build());
+        InboundItem inboundItem = inbound.addItem(createStandardLine());
+        inboundItem.completePutaway(LOT_ID, SECTION_ID);
 
         // when
         inboundItem.changeToNormal();
@@ -115,22 +109,26 @@ public class InboundItemEntityTest {
     }
 
     @Test
-    void 입고_상세_생성_시_입고_객체가_누락되면_예외를_던진다() {
-        assertThatThrownBy(() ->
-                InboundItem.create(null, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE)
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(InboundConstants.INBOUND_MASTER_REQUIRED_MESSAGE);
+    void 입고_전표가_입고_예정_상태가_아닐_때_품목을_추가하려고_하면_예외를_던진다() {
+        // given
+        Inbound inbound = createStubInbound();
+        inbound.startExecution();
+
+        InboundLine line = createStandardLine();
+
+        assertThatThrownBy(() -> inbound.addItem(line))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(InboundConstants.INVALID_ADD_ITEM_MESSAGE);
     }
 
     @Test
     void 입고_상세_생성_시_상품_정보가_누락되면_예외를_던진다() {
         // given
         Inbound inbound = createStubInbound();
+        InboundLine line = new InboundLine(null, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
 
-        assertThatThrownBy(() ->
-                InboundItem.create(inbound, null, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE)
-        )
+        // when & then
+        assertThatThrownBy(() -> inbound.addItem(line))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(InboundConstants.INBOUND_PRODUCT_REQUIRED_MESSAGE);
     }
@@ -139,12 +137,10 @@ public class InboundItemEntityTest {
     void 실물_적재_시_로트_정보가_누락되면_예외를_던진다() {
         // given
         Inbound inbound = createStubInbound();
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
+        InboundItem inboundItem = inbound.addItem(createStandardLine());
 
         // when & then
-        assertThatThrownBy(() ->
-                inboundItem.completePutaway(null, new SectionTestBuilder().build())
-        )
+        assertThatThrownBy(() -> inboundItem.completePutaway(null, SECTION_ID))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(InboundConstants.PUTAWAY_LOT_REQUIRED_MESSAGE);
     }
@@ -153,12 +149,10 @@ public class InboundItemEntityTest {
     void 실물_적재_시_섹션_정보가_누락되면_예외를_던진다() {
         // given
         Inbound inbound = createStubInbound();
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
+        InboundItem inboundItem = inbound.addItem(createStandardLine());
 
         // when & then
-        assertThatThrownBy(() ->
-                inboundItem.completePutaway(new LotTestBuilder().build(), null)
-        )
+        assertThatThrownBy(() -> inboundItem.completePutaway(LOT_ID, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(InboundConstants.PUTAWAY_SECTION_REQUIRED_MESSAGE);
     }
@@ -167,8 +161,8 @@ public class InboundItemEntityTest {
     void 검수_중_상태에서는_품질_판정_결과에_따라_HOLD_상태로_완료된다() {
         // given
         Inbound inbound = createStubInbound();
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
-        inboundItem.completePutaway(new LotTestBuilder().build(), new SectionTestBuilder().build());
+        InboundItem inboundItem = inbound.addItem(createStandardLine());
+        inboundItem.completePutaway(LOT_ID, SECTION_ID);
 
         // when
         inboundItem.changeToHold();
@@ -181,7 +175,7 @@ public class InboundItemEntityTest {
     void 검수_중_상태가_아닌_대기_또는_완료_상태의_상품을_품질_판정_시도하면_예외를_던진다() {
         // given
         Inbound inbound = createStubInbound();
-        InboundItem inboundItem = InboundItem.create(inbound, PRODUCT, QUANTITY, MANUFACTURE_DATE, EXPIRATION_DATE);
+        InboundItem inboundItem = inbound.addItem(createStandardLine());
 
         // when & then
         assertThatThrownBy(inboundItem::changeToHold)
