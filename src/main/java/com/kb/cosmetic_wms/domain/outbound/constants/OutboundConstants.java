@@ -18,6 +18,11 @@ public final class OutboundConstants {
     public static final String WAREHOUSE_REQUIRED_ID_MESSAGE =
             "출고 객체 생성 시 창고 ID는 필수 값입니다.";
 
+    public static final String INVALID_ADD_ITEM_STATUS_MESSAGE =
+            "출고 대기(PENDING) 상태일 때만 품목을 추가할 수 있습니다.";
+    public static final String INCOMPLETE_PICKING_MESSAGE =
+            "모든 출고 품목의 피킹이 완료되지 않아 출고 확정을 할 수 없습니다.";
+
     // OutboundItem
     public static final String INVALID_TARGET_QUANTITY_MESSAGE =
             "출고 지시 수량은 0 이하일 수 없습니다.";

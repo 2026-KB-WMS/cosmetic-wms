@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.outbound.entity;
 
+import com.kb.cosmetic_wms.domain.outbound.OutboundLine;
 import com.kb.cosmetic_wms.domain.outbound.constants.OutboundConstants;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundStatus;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
@@ -9,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,6 +30,9 @@ public class Outbound extends BaseEntity {
 
     private LocalDateTime outboundDate;
 
+    @OneToMany(mappedBy = "outbound", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<OutboundItem> outboundItems = new ArrayList<>();
+
     private Outbound(Long orderId, Long warehouseId, OutboundStatus outboundStatus) {
         this.orderId = orderId;
         this.warehouseId = warehouseId;
@@ -39,6 +45,23 @@ public class Outbound extends BaseEntity {
         validateWarehouseId(warehouseId);
 
         return new Outbound(orderId, warehouseId, OutboundStatus.PENDING);
+    }
+
+    /**
+     * 출고 상세 항목 추가
+     * <p>현장 작업이 시작되기 전인 PENDING(출고 대기) 상태에서만 품목 구성이 가능합니다.
+     *
+     * @param line 출고 라인 명세 (주문 품목, 재고 식별자, 지시 수량)
+     * @return 생성된 OutboundItem 엔티티
+     */
+    public OutboundItem addItem(OutboundLine line) {
+        if (this.outboundStatus != OutboundStatus.PENDING) {
+            throw new IllegalStateException(OutboundConstants.INVALID_ADD_ITEM_STATUS_MESSAGE);
+        }
+        OutboundItem item = new OutboundItem(this, line);
+        this.outboundItems.add(item);
+
+        return item;
     }
 
     /**
@@ -62,6 +85,14 @@ public class Outbound extends BaseEntity {
         if (this.outboundStatus != OutboundStatus.PICKING) {
             throw new IllegalStateException(OutboundConstants.INVALID_SHIP_MESSAGE);
         }
+
+        boolean isAllPicked = this.outboundItems.stream()
+                .allMatch(OutboundItem::isFullyPicked);
+
+        if (!isAllPicked) {
+            throw new IllegalStateException(OutboundConstants.INCOMPLETE_PICKING_MESSAGE);
+        }
+
         this.outboundStatus = OutboundStatus.SHIPPED;
         this.outboundDate = LocalDateTime.now();
     }

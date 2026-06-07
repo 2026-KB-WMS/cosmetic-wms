@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.domain.outbound;
 
 import com.kb.cosmetic_wms.domain.outbound.constants.OutboundConstants;
 import com.kb.cosmetic_wms.domain.outbound.entity.Outbound;
+import com.kb.cosmetic_wms.domain.outbound.entity.OutboundItem;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundStatus;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -133,5 +134,73 @@ public class OutboundEntityTest {
                 )
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage(OutboundConstants.INVALID_SHIP_MESSAGE);
+    }
+
+    @Test
+    void 출고_대기_상태에서는_출고_상세_항목을_정상적으로_추가할_수_있고_자식_리스트에_추가한다() {
+        // given
+        Outbound outbound = Outbound.create(1L, 10L);
+        OutboundLine line = new OutboundLine(1L, 1L, 5);
+
+        // when
+        OutboundItem addedItem = outbound.addItem(line);
+
+        // then
+        assertThat(outbound.getOutboundItems()).hasSize(1);
+        assertThat(outbound.getOutboundItems().getFirst()).isEqualTo(addedItem);
+        assertThat(addedItem.getTargetQuantity()).isEqualTo(5);
+        assertThat(addedItem.getPickedQuantity()).isZero();
+    }
+
+    @Test
+    void 출고_대기_상태가_아닐_때_품목을_추가하려고_하면_예외를_던진다() {
+        // given
+        Outbound outbound = Outbound.create(1L, 10L);
+        outbound.startPicking();
+
+        OutboundLine line = new OutboundLine(1L, 1L, 5);
+
+        // when & then
+        Assertions.assertThatThrownBy(() -> outbound.addItem(line))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(OutboundConstants.INVALID_ADD_ITEM_STATUS_MESSAGE);
+    }
+
+    @Test
+    void 모든_출고_품목의_피킹이_완료되지_않은_상태에서_출고를_시도하면_예외를_던진다() {
+        // given
+        Outbound outbound = Outbound.create(1L, 10L);
+        OutboundLine line = new OutboundLine(1L, 1L, 10);
+        OutboundItem item = outbound.addItem(line);
+
+        outbound.startPicking();
+        item.changePickedQuantity(8);
+
+        // when & then
+        Assertions.assertThatThrownBy(outbound::ship)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(OutboundConstants.INCOMPLETE_PICKING_MESSAGE);
+    }
+
+    @Test
+    void 모든_출고_품목의_피킹이_완료된_상태에서만_출고_처리가_성공한다() {
+        // given
+        Outbound outbound = Outbound.create(1L, 10L);
+        OutboundLine line1 = new OutboundLine(1L, 1L, 10);
+        OutboundLine line2 = new OutboundLine(2L, 2L, 5);
+
+        OutboundItem item1 = outbound.addItem(line1);
+        OutboundItem item2 = outbound.addItem(line2);
+
+        outbound.startPicking();
+        item1.changePickedQuantity(10);
+        item2.changePickedQuantity(5);
+
+        // when
+        outbound.ship();
+
+        // then
+        assertThat(outbound.getOutboundStatus()).isEqualTo(OutboundStatus.SHIPPED);
+        assertThat(outbound.getOutboundDate()).isNotNull();
     }
 }

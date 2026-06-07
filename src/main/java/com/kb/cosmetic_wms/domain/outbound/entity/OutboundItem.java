@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.outbound.entity;
 
+import com.kb.cosmetic_wms.domain.outbound.OutboundLine;
 import com.kb.cosmetic_wms.domain.outbound.constants.OutboundConstants;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundStatus;
 import jakarta.persistence.*;
@@ -25,26 +26,22 @@ public class OutboundItem {
     private int targetQuantity;
     private int pickedQuantity;
 
-    private OutboundItem(Outbound outbound, Long orderItemId,
-                         Long inventoryId, int targetQuantity) {
+    OutboundItem(Outbound outbound, OutboundLine line) {
+        validateTargetQuantity(line.targetQuantity());
+
         this.outbound = outbound;
-        this.orderItemId = orderItemId;
-        this.inventoryId = inventoryId;
-        this.targetQuantity = targetQuantity;
+        this.orderItemId = line.orderItemId();
+        this.inventoryId = line.inventoryId();
+        this.targetQuantity = line.targetQuantity();
         this.pickedQuantity = 0;
     }
 
-    public static OutboundItem create(Outbound outbound, Long orderItemId,
-                                      Long inventoryId, int targetQuantity) {
-        validateTargetQuantity(targetQuantity);
-
-        return new OutboundItem(outbound, orderItemId, inventoryId, targetQuantity);
-    }
-
     /**
-     * 실제 피킹 완료 수량 변경
+     * 물류 현장의 실제 피킹 완료 수량을 반영한다.
      *
-     * @param pickedQuantity
+     * @param pickedQuantity 현장에서 실제 피킹 완료한 수량
+     * @throws IllegalStateException    상위 출고 전표의 라이프사이클 상태가 PICKING이 아닌 경우
+     * @throws IllegalArgumentException 피킹 수량이 음수이거나 지시 수량을 초과한 경우
      */
     public void changePickedQuantity(int pickedQuantity) {
         if (this.outbound.getOutboundStatus() != OutboundStatus.PICKING) {

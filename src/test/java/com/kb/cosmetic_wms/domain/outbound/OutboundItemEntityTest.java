@@ -17,12 +17,11 @@ public class OutboundItemEntityTest {
     void 출고_상세_항목_생성_시_지시_수량이_0_이하이면_예외를_던진다(int invalidQuantity) {
         // given
         Outbound outbound = Outbound.create(1L, 10L);
-        Long orderItemId = 1L;
-        Long inventoryId = 1L;
+        OutboundLine line = new OutboundLine(1L, 1L, invalidQuantity);
 
         // when & then
         assertThatThrownBy(() ->
-                OutboundItem.create(outbound, orderItemId, inventoryId, invalidQuantity)
+                outbound.addItem(line)
         )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(OutboundConstants.INVALID_TARGET_QUANTITY_MESSAGE);
@@ -33,8 +32,10 @@ public class OutboundItemEntityTest {
         // given
         int targetQuantity = 10;
         Outbound outbound = Outbound.create(1L, 10L);
-        OutboundItem outboundItem = OutboundItem.create(
-                outbound, 1L, 1L, targetQuantity);
+        OutboundLine line = new OutboundLine(1L, 1L, targetQuantity);
+        OutboundItem outboundItem = outbound.addItem(line);
+
+        outbound.startPicking();
 
         // when & then
         assertThatThrownBy(() ->
@@ -50,8 +51,11 @@ public class OutboundItemEntityTest {
         // given
         int targetQuantity = 10;
         Outbound outbound = Outbound.create(1L, 10L);
-        OutboundItem outboundItem = OutboundItem.create(
-                outbound, 1L, 1L, targetQuantity);
+
+        OutboundLine line = new OutboundLine(1L, 1L, targetQuantity);
+        OutboundItem outboundItem = outbound.addItem(line);
+
+        outbound.startPicking();
 
         // when & then
         assertThatThrownBy(() ->
@@ -65,8 +69,8 @@ public class OutboundItemEntityTest {
     void 출고_전표가_피킹_중_상태가_아닐_때_실제_피킹_수량을_변경하려고_하면_예외를_던진다() {
         // given
         Outbound outbound = Outbound.create(1L, 10L);
-        OutboundItem outboundItem = OutboundItem.create(
-                outbound, 1L, 1L, 10);
+        OutboundLine line = new OutboundLine(1L, 1L, 10);
+        OutboundItem outboundItem = outbound.addItem(line);
 
         // when & then
         assertThatThrownBy(() ->
@@ -80,10 +84,11 @@ public class OutboundItemEntityTest {
     void 지시_수량과_실제_피킹_수량이_일치하면_완전_피킹_여부가_true를_반환한다() {
         // given
         Outbound outbound = Outbound.create(1L, 10L);
-        outbound.startPicking();
 
-        OutboundItem outboundItem = OutboundItem.create(
-                outbound, 1L, 1L, 10);
+        OutboundLine line = new OutboundLine(1L, 1L, 10);
+        OutboundItem outboundItem = outbound.addItem(line);
+
+        outbound.startPicking();
 
         // when
         outboundItem.changePickedQuantity(10);
