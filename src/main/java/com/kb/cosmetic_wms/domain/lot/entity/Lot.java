@@ -1,8 +1,7 @@
-package com.kb.cosmetic_wms.domain.inventory.entity;
+package com.kb.cosmetic_wms.domain.lot.entity;
 
-import com.kb.cosmetic_wms.domain.inventory.constants.LotConstants;
-import com.kb.cosmetic_wms.domain.inventory.enums.LotStatus;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
+import com.kb.cosmetic_wms.domain.lot.constants.LotConstants;
+import com.kb.cosmetic_wms.domain.lot.enums.LotStatus;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -27,28 +26,28 @@ public class Lot extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private LotStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Product product;
+    private Long productId;
 
     private Lot(
             String lotNumber, LocalDateTime manufacturingDate,
-            LocalDateTime expirationDate, Product product
+            LocalDateTime expirationDate, Long productId
     ) {
         this.lotNumber = lotNumber;
         this.manufacturingDate = manufacturingDate;
         this.expirationDate = expirationDate;
         this.status = LotStatus.AVAILABLE;
-        this.product = product;
+        this.productId = productId;
     }
 
     public static Lot create(
             String lotNumber, LocalDateTime manufacturingDate,
-            LocalDateTime expirationDate, Product product
+            LocalDateTime expirationDate, Long productId
     ) {
         validateDates(manufacturingDate, expirationDate);
         validateLotNo(lotNumber);
+        validateProductId(productId);
 
-        return new Lot(lotNumber, manufacturingDate, expirationDate, product);
+        return new Lot(lotNumber, manufacturingDate, expirationDate, productId);
     }
 
     private static void validateDates(LocalDateTime manufacturingDate, LocalDateTime expirationDate) {
@@ -68,6 +67,12 @@ public class Lot extends BaseEntity {
 
         if (!LotConstants.LOT_NO_PATTERN.matcher(lotNumber).matches()) {
             throw new IllegalArgumentException(LotConstants.INVALID_LOT_NO_FORMAT_MESSAGE);
+        }
+    }
+
+    private static void validateProductId(Long productId) {
+        if (productId == null) {
+            throw new IllegalArgumentException(LotConstants.PRODUCT_REQUIRED_MESSAGE);
         }
     }
 }

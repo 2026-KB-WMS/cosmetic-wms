@@ -1,9 +1,9 @@
-package com.kb.cosmetic_wms.domain.inventory;
+package com.kb.cosmetic_wms.domain.lot;
 
-import com.kb.cosmetic_wms.domain.inventory.constants.LotConstants;
-import com.kb.cosmetic_wms.domain.inventory.entity.Lot;
-import com.kb.cosmetic_wms.domain.inventory.enums.LotStatus;
-import com.kb.cosmetic_wms.domain.inventory.fixture.LotTestBuilder;
+import com.kb.cosmetic_wms.domain.lot.constants.LotConstants;
+import com.kb.cosmetic_wms.domain.lot.entity.Lot;
+import com.kb.cosmetic_wms.domain.lot.enums.LotStatus;
+import com.kb.cosmetic_wms.domain.lot.fixture.LotTestBuilder;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,5 +45,16 @@ public class LotEntityTest {
                 )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(LotConstants.INVALID_LOT_NO_FORMAT_MESSAGE);
+    }
+
+    @Test
+    void 로트_생성_시_상품_식별자_ID가_누락되면_예외를_던진다() {
+        Assertions.assertThatThrownBy(() ->
+                        new LotTestBuilder()
+                                .productId(null)
+                                .build()
+                )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(LotConstants.PRODUCT_REQUIRED_MESSAGE);
     }
 }
