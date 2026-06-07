@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.domain.inventory.enums;
+package com.kb.cosmetic_wms.domain.lot.enums;
 
 public enum LotStatus {
     AVAILABLE("정상(가용)"),

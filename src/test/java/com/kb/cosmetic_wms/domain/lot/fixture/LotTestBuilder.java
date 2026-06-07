@@ -1,9 +1,7 @@
-package com.kb.cosmetic_wms.domain.inventory.fixture;
+package com.kb.cosmetic_wms.domain.lot.fixture;
 
-import com.kb.cosmetic_wms.domain.inventory.entity.Lot;
-import com.kb.cosmetic_wms.domain.inventory.enums.LotStatus;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.fixture.ProductTestBuilder;
+import com.kb.cosmetic_wms.domain.lot.entity.Lot;
+import com.kb.cosmetic_wms.domain.lot.enums.LotStatus;
 
 import java.time.LocalDateTime;
 
@@ -12,7 +10,7 @@ public class LotTestBuilder {
     private LocalDateTime manufacturingDate = LocalDateTime.of(2026, 1, 1, 0, 0);
     private LocalDateTime expirationDate = LocalDateTime.of(2027, 1, 1, 0, 0);
     private LotStatus status = LotStatus.AVAILABLE;
-    private Product product = new ProductTestBuilder().build();
+    private Long productId = 1L;
 
     public LotTestBuilder lotNumber(String lotNumber) {
         this.lotNumber = lotNumber;
@@ -29,8 +27,8 @@ public class LotTestBuilder {
         return this;
     }
 
-    public LotTestBuilder product(Product product) {
-        this.product = product;
+    public LotTestBuilder productId(Long productId) {
+        this.productId = productId;
         return this;
     }
 
@@ -39,7 +37,7 @@ public class LotTestBuilder {
                 lotNumber,
                 manufacturingDate,
                 expirationDate,
-                product
+                productId
         );
     }
 }
