@@ -262,6 +262,19 @@ public class InventoryEntityTest {
     }
 
     @Test
+    void 이미_이동_중인_재고를_중복해서_이동_시작하려고_하면_예외를_던진다() {
+        // given
+        Inventory inventory = new InventoryTestBuilder()
+                .locStatus(LocStatus.MOVING)
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> inventory.startMoving(10))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(InventoryConstants.ALREADY_MOVING_INVENTORY_MESSAGE);
+    }
+
+    @Test
     void 이동_중인_재고의_일부_수량이_도착하면_원래_재고의_수량은_차감되고_STORED_및_가용_수량이_복구된_새_객체가_반환된다() {
         // given
         Inventory inventory = new InventoryTestBuilder().build();
@@ -276,6 +289,19 @@ public class InventoryEntityTest {
         // then 2: 도착한 재고는 가용 수량이 10이면서 상태가 STORED인 새 반환 객체이다.
         assertThat(finishedInventory.getAvailableQuantity()).isEqualTo(10);
         assertThat(finishedInventory.getStatusSet().locStatus()).isEqualTo(LocStatus.STORED);
+    }
+
+    @Test
+    void 이동_중_상태가_아닌_재고를_이동_완료_처리하려고_하면_예외를_던진다() {
+        // given
+        Inventory inventory = new InventoryTestBuilder()
+                .locStatus(LocStatus.STORED)
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> inventory.finishMoving(10))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(InventoryConstants.FINISH_MOVING_FOR_MOVING_ONLY_MESSAGE);
     }
 
     @Test
@@ -448,9 +474,9 @@ public class InventoryEntityTest {
                         InventoryConstants.INVALID_STATUS_SET_ALLOC_MOVING_MESSAGE),
 
                 Arguments.of(AllocStatus.UNALLOCATED, QualityStatus.INSPECTING, LocStatus.MOVING,
-                        "창고 간 이동(MOVING)이 불가능합니다."),
+                        "품질 상태가 검수 대기/중인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다."),
                 Arguments.of(AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.MOVING,
-                        "창고 간 이동(MOVING)이 불가능합니다.")
+                        "품질 상태가 출고 금지인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다.")
         );
     }
 }
