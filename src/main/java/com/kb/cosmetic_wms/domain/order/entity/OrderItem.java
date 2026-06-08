@@ -1,6 +1,5 @@
 package com.kb.cosmetic_wms.domain.order.entity;
 
-import com.kb.cosmetic_wms.domain.product.entity.Product;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -19,14 +18,13 @@ public class OrderItem extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Order order;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Product product;
+    private Long productId;
 
     private int quantity;
 
-    OrderItem(Order order, Product product, int quantity) {
+    OrderItem(Order order, Long productId, int quantity) {
         this.order = order;
-        this.product = product;
+        this.productId = productId;
         this.quantity = quantity;
     }
 }

@@ -2,32 +2,26 @@ package com.kb.cosmetic_wms.domain.order.fixture;
 
 import com.kb.cosmetic_wms.domain.order.OrderLine;
 import com.kb.cosmetic_wms.domain.order.entity.Order;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.fixture.ProductTestBuilder;
-import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
-import com.kb.cosmetic_wms.domain.storage.fixture.WarehouseTestBuilder;
-import com.kb.cosmetic_wms.domain.store.entity.Store;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class OrderTestBuilder {
-    private Store store = Store.create("기본 가맹점", "기본 주소");
-    private Warehouse warehouse = new WarehouseTestBuilder().build();
+    private Long storeId = 1L;
+    private Long warehouseId = 10L;
     private List<OrderLine> orderLines = new ArrayList<>();
 
     public OrderTestBuilder() {
-        Product defaultProduct = new ProductTestBuilder().build();
-        this.orderLines.add(new OrderLine(defaultProduct, 10));
+        this.orderLines.add(new OrderLine(1L, 10));
     }
 
-    public OrderTestBuilder store(Store store) {
-        this.store = store;
+    public OrderTestBuilder storeId(Long storeId) {
+        this.storeId = storeId;
         return this;
     }
 
-    public OrderTestBuilder warehouse(Warehouse warehouse) {
-        this.warehouse = warehouse;
+    public OrderTestBuilder warehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
         return this;
     }
 
@@ -36,8 +30,9 @@ public class OrderTestBuilder {
         return this;
     }
 
-    public OrderTestBuilder addOrderLine(Product product, int quantity) {
-        this.orderLines.add(new OrderLine(product, quantity));
+    public OrderTestBuilder addOrderLine(Long productId, int quantity) {
+        // 🌟 Product 객체 대신 식별자 ID를 받아 OrderLine 조립
+        this.orderLines.add(new OrderLine(productId, quantity));
         return this;
     }
 
@@ -47,6 +42,6 @@ public class OrderTestBuilder {
     }
 
     public Order build() {
-        return Order.create(this.store, this.warehouse, this.orderLines);
+        return Order.create(this.storeId, this.warehouseId, this.orderLines);
     }
 }
