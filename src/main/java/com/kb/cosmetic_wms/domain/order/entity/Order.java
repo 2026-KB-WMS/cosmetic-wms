@@ -3,8 +3,6 @@ package com.kb.cosmetic_wms.domain.order.entity;
 import com.kb.cosmetic_wms.domain.order.OrderLine;
 import com.kb.cosmetic_wms.domain.order.constants.OrderConstants;
 import com.kb.cosmetic_wms.domain.order.enums.OrderStatus;
-import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
-import com.kb.cosmetic_wms.domain.store.entity.Store;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -26,19 +24,16 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Store store;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Warehouse warehouse;
+    private Long storeId;
+    private Long warehouseId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<OrderItem> orderItems = new ArrayList<>();
 
-    private Order(Store store, Warehouse warehouse) {
+    private Order(Long storeId, Long warehouseId) {
         this.orderStatus = OrderStatus.PENDING;
-        this.store = store;
-        this.warehouse = warehouse;
+        this.storeId = storeId;
+        this.warehouseId = warehouseId;
     }
 
     /**
@@ -52,18 +47,18 @@ public class Order extends BaseEntity {
      * @param lines     점주가 요청한 상품 및 수량 리스트
      * @return 무결성이 보장된 발주 객체
      */
-    public static Order create(Store store, Warehouse warehouse, List<OrderLine> lines) {
-        validateStore(store);
-        validateWarehouse(warehouse);
+    public static Order create(Long storeId, Long warehouseId, List<OrderLine> lines) {
+        validateStore(storeId);
+        validateWarehouse(warehouseId);
         validateOrderLine(lines);
 
-        Order order = new Order(store, warehouse);
+        Order order = new Order(storeId, warehouseId);
         lines.forEach(order::addOrderItem);
         return order;
     }
 
     private void addOrderItem(OrderLine line) {
-        this.orderItems.add(new OrderItem(this, line.product(), line.quantity()));
+        this.orderItems.add(new OrderItem(this, line.productId(), line.quantity()));
     }
 
     /**
@@ -121,20 +116,20 @@ public class Order extends BaseEntity {
         this.orderStatus = OrderStatus.DELIVERED;
     }
 
-    private static void validateStore(Store store) {
-        if (store == null) {
+    private static void validateStore(Long storeId) {
+        if (storeId == null) {
             throw new IllegalArgumentException(OrderConstants.STORE_REQUIRED_MESSAGE);
         }
     }
 
-    private static void validateWarehouse(Warehouse warehouse) {
-        if (warehouse == null) {
+    private static void validateWarehouse(Long warehouseId) {
+        if (warehouseId == null) {
             throw new IllegalArgumentException(OrderConstants.WAREHOUSE_REQUIRED_MESSAGE);
         }
     }
 
     private static void validateOrderLine(List<OrderLine> lines) {
-        if (lines.isEmpty()) {
+        if (lines == null || lines.isEmpty()) {
             throw new IllegalArgumentException(OrderConstants.ORDER_ITEM_MINIMUM_MESSAGE);
         }
     }
