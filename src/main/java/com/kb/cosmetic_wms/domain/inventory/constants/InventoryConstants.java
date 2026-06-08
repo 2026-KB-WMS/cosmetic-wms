@@ -42,6 +42,12 @@ public final class InventoryConstants {
     public static final String START_MOVING_FOR_UNALLOCATED_ONLY_MESSAGE =
             "이미 할당된 재고는 이동(MOVING) 시킬 수 없습니다. 할당 취소부터 진행해주세요.";
 
+    public static final String ALREADY_MOVING_INVENTORY_MESSAGE =
+            "이미 이동 중인 재고입니다.";
+
+    public static final String FINISH_MOVING_FOR_MOVING_ONLY_MESSAGE =
+            "이동 중(MOVING) 상태의 재고만 이동 완료 처리가 가능합니다.";
+
     public static final String START_INSPECTING_FOR_UNALLOCATED_ONLY_MESSAGE =
             "이미 할당된 재고는 검수(INSPECTING) 상태로 변경할 수 없습니다. 할당 취소부터 진행해주세요.";
 

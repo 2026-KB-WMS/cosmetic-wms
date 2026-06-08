@@ -25,7 +25,7 @@ public class OrderEntityTest {
     void 발주_생성_시_가맹점_정보가_누락되면_예외를_던진다() {
         assertThatThrownBy(() ->
                 new OrderTestBuilder()
-                        .store(null)
+                        .storeId(null)
                         .build()
         )
                 .isInstanceOf(IllegalArgumentException.class)
@@ -36,7 +36,7 @@ public class OrderEntityTest {
     void 발주_생성_시_배정_창고_정보가_누락되면_예외를_던진다() {
         assertThatThrownBy(() ->
                 new OrderTestBuilder()
-                        .warehouse(null)
+                        .warehouseId(null)
                         .build()
         )
                 .isInstanceOf(IllegalArgumentException.class)
@@ -184,5 +184,14 @@ public class OrderEntityTest {
         assertThatThrownBy(order::completeDelivery)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage(OrderConstants.INVALID_DELIVERY_STATUS_MESSAGE);
+    }
+
+    @Test
+    void 발주_생성_시_발주_항목_리스트가_null이면_예외를_던진다() {
+        assertThatThrownBy(() ->
+                Order.create(1L, 10L, null)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(OrderConstants.ORDER_ITEM_MINIMUM_MESSAGE);
     }
 }

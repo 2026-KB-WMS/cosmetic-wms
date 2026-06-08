@@ -21,6 +21,12 @@ public final class InboundConstants {
     public static final String INVALID_CANCEL_STATUS_MESSAGE =
             "이미 작업이 진행되었거나 완료된 입고 건은 취소할 수 없습니다. (현재 상태: %s)";
 
+    public static final String INVALID_ADD_ITEM_MESSAGE =
+            "입고 예정(SCHEDULED) 상태일 때만 품목을 추가할 수 있습니다.";
+
+    public static final String INCOMPLETE_INSPECTION_MESSAGE =
+            "아직 적재가 완료되지 않았거나 검수 중인 품목이 존재하여 입고 완료 처리가 불가능합니다.";
+
     public static final String INVALID_INBOUND_QUANTITY_MESSAGE =
             "입고 예정 수량은 0보다 커야 합니다.";
 

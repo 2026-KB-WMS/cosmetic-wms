@@ -2,23 +2,16 @@ package com.kb.cosmetic_wms.domain.inventory.fixture;
 
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
 import com.kb.cosmetic_wms.domain.inventory.entity.InventoryStatusSet;
-import com.kb.cosmetic_wms.domain.inventory.entity.Lot;
 import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.QualityStatus;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.fixture.ProductTestBuilder;
-import com.kb.cosmetic_wms.domain.storage.entity.Section;
-import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
-import com.kb.cosmetic_wms.domain.storage.fixture.SectionTestBuilder;
-import com.kb.cosmetic_wms.domain.storage.fixture.WarehouseTestBuilder;
 
 public class InventoryTestBuilder {
 
-    private Product product = new ProductTestBuilder().build();
-    private Lot lot = new LotTestBuilder().product(product).build();
-    private Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
-    private Section section = new SectionTestBuilder().warehouse(warehouse).maxCapacity(5000).build();
+    private final Long PRODUCT_ID = 1L;
+    private final Long LOT_ID = 10L;
+    private final Long WAREHOUSE_ID = 100L;
+    private final Long SECTION_ID = 1000L;
 
     private int quantity = 100;
     private int availableQuantity = 100;
@@ -26,26 +19,6 @@ public class InventoryTestBuilder {
     private AllocStatus allocStatus = AllocStatus.UNALLOCATED;
     private QualityStatus qualityStatus = QualityStatus.NORMAL;
     private LocStatus locStatus = LocStatus.STORED;
-
-    public InventoryTestBuilder product(Product product) {
-        this.product = product;
-        return this;
-    }
-
-    public InventoryTestBuilder lot(Lot lot) {
-        this.lot = lot;
-        return this;
-    }
-
-    public InventoryTestBuilder warehouse(Warehouse warehouse) {
-        this.warehouse = warehouse;
-        return this;
-    }
-
-    public InventoryTestBuilder section(Section section) {
-        this.section = section;
-        return this;
-    }
 
     public InventoryTestBuilder quantity(int quantity) {
         this.quantity = quantity;
@@ -77,10 +50,10 @@ public class InventoryTestBuilder {
                 this.allocStatus, this.qualityStatus, this.locStatus);
 
         return Inventory.create(
-                this.product,
-                this.lot,
-                this.section,
-                this.warehouse,
+                PRODUCT_ID,
+                LOT_ID,
+                SECTION_ID,
+                WAREHOUSE_ID,
                 this.quantity,
                 this.availableQuantity,
                 statusSet
