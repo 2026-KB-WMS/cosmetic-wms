@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.domain.inventory.constants;
+package com.kb.cosmetic_wms.domain.lot.constants;
 
 import java.util.regex.Pattern;
 
@@ -22,4 +22,7 @@ public final class LotConstants {
 
     public static final String INVALID_LOT_NO_FORMAT_MESSAGE =
             "올바르지 않은 로트 번호 형식입니다. (규격: [카테고리3자]-[YYMMDD]-[공장2자]-[일련번호4자])";
+
+    public static final String PRODUCT_REQUIRED_MESSAGE =
+            "상품 식별자(ID)는 필수입니다.";
 }

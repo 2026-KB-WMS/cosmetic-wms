@@ -8,6 +8,11 @@ public final class OrderConstants {
     public static final String WAREHOUSE_REQUIRED_MESSAGE = "발주 시 창고 정보는 필수입니다.";
     public static final String ORDER_ITEM_MINIMUM_MESSAGE = "발주 항목은 최소 1개 이상이어야 합니다.";
 
+    public static final String INBOUND_PRODUCT_REQUIRED_MESSAGE =
+            "발주 항목의 상품 정보는 필수입니다.";
+    public static final String INVALID_INBOUND_QUANTITY_MESSAGE =
+            "발주 수량은 0보다 커야 합니다.";
+
     public static final String INVALID_CANCEL_STATUS_MESSAGE =
             "발주 대기(PENDING) 상태에서만 취소가 가능합니다.";
     public static final String INVALID_START_STATUS_MESSAGE =
