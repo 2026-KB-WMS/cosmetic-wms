@@ -1,0 +1,23 @@
+= 🧴 Cosmetic WMS REST API 사양서
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 3
+:sectlinks:
+
+[[Overview]]
+== 📌 개요
+본 문서는 화장품 도메인 특수성을 반영한 WMS(창고 관리 시스템)의 REST API 명세서입니다.
+모든 API는 성공 시 200 OK 또는 201 Created와 함께 JSON 포맷의 데이터를 반환합니다.
+
+---
+
+[[System-Status-API]]
+== 🟢 시스템 상태 API
+
+=== 1.1 헬스체크 API
+시스템이 정상 구동 중인지 확인하는 핑 테스트용 API입니다.
+
+// 나중에 만들 테스트 스니펫 조각이 들어올 자리 예시
+// operation::health-check[snippets='http-request,http-response']
