@@ -59,4 +59,19 @@ public final class InventoryConstants {
 
     public static final String DISCARD_FOR_UNALLOCATED_ONLY_MESSAGE =
             "할당된 재고는 폐기 처리할 수 없습니다. 할당 취소부터 진행해주세요.";
+
+    // ==== 재고 트랜잭션 이력(InventoryTransaction) 전용 예외 상수 ====
+    public static final String INVENTORY_ID_REQUIRED_MESSAGE =
+            "재고 식별자(ID)는 필수입니다.";
+    public static final String TRANSACTION_TYPE_REQUIRED_MESSAGE =
+            "트랜잭션 타입은 필수입니다.";
+    public static final String CURR_STATUS_REQUIRED_MESSAGE =
+            "현재 재고 상태 정보는 필수입니다.";
+    public static final String MEMBER_ID_REQUIRED_MESSAGE =
+            "작업자 식별자(ID)는 필수입니다.";
+    public static final String INVALID_TRANSACTION_QTY_MESSAGE =
+            "트랜잭션 변동 수량은 0보다 커야 합니다.";
+    public static final String REFERENCE_ID_REQUIRED_TEMPLATE =
+            "%s 행위는 원인 전표 ID가 필수입니다.";
+
 }
