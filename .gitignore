@@ -54,3 +54,6 @@ application-secret.properties
 
 ### Generated files ###
 generated/s
+
+### Spring REST Docs
+src/main/resources/static/docs/
