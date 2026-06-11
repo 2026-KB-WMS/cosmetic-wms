@@ -27,9 +27,19 @@ public class InventoryTransaction extends BaseEntity {
     private Long referenceId;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "allocStatus", column = @Column(name = "prev_alloc_status")),
+            @AttributeOverride(name = "qualityStatus", column = @Column(name = "prev_quality_status")),
+            @AttributeOverride(name = "locStatus", column = @Column(name = "prev_loc_status"))
+    })
     private InventoryStatusSet prevStatusSet;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "allocStatus", column = @Column(name = "curr_alloc_status")),
+            @AttributeOverride(name = "qualityStatus", column = @Column(name = "curr_quality_status")),
+            @AttributeOverride(name = "locStatus", column = @Column(name = "curr_loc_status"))
+    })
     private InventoryStatusSet currStatusSet;
 
     private String changeReason;
