@@ -22,3 +22,9 @@ spring:
       user:
         name: user
         password: password
+
+    springdoc:
+      api-docs:
+        enabled: false
+      swagger-ui:
+        url: /docs/openapi3.yaml
