@@ -1,9 +1,11 @@
 package com.kb.cosmetic_wms.domain.member.service;
 
 import com.kb.cosmetic_wms.domain.member.dto.MemberDetailResponseDto;
+import com.kb.cosmetic_wms.domain.member.dto.MemberLoginRequestDto;
 import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequestDto;
 import com.kb.cosmetic_wms.domain.member.entity.Member;
 import com.kb.cosmetic_wms.domain.member.exception.DuplicateMemberException;
+import com.kb.cosmetic_wms.domain.member.exception.LoginFailedException;
 import com.kb.cosmetic_wms.domain.member.exception.MemberNotFoundException;
 import com.kb.cosmetic_wms.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,17 @@ public class MemberService {
         Member savedMember = memberRepository.save(member);
 
         return MemberDetailResponseDto.from(savedMember);
+    }
+
+    public MemberDetailResponseDto login(MemberLoginRequestDto requestDto) {
+        Member member = memberRepository.findByLoginId(requestDto.loginId())
+                .orElseThrow(LoginFailedException::new);
+
+        if (!member.getPassword().equals(requestDto.password())) {
+            throw new LoginFailedException();
+        }
+
+        return MemberDetailResponseDto.from(member);
     }
 
 

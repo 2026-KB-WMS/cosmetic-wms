@@ -1,11 +1,14 @@
 package com.kb.cosmetic_wms.domain.member;
 
 import com.kb.cosmetic_wms.domain.member.dto.MemberDetailResponseDto;
+import com.kb.cosmetic_wms.domain.member.dto.MemberLoginRequestDto;
 import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequestDto;
 import com.kb.cosmetic_wms.domain.member.entity.Member;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
 import com.kb.cosmetic_wms.domain.member.exception.DuplicateMemberException;
+import com.kb.cosmetic_wms.domain.member.exception.LoginFailedException;
 import com.kb.cosmetic_wms.domain.member.exception.MemberNotFoundException;
+import com.kb.cosmetic_wms.domain.member.fixture.MemberDtoFixture;
 import com.kb.cosmetic_wms.domain.member.fixture.MemberTestBuilder;
 import com.kb.cosmetic_wms.domain.member.repository.MemberRepository;
 import com.kb.cosmetic_wms.domain.member.service.MemberService;
@@ -95,4 +98,46 @@ public class MemberServiceTest {
         assertThatThrownBy(() -> memberService.register(requestDto))
                 .isInstanceOf(DuplicateMemberException.class);
     }
+
+    @Test
+    void 올바른_로그인_ID와_비밀번호를_입력하면_로그인에_성공하여_회원_정보를_반환한다() {
+        // given
+        MemberLoginRequestDto loginRequestDto = MemberDtoFixture.createLoginRequest(
+                "admin123", "password123!");
+
+        Member existingMember = new MemberTestBuilder()
+                .loginId(loginRequestDto.loginId())
+                .password(loginRequestDto.password())
+                .build();
+        ReflectionTestUtils.setField(existingMember, "id", 1L);
+
+        given(memberRepository.findByLoginId(loginRequestDto.loginId())).willReturn(Optional.of(existingMember));
+
+        // when
+        MemberDetailResponseDto responseDto = memberService.login(loginRequestDto);
+
+        // then
+        assertThat(responseDto.id()).isEqualTo(1L);
+        assertThat(responseDto.name()).isEqualTo(existingMember.getMemberName());
+    }
+
+    @Test
+    void 올바른_로그인_ID를_입력해도_비밀번호가_일치하지_않으면_LoginFailedException_예외를_던진다() {
+        // given
+        MemberLoginRequestDto loginRequestDto = MemberDtoFixture.createLoginRequest(
+                "admin123", "wrongPassword!");
+
+        Member existingMember = new MemberTestBuilder()
+                .loginId(loginRequestDto.loginId())
+                .password("password123!")
+                .build();
+
+        given(memberRepository.findByLoginId(
+                loginRequestDto.loginId())).willReturn(Optional.of(existingMember));
+
+        // when & then
+        assertThatThrownBy(() -> memberService.login(loginRequestDto))
+                .isInstanceOf(LoginFailedException.class);
+    }
+
 }

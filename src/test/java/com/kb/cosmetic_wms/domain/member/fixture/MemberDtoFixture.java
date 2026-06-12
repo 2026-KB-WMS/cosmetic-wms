@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.member.fixture;
 
+import com.kb.cosmetic_wms.domain.member.dto.MemberLoginRequestDto;
 import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequestDto;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
 
@@ -24,5 +25,12 @@ public final class MemberDtoFixture {
                 "test@cosmetic.com",
                 "010-1234-5678"
         );
+    }
+
+    /**
+     * 로그인 요청 DTO
+     */
+    public static MemberLoginRequestDto createLoginRequest(String loginId, String password) {
+        return new MemberLoginRequestDto(loginId, password);
     }
 }
