@@ -1,0 +1,98 @@
+package com.kb.cosmetic_wms.domain.member;
+
+import com.kb.cosmetic_wms.domain.member.dto.MemberDetailResponseDto;
+import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequestDto;
+import com.kb.cosmetic_wms.domain.member.entity.Member;
+import com.kb.cosmetic_wms.domain.member.enums.Role;
+import com.kb.cosmetic_wms.domain.member.exception.DuplicateMemberException;
+import com.kb.cosmetic_wms.domain.member.exception.MemberNotFoundException;
+import com.kb.cosmetic_wms.domain.member.fixture.MemberTestBuilder;
+import com.kb.cosmetic_wms.domain.member.repository.MemberRepository;
+import com.kb.cosmetic_wms.domain.member.service.MemberService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.Optional;
+
+import static com.kb.cosmetic_wms.domain.member.fixture.MemberDtoFixture.createSignUpRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
+@ExtendWith(MockitoExtension.class)
+public class MemberServiceTest {
+
+    @InjectMocks
+    private MemberService memberService;
+
+    @Mock
+    private MemberRepository memberRepository;
+
+    @Test
+    void 존재하는_ID를_조회하면_회원_정보를_반환한다() {
+        // given
+        Long mockMemberId = 1L;
+        Member member = new MemberTestBuilder().build();
+        ReflectionTestUtils.setField(member, "id", mockMemberId);
+
+        given(memberRepository.findById(mockMemberId)).willReturn(Optional.of(member));
+
+        // when
+        MemberDetailResponseDto responseDto = memberService.findById(mockMemberId);
+
+        // then
+        assertThat(responseDto).isNotNull();
+        assertThat(responseDto.name()).isEqualTo("홍길동");
+    }
+
+    @Test
+    void 존재하지_않는_ID를_조회하면_MemberNotFoundException_예외를_던진다() {
+        // given
+        Long wrongMemberId = 999L;
+
+        given(memberRepository.findById(wrongMemberId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> memberService.findById(wrongMemberId))
+                .isInstanceOf(MemberNotFoundException.class);
+    }
+
+    @Test
+    void 새로운_회원_정보를_입력하면_회원_등록에_성공한다() {
+        // given
+        MemberSignUpRequestDto requestDto =
+                createSignUpRequest("warehouseManager1", Role.ROLE_WAREHOUSE_MANAGER);
+
+        Member mockMember = new MemberTestBuilder()
+                .loginId(requestDto.loginId())
+                .role(requestDto.role())
+                .build();
+        ReflectionTestUtils.setField(mockMember, "id", 1L);
+
+        given(memberRepository.existsByLoginId(requestDto.loginId())).willReturn(false);
+        given(memberRepository.save(any(Member.class))).willReturn(mockMember);
+
+        // when
+        MemberDetailResponseDto responseDto = memberService.register(requestDto);
+
+        // then
+        assertThat(responseDto.id()).isEqualTo(1L);
+    }
+
+    @Test
+    void 이미_존재하는_로그인_ID로_회원_등록을_요청하면_DuplicateMemberException_예외를_던진다() {
+        // given
+        MemberSignUpRequestDto requestDto = createSignUpRequest();
+
+        given(memberRepository.existsByLoginId(requestDto.loginId())).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> memberService.register(requestDto))
+                .isInstanceOf(DuplicateMemberException.class);
+    }
+}
