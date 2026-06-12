@@ -4,11 +4,10 @@ import com.kb.cosmetic_wms.domain.member.dto.MemberDetailResponseDto;
 import com.kb.cosmetic_wms.domain.member.dto.MemberLoginRequestDto;
 import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequestDto;
 import com.kb.cosmetic_wms.domain.member.entity.Member;
-import com.kb.cosmetic_wms.domain.member.enums.Role;
 import com.kb.cosmetic_wms.domain.member.exception.DuplicateMemberException;
 import com.kb.cosmetic_wms.domain.member.exception.LoginFailedException;
 import com.kb.cosmetic_wms.domain.member.exception.MemberNotFoundException;
-import com.kb.cosmetic_wms.domain.member.fixture.MemberDtoFixture;
+import com.kb.cosmetic_wms.domain.member.fixture.MemberDtoBuilder;
 import com.kb.cosmetic_wms.domain.member.fixture.MemberTestBuilder;
 import com.kb.cosmetic_wms.domain.member.repository.MemberRepository;
 import com.kb.cosmetic_wms.domain.member.service.MemberService;
@@ -21,7 +20,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
-import static com.kb.cosmetic_wms.domain.member.fixture.MemberDtoFixture.createSignUpRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,7 +48,7 @@ public class MemberServiceTest {
 
         // then
         assertThat(responseDto).isNotNull();
-        assertThat(responseDto.name()).isEqualTo("홍길동");
+        assertThat(responseDto.memberName()).isEqualTo("홍길동");
     }
 
     @Test
@@ -68,8 +66,7 @@ public class MemberServiceTest {
     @Test
     void 새로운_회원_정보를_입력하면_회원_등록에_성공한다() {
         // given
-        MemberSignUpRequestDto requestDto =
-                createSignUpRequest("warehouseManager1", Role.ROLE_WAREHOUSE_MANAGER);
+        MemberSignUpRequestDto requestDto = MemberDtoBuilder.signUpRequest().build();
 
         Member mockMember = new MemberTestBuilder()
                 .loginId(requestDto.loginId())
@@ -90,7 +87,7 @@ public class MemberServiceTest {
     @Test
     void 이미_존재하는_로그인_ID로_회원_등록을_요청하면_DuplicateMemberException_예외를_던진다() {
         // given
-        MemberSignUpRequestDto requestDto = createSignUpRequest();
+        MemberSignUpRequestDto requestDto = MemberDtoBuilder.signUpRequest().build();
 
         given(memberRepository.existsByLoginId(requestDto.loginId())).willReturn(true);
 
@@ -102,8 +99,7 @@ public class MemberServiceTest {
     @Test
     void 올바른_로그인_ID와_비밀번호를_입력하면_로그인에_성공하여_회원_정보를_반환한다() {
         // given
-        MemberLoginRequestDto loginRequestDto = MemberDtoFixture.createLoginRequest(
-                "admin123", "password123!");
+        MemberLoginRequestDto loginRequestDto = MemberDtoBuilder.loginRequest().build();
 
         Member existingMember = new MemberTestBuilder()
                 .loginId(loginRequestDto.loginId())
@@ -118,18 +114,19 @@ public class MemberServiceTest {
 
         // then
         assertThat(responseDto.id()).isEqualTo(1L);
-        assertThat(responseDto.name()).isEqualTo(existingMember.getMemberName());
+        assertThat(responseDto.memberName()).isEqualTo(existingMember.getMemberName());
     }
 
     @Test
     void 올바른_로그인_ID를_입력해도_비밀번호가_일치하지_않으면_LoginFailedException_예외를_던진다() {
         // given
-        MemberLoginRequestDto loginRequestDto = MemberDtoFixture.createLoginRequest(
-                "admin123", "wrongPassword!");
+        MemberLoginRequestDto loginRequestDto = MemberDtoBuilder.loginRequest()
+                .password("password20934!")
+                .build();
 
         Member existingMember = new MemberTestBuilder()
                 .loginId(loginRequestDto.loginId())
-                .password("password123!")
+                .password("password123!@")
                 .build();
 
         given(memberRepository.findByLoginId(

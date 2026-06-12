@@ -3,34 +3,41 @@ package com.kb.cosmetic_wms.domain.member.fixture;
 import com.kb.cosmetic_wms.domain.member.dto.MemberLoginRequestDto;
 import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequestDto;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
+import lombok.Builder;
 
-public final class MemberDtoFixture {
+public final class MemberDtoBuilder {
 
-    private MemberDtoFixture() {
+    private MemberDtoBuilder() {
     }
 
     /**
      * 회원가입 요청 DTO
      */
-    public static MemberSignUpRequestDto createSignUpRequest() {
-        return createSignUpRequest("admin01", Role.ROLE_HEADQUARTERS);
-    }
-
-    public static MemberSignUpRequestDto createSignUpRequest(String loginId, Role role) {
+    @Builder(builderMethodName = "signUpRequest", buildMethodName = "build")
+    private static MemberSignUpRequestDto signUpRequestFactory(
+            String loginId, String password, Role role,
+            String memberName, String email, String phoneNumber
+    ) {
         return new MemberSignUpRequestDto(
-                loginId,
-                "password123!",
-                role,
-                "홍길동",
-                "test@cosmetic.com",
-                "010-1234-5678"
+                loginId != null ? loginId : "admin01",
+                password != null ? password : "password123!",
+                role != null ? role : Role.ROLE_HEADQUARTERS,
+                memberName != null ? memberName : "홍길동",
+                email != null ? email : "admin@example.com",
+                phoneNumber != null ? phoneNumber : "010-1234-5678"
         );
     }
 
     /**
      * 로그인 요청 DTO
      */
-    public static MemberLoginRequestDto createLoginRequest(String loginId, String password) {
-        return new MemberLoginRequestDto(loginId, password);
+    @Builder(builderMethodName = "loginRequest", buildMethodName = "build")
+    public static MemberLoginRequestDto LoginRequestFactory(
+            String loginId, String password
+    ) {
+        return new MemberLoginRequestDto(
+                loginId != null ? loginId : "admin01",
+                password != null ? password : "password123!"
+        );
     }
 }
