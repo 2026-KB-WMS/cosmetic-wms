@@ -15,7 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -33,6 +35,9 @@ public class MemberServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Spy
+    private BCryptPasswordEncoder passwordEncoder;
 
     @Test
     void 존재하는_ID를_조회하면_회원_정보를_반환한다() {
@@ -68,8 +73,10 @@ public class MemberServiceTest {
         // given
         MemberSignUpRequestDto requestDto = MemberDtoBuilder.signUpRequest().build();
 
+        String encodedPassword = passwordEncoder.encode(requestDto.password());
         Member mockMember = new MemberTestBuilder()
                 .loginId(requestDto.loginId())
+                .password(encodedPassword)
                 .role(requestDto.role())
                 .build();
         ReflectionTestUtils.setField(mockMember, "id", 1L);
@@ -101,9 +108,11 @@ public class MemberServiceTest {
         // given
         MemberLoginRequestDto loginRequestDto = MemberDtoBuilder.loginRequest().build();
 
+        String encodedPassword = passwordEncoder.encode(loginRequestDto.password());
+
         Member existingMember = new MemberTestBuilder()
                 .loginId(loginRequestDto.loginId())
-                .password(loginRequestDto.password())
+                .password(encodedPassword)
                 .build();
         ReflectionTestUtils.setField(existingMember, "id", 1L);
 
@@ -136,5 +145,4 @@ public class MemberServiceTest {
         assertThatThrownBy(() -> memberService.login(loginRequestDto))
                 .isInstanceOf(LoginFailedException.class);
     }
-
 }

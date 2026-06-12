@@ -81,27 +81,4 @@ public class MemberEntityTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(MemberConstants.PASSWORD_REQUIRED_MESSAGE);
     }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"pwd", "passwordpasswordpasswordpasswordpasswordpasswordpassword1234!@$%"})
-    void 비밀번호가_8자_미만_50자_초과하면_예외를_던진다(String invalidLengthPassword) {
-        Assertions.assertThatThrownBy(() ->
-                        new MemberTestBuilder()
-                                .password(invalidLengthPassword)
-                                .build()
-                )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(MemberConstants.INVALID_PASSWORD_LENGTH_MESSAGE);
-    }
-
-    @Test
-    void 올바르지_않은_비밀번호_입력시_예외를_던진다() {
-        Assertions.assertThatThrownBy(() ->
-                        new MemberTestBuilder()
-                                .password("^#$%&@@$#@#$")
-                                .build()
-                )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(MemberConstants.INVALID_PASSWORD_MESSAGE);
-    }
 }

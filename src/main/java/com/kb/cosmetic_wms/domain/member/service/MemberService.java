@@ -9,6 +9,7 @@ import com.kb.cosmetic_wms.domain.member.exception.LoginFailedException;
 import com.kb.cosmetic_wms.domain.member.exception.MemberNotFoundException;
 import com.kb.cosmetic_wms.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberService {
 
-    private MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public MemberDetailResponseDto findById(Long id) {
         Member member = memberRepository.findById(id)
@@ -31,7 +33,10 @@ public class MemberService {
         if (memberRepository.existsByLoginId(requestDto.loginId())) {
             throw new DuplicateMemberException();
         }
-        Member member = toEntity(requestDto);
+
+        String encodedPassword = passwordEncoder.encode(requestDto.password());
+
+        Member member = toEntity(requestDto, encodedPassword);
         Member savedMember = memberRepository.save(member);
 
         return MemberDetailResponseDto.from(savedMember);
@@ -41,18 +46,17 @@ public class MemberService {
         Member member = memberRepository.findByLoginId(requestDto.loginId())
                 .orElseThrow(LoginFailedException::new);
 
-        if (!member.getPassword().equals(requestDto.password())) {
+        if (!passwordEncoder.matches(requestDto.password(), member.getPassword())) {
             throw new LoginFailedException();
         }
 
         return MemberDetailResponseDto.from(member);
     }
 
-
-    private Member toEntity(MemberSignUpRequestDto requestDto) {
+    private Member toEntity(MemberSignUpRequestDto requestDto, String encodedPassword) {
         return Member.create(
                 requestDto.loginId(),
-                requestDto.password(),
+                encodedPassword,
                 requestDto.role(),
                 requestDto.memberName(),
                 requestDto.email(),
