@@ -14,7 +14,9 @@ import java.util.regex.Pattern;
 @Table(
         name = "member",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uq_login_id", columnNames = "login_id")
+                @UniqueConstraint(name = "uq_login_id", columnNames = "login_id"),
+                @UniqueConstraint(name = "uq_email", columnNames = "email"),
+                @UniqueConstraint(name = "uq_phone_number", columnNames = "phone_number")
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -38,10 +40,10 @@ public class Member extends BaseEntity {
     @Column(name = "member_name", nullable = false, length = 50)
     private String memberName;
 
-    @Column(name = "email", nullable = false, unique = true, length = 50)
+    @Column(name = "email", nullable = false, length = 50)
     private String email;
 
-    @Column(name = "phone_number", nullable = false, unique = true, length = 50)
+    @Column(name = "phone_number", nullable = false, length = 50)
     private String phoneNumber;
 
     private Member(String loginId, String password, Role role, String memberName, String email, String phoneNumber) {
