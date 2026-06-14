@@ -4,7 +4,7 @@ import com.kb.cosmetic_wms.domain.member.MemberConstants;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
 import jakarta.validation.constraints.*;
 
-public record MemberSignUpRequest(
+public record MemberSignUpRequestDto(
         @NotBlank(message = MemberConstants.LOGIN_ID_REQUIRED_MESSAGE)
         @Size(
                 min = MemberConstants.LOGIN_ID_MIN_LENGTH,

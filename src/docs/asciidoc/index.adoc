@@ -1,23 +1,34 @@
-= 🧴 Cosmetic WMS REST API 사양서
+= 🧴 Cosmetic WMS REST API 명세서
 :doctype: book
 :icons: font
 :source-highlighter: highlightjs
 :toc: left
 :toclevels: 3
 :sectlinks:
+:snippets: {snippets}
 
 [[Overview]]
-== 📌 개요
+== 📜개요
 본 문서는 화장품 도메인 특수성을 반영한 WMS(창고 관리 시스템)의 REST API 명세서입니다.
 모든 API는 성공 시 200 OK 또는 201 Created와 함께 JSON 포맷의 데이터를 반환합니다.
 
+[[Member-API]]
+== 👤 회원(사원) 도메인 API
+
+=== 2.1 회원 가입 API
+새로운 WMS 작업자 또는 관리자를 시스템에 등록합니다.
+필수 제약 조건(ID 글자 수, 비밀번호 포맷 등)을 위반하거나 이미 존재하는 ID일 경우 `400 Bad Request`가 발생합니다.
+
+==== HTTP Request
+include::{snippets}/member/signup/http-request.adoc[]
+
+==== Request Fields
+include::{snippets}/member/signup/request-fields.adoc[]
+
+==== HTTP Response
+include::{snippets}/member/signup/http-response.adoc[]
+
+==== Response Fields
+include::{snippets}/member/signup/response-fields.adoc[]
+
 ---
-
-[[System-Status-API]]
-== 🟢 시스템 상태 API
-
-=== 1.1 헬스체크 API
-시스템이 정상 구동 중인지 확인하는 핑 테스트용 API입니다.
-
-// 나중에 만들 테스트 스니펫 조각이 들어올 자리 예시
-// operation::health-check[snippets='http-request,http-response']
