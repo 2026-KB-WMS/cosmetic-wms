@@ -11,21 +11,39 @@ import lombok.NoArgsConstructor;
 import java.util.regex.Pattern;
 
 @Entity
+@Table(
+        name = "member",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_login_id", columnNames = "login_id"),
+                @UniqueConstraint(name = "uq_email", columnNames = "email"),
+                @UniqueConstraint(name = "uq_phone_number", columnNames = "phone_number")
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Member extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "member_id")
     private Long id;
 
+    @Column(name = "login_id", nullable = false, length = 50)
     private String loginId;
+
+    @Column(name = "password", nullable = false, length = 255)
     private String password;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 50)
     private Role role;
 
+    @Column(name = "member_name", nullable = false, length = 50)
     private String memberName;
+
+    @Column(name = "email", nullable = false, length = 50)
     private String email;
+
+    @Column(name = "phone_number", nullable = false, length = 50)
     private String phoneNumber;
 
     private Member(String loginId, String password, Role role, String memberName, String email, String phoneNumber) {
@@ -87,13 +105,6 @@ public class Member extends BaseEntity {
     private static void validatePassword(String password) {
         if (password == null || password.isBlank()) {
             throw new IllegalArgumentException(MemberConstants.PASSWORD_REQUIRED_MESSAGE);
-        }
-        if (password.length() < MemberConstants.PASSWORD_MIN_LENGTH ||
-                password.length() > MemberConstants.PASSWORD_MAX_LENGTH) {
-            throw new IllegalArgumentException(MemberConstants.INVALID_PASSWORD_LENGTH_MESSAGE);
-        }
-        if (!Pattern.matches(MemberConstants.PASSWORD_REGEX, password)) {
-            throw new IllegalArgumentException(MemberConstants.INVALID_PASSWORD_MESSAGE);
         }
     }
 }
