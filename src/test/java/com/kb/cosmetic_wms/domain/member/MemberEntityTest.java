@@ -2,6 +2,10 @@ package com.kb.cosmetic_wms.domain.member;
 
 import com.kb.cosmetic_wms.domain.member.entity.Member;
 import com.kb.cosmetic_wms.domain.member.enums.Role;
+import com.kb.cosmetic_wms.domain.member.exception.InvalidEmailException;
+import com.kb.cosmetic_wms.domain.member.exception.InvalidPhoneNumberException;
+import com.kb.cosmetic_wms.domain.member.exception.MemberErrorCode;
+import com.kb.cosmetic_wms.domain.member.exception.MemberValidationException;
 import com.kb.cosmetic_wms.domain.member.fixture.MemberTestBuilder;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,8 +33,8 @@ public class MemberEntityTest {
                                 .email(invalidEmail)
                                 .build()
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(MemberConstants.INVALID_EMAIL_MESSAGE);
+                .isInstanceOf(InvalidEmailException.class)
+                .hasMessage(MemberErrorCode.INVALID_EMAIL.getMessage());
     }
 
     @ParameterizedTest
@@ -41,8 +45,8 @@ public class MemberEntityTest {
                                 .phoneNumber(invalidPhoneNumber)
                                 .build()
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(MemberConstants.INVALID_PHONE_NUMBER_MESSAGE);
+                .isInstanceOf(InvalidPhoneNumberException.class)
+                .hasMessage(MemberErrorCode.INVALID_PHONE_NUMBER.getMessage());
     }
 
     @ParameterizedTest
@@ -53,8 +57,8 @@ public class MemberEntityTest {
                                 .loginId(emptyLoginId)
                                 .build()
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(MemberConstants.LOGIN_ID_REQUIRED_MESSAGE);
+                .isInstanceOf(MemberValidationException.class)
+                .hasMessage(MemberErrorCode.INVALID_MEMBER_VALIDATION.getMessage());
     }
 
     @ParameterizedTest
@@ -66,8 +70,8 @@ public class MemberEntityTest {
                                 .build()
 
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(MemberConstants.INVALID_LOGIN_ID_LENGTH_MESSAGE);
+                .isInstanceOf(MemberValidationException.class)
+                .hasMessage(MemberErrorCode.INVALID_MEMBER_VALIDATION.getMessage());
     }
 
     @ParameterizedTest
@@ -78,7 +82,7 @@ public class MemberEntityTest {
                                 .password(emptyPassword)
                                 .build()
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(MemberConstants.PASSWORD_REQUIRED_MESSAGE);
+                .isInstanceOf(MemberValidationException.class)
+                .hasMessage(MemberErrorCode.INVALID_MEMBER_VALIDATION.getMessage());
     }
 }

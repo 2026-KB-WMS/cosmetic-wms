@@ -1,13 +1,9 @@
 package com.kb.cosmetic_wms.domain.member.exception;
 
-public class DuplicateMemberException extends RuntimeException {
-    private static final String DEFAULT_MESSAGE = "이미 사용 중인 로그인 ID입니다.";
+import com.kb.cosmetic_wms.global.error.BusinessException;
 
+public class DuplicateMemberException extends BusinessException {
     public DuplicateMemberException() {
-        super(DEFAULT_MESSAGE);
-    }
-
-    public DuplicateMemberException(String message) {
-        super(message);
+        super(MemberErrorCode.DUPLICATE_LOGIN_ID);
     }
 }
