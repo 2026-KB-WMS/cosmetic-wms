@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.global.error.dto;
 
+import com.kb.cosmetic_wms.global.error.ErrorCode;
+
 import java.time.LocalDateTime;
 
 public record ErrorResponseDto(
@@ -7,7 +9,11 @@ public record ErrorResponseDto(
         String message,
         LocalDateTime timestamp
 ) {
-    public static ErrorResponseDto of(String errorCode, String message) {
-        return new ErrorResponseDto(errorCode, message, LocalDateTime.now());
+    public static ErrorResponseDto of(ErrorCode errorCode) {
+        return new ErrorResponseDto(
+                errorCode.getCode(),
+                errorCode.getMessage(),
+                LocalDateTime.now()
+        );
     }
 }
