@@ -1,13 +1,9 @@
 package com.kb.cosmetic_wms.domain.member.exception;
 
-public class MemberNotFoundException extends RuntimeException {
-    private static final String DEFAULT_MESSAGE = "존재하지 않는 작업자입니다.";
+import com.kb.cosmetic_wms.global.error.BusinessException;
 
+public class MemberNotFoundException extends BusinessException {
     public MemberNotFoundException() {
-        super(DEFAULT_MESSAGE);
-    }
-
-    public MemberNotFoundException(String message) {
-        super(message);
+        super(MemberErrorCode.MEMBER_NOT_FOUND);
     }
 }

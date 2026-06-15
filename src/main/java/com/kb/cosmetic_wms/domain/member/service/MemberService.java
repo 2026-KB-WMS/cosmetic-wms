@@ -46,7 +46,7 @@ public class MemberService {
         Member member = memberRepository.findByLoginId(requestDto.loginId())
                 .orElseThrow(LoginFailedException::new);
 
-        if (!passwordEncoder.matches(requestDto.password(), member.getPassword())) {
+        if (!passwordEncoder.matches(requestDto.password(), member.getEncodedPassword())) {
             throw new LoginFailedException();
         }
 
