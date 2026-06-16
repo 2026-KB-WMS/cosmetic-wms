@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.domain.storage.entity;
 import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
+import com.kb.cosmetic_wms.domain.storage.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,18 +14,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "warehouse")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Warehouse extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "warehouse_id")
     private Long id;
 
+    @Column(name = "warehouse_name", nullable = false, length = 100)
     private String warehouseName;
+
+    @Column(name = "address", nullable = false, length = 255)
     private String address;
+
+    @Column(name = "target_temp", nullable = false, length = 20)
     private String targetTemp;
+
+    @Column(name = "capacity", nullable = false)
     private int capacity;
+
+    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<Section> sections = new ArrayList<>();
 
     private Warehouse(String warehouseName, String address, String targetTemp, int capacity) {
         this.warehouseName = warehouseName;
@@ -32,9 +45,6 @@ public class Warehouse extends BaseEntity {
         this.targetTemp = targetTemp;
         this.capacity = capacity;
     }
-
-    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<Section> sections = new ArrayList<>();
 
     public static Warehouse create(String warehouseName, String address, String targetTemp, int capacity) {
         validateWarehouseName(warehouseName);
@@ -105,7 +115,7 @@ public class Warehouse extends BaseEntity {
                 .sum();
 
         if (currentTotalCapacity + newSectionMaxCapacity > this.capacity) {
-            throw new IllegalArgumentException(StorageConstants.EXCEED_WAREHOUSE_CAPACITY_MESSAGE);
+            throw new StorageExceedCapacityException();
         }
     }
 
