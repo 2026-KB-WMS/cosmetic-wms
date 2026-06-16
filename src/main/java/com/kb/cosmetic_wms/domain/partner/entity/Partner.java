@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.domain.partner.entity;
 
 import com.kb.cosmetic_wms.domain.partner.enums.PartnerType;
+import com.kb.cosmetic_wms.domain.partner.exception.PartnerValidationException;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,6 +9,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(
+        name = "partner",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_partner_business_number", columnNames = "business_number")
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Partner extends BaseEntity {
@@ -17,13 +24,17 @@ public class Partner extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "partner_id")
     private Long id;
 
+    @Column(name = "partner_name", nullable = false, length = 100)
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "partner_type", nullable = false, length = 30)
     private PartnerType type;
 
+    @Column(name = "business_number", length = 20)
     private String businessNumber;
 
     private Partner(String name, PartnerType type, String businessNumber) {
@@ -41,13 +52,13 @@ public class Partner extends BaseEntity {
 
     private static void validateName(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException(PARTNER_NAME_REQUIRED_MESSAGE);
+            throw new PartnerValidationException();
         }
     }
 
     private static void validateType(PartnerType type) {
         if (type == null) {
-            throw new IllegalArgumentException(PARTNER_TYPE_REQUIRED_MESSAGE);
+            throw new PartnerValidationException();
         }
     }
 }

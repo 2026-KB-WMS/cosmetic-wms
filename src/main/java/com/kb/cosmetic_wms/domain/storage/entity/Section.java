@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionAllocationStatus;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionQualityStatus;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
+import com.kb.cosmetic_wms.domain.storage.exception.StorageValidationException;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,34 +14,51 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(
+        name = "section",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_section_code", columnNames = {"warehouse_id", "section_code"})
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Section extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "section_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id", nullable = false, foreignKey = @ForeignKey(name = "fk_section_warehouse"))
     private Warehouse warehouse;
 
+    @Column(name = "section_code", nullable = false, length = 20)
     private String sectionCode;
+
+    @Column(name = "section_name", nullable = false, length = 50)
     private String sectionName;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "section_type", nullable = false, length = 20)
     private SectionType sectionType;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "quality_status", nullable = false, length = 10)
     private SectionQualityStatus qualityStatus;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "allocation_status", nullable = false, length = 10)
     private SectionAllocationStatus allocationStatus;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "temperature_type", nullable = false, length = 10)
     private TemperatureType temperatureType;
 
+    @Column(name = "max_capacity", nullable = false)
     private int maxCapacity;
 
+    @Column(name = "current_capacity", nullable = false)
     private int currentCapacity;
 
     @Builder(access = AccessLevel.PRIVATE)
@@ -162,7 +180,7 @@ public class Section extends BaseEntity {
 
     private void validateQuarantineTemperature(SectionType sectionType, TemperatureType temperatureType) {
         if (sectionType == SectionType.QUARANTINE && temperatureType == TemperatureType.COOL) {
-            throw new IllegalArgumentException(StorageConstants.QUARANTINE_MUST_BE_ROOM_MESSAGE);
+            throw new StorageValidationException();
         }
     }
 
