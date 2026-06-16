@@ -112,7 +112,7 @@ public class StorageServiceTest {
     }
 
     @Test
-    void 존하지_않는_창고_ID로_단건_조회를_시도하면_WarehouseNotFoundException이_발생한다() {
+    void 존재하지_않는_창고_ID로_단건_조회를_시도하면_WarehouseNotFoundException이_발생한다() {
         // given
         Long invalidWarehouseId = 99L;
         given(warehouseRepository.findById(invalidWarehouseId)).willReturn(Optional.empty());
