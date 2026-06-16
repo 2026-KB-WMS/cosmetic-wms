@@ -1,6 +1,5 @@
 package com.kb.cosmetic_wms.domain.store;
 
-import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kb.cosmetic_wms.domain.store.controller.StoreController;
 import com.kb.cosmetic_wms.domain.store.dto.StoreCreateRequestDto;
@@ -16,15 +15,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.RequestFieldsSnippet;
-import org.springframework.restdocs.payload.ResponseFieldsSnippet;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.kb.cosmetic_wms.global.restdocs.ApiDocs.STORE;
+import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.STORE_CREATE_REQUEST;
+import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.STORE_RESPONSE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -61,12 +62,9 @@ public class StoreControllerTest extends RestDocsSupport {
                 .andExpect(jsonPath("$.storeName").value("서울 성수점"))
                 .andExpect(jsonPath("$.address").value("서울시 성동구 성수동"))
                 .andDo(document("store-create-success",
-                        ResourceSnippetParameters.builder()
-                                .tag("Store API")
-                                .summary("WMS 가맹점 등록")
-                                .description("새로운 가맹점(점포)을 시스템에 등록합니다."),
-                        getStoreCreateRequestFields(),
-                        getStoreResponseFields()
+                        buildParams(STORE, "WMS 가맹점 등록", STORE_CREATE_REQUEST, STORE_RESPONSE),
+                        createRequestFields(getStoreCreateRequestFields()),
+                        createResponseFields(getStoreResponseFields())
                 ));
     }
 
@@ -86,11 +84,8 @@ public class StoreControllerTest extends RestDocsSupport {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.storeName").value("서울 성수점"))
                 .andDo(document("store-get-success",
-                        ResourceSnippetParameters.builder()
-                                .tag("Store API")
-                                .summary("가맹점 단건 조회")
-                                .description("가맹점 고유 ID를 통해 마스터 정보를 단건 조회합니다."),
-                        getStoreResponseFields()
+                        buildParams(STORE, "가맹점 단건 조회", null, STORE_RESPONSE),
+                        createResponseFields(getStoreResponseFields())
                 ));
     }
 
@@ -110,35 +105,24 @@ public class StoreControllerTest extends RestDocsSupport {
                 .andExpect(jsonPath("$.message").value(StoreErrorCode.STORE_NOT_FOUND.getMessage()))
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andDo(document("store-get-fail-not-found",
-                        ResourceSnippetParameters.builder()
-                                .tag("Store API")
-                                .summary("가맹점 단건 조회 실패 - 존재하지 않는 ID")
-                                .description("시스템 데이터에 존재하지 않는 가맹점 ID를 조회할 경우 터지는 404 예외 규격입니다."),
-                        getGlobalErrorResponseFields()
+                        buildErrorParams(STORE, "가맹점 단건 조회"),
+                        globalErrorResponseFields()
                 ));
     }
 
-    private static RequestFieldsSnippet getStoreCreateRequestFields() {
-        return requestFields(
+    private static FieldDescriptor[] getStoreCreateRequestFields() {
+        return new FieldDescriptor[]{
                 fieldWithPath("storeName").description("등록할 가맹점 점포 명칭 (필수값)"),
                 fieldWithPath("address").description("가맹점 물리 주소 (필수값)")
-        );
+        };
     }
 
-    private static ResponseFieldsSnippet getStoreResponseFields() {
-        return responseFields(
+    private static FieldDescriptor[] getStoreResponseFields() {
+        return new FieldDescriptor[]{
                 fieldWithPath("id").description("가맹점 고유 식별 번호 (PK)"),
                 fieldWithPath("storeName").description("가맹점 점포 명칭"),
                 fieldWithPath("address").description("가맹점 주소")
-        );
-    }
-
-    private static ResponseFieldsSnippet getGlobalErrorResponseFields() {
-        return responseFields(
-                fieldWithPath("errorCode").description("서버 내부 정의 에러 식별 코드 (예: STORE_NOT_FOUND)"),
-                fieldWithPath("message").description("에러 발생 사유 상세 메시지"),
-                fieldWithPath("timestamp").description("에러 발생 시각")
-        );
+        };
     }
 
 }

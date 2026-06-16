@@ -1,6 +1,5 @@
 package com.kb.cosmetic_wms.domain.partner;
 
-import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kb.cosmetic_wms.domain.partner.controller.PartnerController;
 import com.kb.cosmetic_wms.domain.partner.dto.PartnerCreateRequestDto;
@@ -17,16 +16,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.RequestFieldsSnippet;
-import org.springframework.restdocs.payload.ResponseFieldsSnippet;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.kb.cosmetic_wms.global.restdocs.ApiDocs.PARTNER;
+import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
-import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -60,11 +60,9 @@ public class PartnerControllerTest extends RestDocsSupport {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andDo(document("partner-create-success",
-                        ResourceSnippetParameters.builder()
-                                .tag("Partner API")
-                                .summary("WMS 기초 가맹점 협력사 등록"),
-                        getPartnerCreateRequestFields(),
-                        getPartnerResponseFields()
+                        buildParams(PARTNER, "WMS 기초 가맹점 협력사 등록", PARTNER_CREATE_REQUEST, PARTNER_RESPONSE),
+                        createRequestFields(getPartnerCreateRequestFields()),
+                        createResponseFields(getPartnerResponseFields())
                 ));
     }
 
@@ -81,10 +79,8 @@ public class PartnerControllerTest extends RestDocsSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andDo(document("partner-get-success",
-                        ResourceSnippetParameters.builder()
-                                .tag("Partner API")
-                                .summary("협력사 단건 조회"),
-                        getPartnerResponseFields()
+                        buildParams(PARTNER, "협력사 단건 조회", null, PARTNER_RESPONSE),
+                        createResponseFields(getPartnerResponseFields())
                 ));
     }
 
@@ -106,36 +102,25 @@ public class PartnerControllerTest extends RestDocsSupport {
                 .andExpect(jsonPath("$.timestamp").exists())
 
                 .andDo(document("partner-get-fail-not-found",
-                        ResourceSnippetParameters.builder()
-                                .tag("Partner API")
-                                .summary("협력사 단건 조회 실패 - 존재하지 않는 ID")
-                                .description("데이터에 존재하지 않는 협력사 고유 번호를 조회했을 때 발생하는 404 에러 명세입니다."),
-                        getGlobalErrorResponseFields()
+                        buildErrorParams(PARTNER, "협력사 단건 조회"),
+                        globalErrorResponseFields()
                 ));
     }
 
-    private static ResponseFieldsSnippet getGlobalErrorResponseFields() {
-        return responseFields(
-                fieldWithPath("errorCode").description("서버 내부 정의 에러 식별 코드"),
-                fieldWithPath("message").description("에러 발생 상세 사유 메시지"),
-                fieldWithPath("timestamp").description("에러 발생 시각")
-        );
-    }
-
-    private static RequestFieldsSnippet getPartnerCreateRequestFields() {
-        return requestFields(
+    private static FieldDescriptor[] getPartnerCreateRequestFields() {
+        return new FieldDescriptor[]{
                 fieldWithPath("partnerName").description("협력사 회사 상호명 (필수값)"),
                 fieldWithPath("partnerType").description("협력사 타입 (VENDOR, HEADQUARTER, BRANCH)"),
                 fieldWithPath("businessNumber").description("사업자 등록 번호 (필수값)")
-        );
+        };
     }
 
-    private static ResponseFieldsSnippet getPartnerResponseFields() {
-        return responseFields(
+    private static FieldDescriptor[] getPartnerResponseFields() {
+        return new FieldDescriptor[]{
                 fieldWithPath("id").description("협력사 고유 식별 번호 (PK)"),
                 fieldWithPath("partnerName").description("협력사 상호명"),
-                fieldWithPath("partnerType").description("협력사 타입 (VENDOR, HEADQUARTER, BRANCH)"), // 🌟 추가!
+                fieldWithPath("partnerType").description("협력사 타입 (VENDOR, HEADQUARTER, BRANCH)"),
                 fieldWithPath("businessNumber").description("사업자 등록 번호")
-        );
+        };
     }
 }
