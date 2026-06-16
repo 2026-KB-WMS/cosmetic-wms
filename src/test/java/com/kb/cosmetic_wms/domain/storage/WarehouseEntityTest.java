@@ -5,6 +5,8 @@ import com.kb.cosmetic_wms.domain.storage.constants.StorageConstants;
 import com.kb.cosmetic_wms.domain.storage.entity.Section;
 import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
 import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
+import com.kb.cosmetic_wms.domain.storage.exception.StorageErrorCode;
+import com.kb.cosmetic_wms.domain.storage.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.domain.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.domain.storage.fixture.WarehouseTestBuilder;
 import org.assertj.core.api.Assertions;
@@ -111,8 +113,8 @@ public class WarehouseEntityTest {
                         .maxCapacity(6000)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(StorageConstants.EXCEED_WAREHOUSE_CAPACITY_MESSAGE);
+                .isInstanceOf(StorageExceedCapacityException.class)
+                .hasMessage(StorageErrorCode.EXCEED_WAREHOUSE_CAPACITY.getMessage());
     }
 
     @Test
