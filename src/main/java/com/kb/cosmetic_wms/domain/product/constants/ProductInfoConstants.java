@@ -19,17 +19,19 @@ public final class ProductInfoConstants {
 
     // 허용 용량 단위
     public static final List<String> ALLOWED_UNITS = List.of("ml", "g", "ea", "oz", "fl.oz");
+    public static final String ALLOWED_UNITS_REGEX = "^(ml|g|ea|oz|fl\\.oz)$";
+    public static final String VOLUME_REQUEST_REQUIRED_MESSAGE = "용량 정보는 필수 입력 항목입니다.";
 
     // Validation Messages
     public static final String INVALID_VOLUME_MIN_MESSAGE =
             "화장품 용량은 " + MIN_VOLUME + "보다 커야 합니다.";
     public static final String INVALID_VOLUME_MAX_MESSAGE =
-            "올바르지 않은 대용량 수치입니다. (최대 " + String.format("%,d", MAX_VOLUME) + "까지 허용)";
+            "올바르지 않은 대용량 수치입니다. (최대 " + MAX_VOLUME + "까지 허용)";
 
     public static final String UNIT_REQUIRED_MESSAGE =
             "용량 단위는 필수 입력 항목입니다.";
     public static final String INVALID_UNIT_FORMAT_MESSAGE =
-            "올바르지 않은 용량 단위입니다. (" + String.join(", ", ALLOWED_UNITS) + " 허용)";
+            "올바르지 않은 용량 단위입니다. (ml, g, ea, oz, fl.oz 허용)";
 
     public static final String INVALID_SKIN_TYPE_LENGTH_MESSAGE =
             "피부 타입 정보는 " + SKIN_TYPE_MAX_LENGTH + "자를 초과할 수 없습니다.";
