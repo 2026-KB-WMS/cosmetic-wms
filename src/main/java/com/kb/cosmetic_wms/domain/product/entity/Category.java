@@ -2,23 +2,26 @@ package com.kb.cosmetic_wms.domain.product.entity;
 
 import com.kb.cosmetic_wms.domain.product.constants.CategoryConstants;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "category")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Category extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "category_id")
     private Long id;
 
+    @Column(name = "category_code", nullable = false, columnDefinition = "CHAR(3)")
     private String categoryCode;
+
+    @Column(name = "category_name", nullable = false, length = 50)
     private String categoryName;
 
     private Category(String categoryCode, String categoryName) {
