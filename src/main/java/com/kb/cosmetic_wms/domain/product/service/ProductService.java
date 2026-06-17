@@ -1,6 +1,5 @@
 package com.kb.cosmetic_wms.domain.product.service;
 
-import com.kb.cosmetic_wms.domain.product.constants.ProductConstants;
 import com.kb.cosmetic_wms.domain.product.dto.ProductCreateRequestDto;
 import com.kb.cosmetic_wms.domain.product.dto.ProductDetailResponseDto;
 import com.kb.cosmetic_wms.domain.product.dto.ProductSummaryResponseDto;
@@ -10,6 +9,7 @@ import com.kb.cosmetic_wms.domain.product.exception.*;
 import com.kb.cosmetic_wms.domain.product.repository.CategoryRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductTypeRepository;
+import com.kb.cosmetic_wms.domain.product.repository.SkuSequenceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +24,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductTypeRepository productTypeRepository;
+    private final SkuSequenceRepository skuSequenceRepository;
 
     @Transactional
     public ProductDetailResponseDto register(ProductCreateRequestDto request) {
@@ -41,12 +42,21 @@ public class ProductService {
             throw new DuplicateProductException();
         }
 
-        int nextSequence = productRepository.findNextSequence(
-                category.getCategoryCode(), productType.getTypeCode(),
-                volumeValue, request.brandName());
-        if (nextSequence > ProductConstants.SEQUENCE_MAX_BOUND) {
-            throw new SkuSequenceOverflowException();
-        }
+        String brandNameUpper = request.brandName().trim().toUpperCase();
+        skuSequenceRepository.initIfAbsent(
+                brandNameUpper,
+                category.getCategoryCode(),
+                productType.getTypeCode(),
+                volumeValue);
+
+        SkuSequence skuSeq = skuSequenceRepository.findForUpdate(
+                brandNameUpper,
+                category.getCategoryCode(),
+                productType.getTypeCode(),
+                volumeValue)
+                .orElseThrow();
+
+        int nextSequence = skuSeq.incrementAndGet();
 
         ProductInfo productInfo = toProductInfo(request.productInfo());
         Product product = Product.create(

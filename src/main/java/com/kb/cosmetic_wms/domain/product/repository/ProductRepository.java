@@ -9,16 +9,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    @Query("SELECT COALESCE(COUNT(p), 0) + 1 FROM Product p " +
-           "WHERE p.category.categoryCode = :categoryCode " +
-           "AND p.productType.typeCode = :typeCode " +
-           "AND p.productInfo.volume.value = :volume " +
-           "AND p.brandName = :brandName")
-    int findNextSequence(@Param("categoryCode") String categoryCode,
-                         @Param("typeCode") String typeCode,
-                         @Param("volume") int volume,
-                         @Param("brandName") String brandName);
-
     @Query("SELECT COUNT(p) > 0 FROM Product p " +
            "WHERE p.brandName = :brandName " +
            "AND p.productName = :productName " +

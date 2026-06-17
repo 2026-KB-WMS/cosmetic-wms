@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.product;
 
+import com.kb.cosmetic_wms.domain.product.constants.ProductConstants;
 import com.kb.cosmetic_wms.domain.product.dto.ProductCreateRequestDto;
 import com.kb.cosmetic_wms.domain.product.dto.ProductDetailResponseDto;
 import com.kb.cosmetic_wms.domain.product.dto.ProductSummaryResponseDto;
@@ -7,6 +8,7 @@ import com.kb.cosmetic_wms.domain.product.dto.ProductUpdateRequestDto;
 import com.kb.cosmetic_wms.domain.product.entity.Category;
 import com.kb.cosmetic_wms.domain.product.entity.Product;
 import com.kb.cosmetic_wms.domain.product.entity.ProductType;
+import com.kb.cosmetic_wms.domain.product.entity.SkuSequence;
 import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.product.exception.*;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductDtoBuilder;
@@ -15,6 +17,7 @@ import com.kb.cosmetic_wms.domain.product.fixture.ProductTestBuilder;
 import com.kb.cosmetic_wms.domain.product.repository.CategoryRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductTypeRepository;
+import com.kb.cosmetic_wms.domain.product.repository.SkuSequenceRepository;
 import com.kb.cosmetic_wms.domain.product.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -49,6 +52,9 @@ public class ProductServiceTest {
 
     @Mock
     private ProductTypeRepository productTypeRepository;
+
+    @Mock
+    private SkuSequenceRepository skuSequenceRepository;
 
     private Category defaultCategory;
     private ProductType defaultProductType;
@@ -197,10 +203,8 @@ public class ProductServiceTest {
                     defaultCategory, defaultProductType,
                     request.productInfo().volume().value(), request.productInfo().volume().unit()))
                     .willReturn(false);
-            given(productRepository.findNextSequence(
-                    defaultCategory.getCategoryCode(), defaultProductType.getTypeCode(),
-                    request.productInfo().volume().value(), request.brandName()))
-                    .willReturn(1);
+            given(skuSequenceRepository.findForUpdate(any(), any(), any(), anyInt()))
+                    .willReturn(Optional.of(SkuSequence.init("BIO", "SKN", "TON", 150)));
             given(productRepository.save(any(Product.class))).willReturn(defaultProduct);
 
             // when
@@ -234,7 +238,8 @@ public class ProductServiceTest {
             given(productTypeRepository.findById(request.productTypeId())).willReturn(Optional.of(defaultProductType));
             given(productRepository.existsDuplicateProduct(any(), any(), any(), any(), anyInt(), anyString()))
                     .willReturn(false);
-            given(productRepository.findNextSequence(any(), any(), anyInt(), any())).willReturn(1);
+            given(skuSequenceRepository.findForUpdate(any(), any(), any(), anyInt()))
+                    .willReturn(Optional.of(SkuSequence.init("BIO", "SKN", "TON", 50)));
             given(productRepository.save(captor.capture())).willReturn(productGrams);
 
             // when
@@ -249,15 +254,19 @@ public class ProductServiceTest {
 
         @Test
         void 동일한_조건에서_새_상품을_등록하면_SKU_코드의_순번이_순차적으로_증가하여_부여된다() {
-            // given - findNextSequence가 2를 반환 → 이미 sequence 1인 상품이 존재하는 상황
+            // given - currentSeq = 1인 SkuSequence → incrementAndGet() = 2
             ProductCreateRequestDto request = new ProductDtoBuilder().build();
             ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+
+            SkuSequence seqWithOne = SkuSequence.init("BIO", "SKN", "TON", 150);
+            ReflectionTestUtils.setField(seqWithOne, "currentSeq", 1);
 
             given(categoryRepository.findById(request.categoryId())).willReturn(Optional.of(defaultCategory));
             given(productTypeRepository.findById(request.productTypeId())).willReturn(Optional.of(defaultProductType));
             given(productRepository.existsDuplicateProduct(any(), any(), any(), any(), anyInt(), anyString()))
                     .willReturn(false);
-            given(productRepository.findNextSequence(any(), any(), anyInt(), any())).willReturn(2);
+            given(skuSequenceRepository.findForUpdate(any(), any(), any(), anyInt()))
+                    .willReturn(Optional.of(seqWithOne));
             given(productRepository.save(captor.capture())).willReturn(defaultProduct);
 
             // when
@@ -269,7 +278,7 @@ public class ProductServiceTest {
 
         @Test
         void 특정_카테고리나_상품_타입의_첫_상품_등록_시_SKU_코드_순번이_0001로_초기화되어_발급된다() {
-            // given - findNextSequence가 1을 반환 → 해당 그룹 내 첫 번째 상품
+            // given - currentSeq = 0인 SkuSequence → incrementAndGet() = 1 → "-0001"
             ProductCreateRequestDto request = new ProductDtoBuilder().build();
             ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
 
@@ -277,7 +286,8 @@ public class ProductServiceTest {
             given(productTypeRepository.findById(request.productTypeId())).willReturn(Optional.of(defaultProductType));
             given(productRepository.existsDuplicateProduct(any(), any(), any(), any(), anyInt(), anyString()))
                     .willReturn(false);
-            given(productRepository.findNextSequence(any(), any(), anyInt(), any())).willReturn(1);
+            given(skuSequenceRepository.findForUpdate(any(), any(), any(), anyInt()))
+                    .willReturn(Optional.of(SkuSequence.init("BIO", "SKN", "TON", 150)));
             given(productRepository.save(captor.capture())).willReturn(defaultProduct);
 
             // when
@@ -314,14 +324,18 @@ public class ProductServiceTest {
 
         @Test
         void SKU_코드_생성_과정에서_순번이_허용_최대치를_초과하면_SkuSequenceOverflowException이_발생한다() {
-            // 최대치 = 9999, findNextSequence가 10000을 반환하면 초과
+            // currentSeq = 9999 → incrementAndGet() 내부에서 9999 >= 9999 → 예외 발생
             ProductCreateRequestDto request = new ProductDtoBuilder().build();
+
+            SkuSequence fullSeq = SkuSequence.init("BIO", "SKN", "TON", 150);
+            ReflectionTestUtils.setField(fullSeq, "currentSeq", ProductConstants.SEQUENCE_MAX_BOUND);
 
             given(categoryRepository.findById(request.categoryId())).willReturn(Optional.of(defaultCategory));
             given(productTypeRepository.findById(request.productTypeId())).willReturn(Optional.of(defaultProductType));
             given(productRepository.existsDuplicateProduct(any(), any(), any(), any(), anyInt(), anyString()))
                     .willReturn(false);
-            given(productRepository.findNextSequence(any(), any(), anyInt(), any())).willReturn(10000);
+            given(skuSequenceRepository.findForUpdate(any(), any(), any(), anyInt()))
+                    .willReturn(Optional.of(fullSeq));
 
             // when & then
             assertThatThrownBy(() -> productService.register(request))
