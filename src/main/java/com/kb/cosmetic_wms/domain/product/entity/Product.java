@@ -7,26 +7,46 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Check;
 
 @Entity
+@Table(
+        name = "product",
+        uniqueConstraints = @UniqueConstraint(name = "uq_product_sku_code", columnNames = "sku_code")
+)
+@Check(name = "chk_product_price_non_negative", constraints = "product_price >= 0")
+@Check(name = "chk_volume_positive", constraints = "volume > 0")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Product extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "product_id")
     private Long id;
 
+    @Column(name = "sku_code", nullable = false, length = 50)
     private String skuCode;
+
+    @Column(name = "brand_name", nullable = false, length = 50)
     private String brandName;
+
+    @Column(name = "product_name", nullable = false, length = 100)
     private String productName;
+
+    @Column(name = "product_price", nullable = false)
     private int productPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "temperature_type", nullable = false, length = 20)
     private TemperatureType temperatureType;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false, foreignKey = @ForeignKey(name = "fk_product_category"))
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "type_id", nullable = false, foreignKey = @ForeignKey(name = "fk_product_type"))
     private ProductType productType;
 
     @Embedded
@@ -62,6 +82,19 @@ public class Product extends BaseEntity {
                 brandName, productName, productPrice, temperatureType,
                 category, productType, productInfo, sequence
         );
+    }
+
+    public void update(String productName, int productPrice,
+                       TemperatureType temperatureType, ProductInfo productInfo) {
+        validateProductName(productName);
+        validateProductPrice(productPrice);
+        validateTemperatureType(temperatureType);
+        validateRequiredObjects(this.category, this.productType, productInfo);
+
+        this.productName = productName;
+        this.productPrice = productPrice;
+        this.temperatureType = temperatureType;
+        this.productInfo = productInfo;
     }
 
     private String generateSkuCode(int sequence) {

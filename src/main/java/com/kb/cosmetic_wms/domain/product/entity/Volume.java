@@ -1,10 +1,14 @@
 package com.kb.cosmetic_wms.domain.product.entity;
 
 import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
-public record Volume(int value, String unit) {
+public record Volume(
+        @Column(name = "volume", nullable = false) int value,
+        @Column(name = "unit", nullable = false, length = 10) String unit
+) {
 
     public Volume {
         validateValue(value);

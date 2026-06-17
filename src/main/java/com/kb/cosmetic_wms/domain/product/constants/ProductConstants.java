@@ -11,15 +11,29 @@ public final class ProductConstants {
     public static final int SEQUENCE_MAX_BOUND = 9999;
     public static final int MIN_PRICE_BOUND = 0;
 
+    // --- 길이 제한 ---
+    public static final int BRAND_NAME_MAX_LENGTH = 100;
+    public static final int PRODUCT_NAME_MAX_LENGTH = 255;
+
     // Validation Messages
     public static final String BRAND_NAME_REQUIRED_MESSAGE =
             "브랜드명은 필수 입력 항목입니다.";
+    public static final String INVALID_BRAND_NAME_LENGTH_MESSAGE =
+            "브랜드명은 " + BRAND_NAME_MAX_LENGTH + "자를 초과할 수 없습니다.";
     public static final String PRODUCT_NAME_REQUIRED_MESSAGE =
             "상품명은 필수 입력 항목입니다.";
+    public static final String INVALID_PRODUCT_NAME_LENGTH_MESSAGE =
+            "상품명은 " + PRODUCT_NAME_MAX_LENGTH + "자를 초과할 수 없습니다.";
     public static final String INVALID_PRODUCT_PRICE_MESSAGE =
             "상품 가격은 " + MIN_PRICE_BOUND + "원 이상이어야 합니다.";
     public static final String TEMPERATURE_TYPE_REQUIRED_MESSAGE =
             "보관 온도 타입은 필수 입력 항목입니다.";
+    public static final String CATEGORY_ID_REQUIRED_MESSAGE =
+            "카테고리 ID는 필수 입력 항목입니다.";
+    public static final String PRODUCT_TYPE_ID_REQUIRED_MESSAGE =
+            "상품 타입 ID는 필수 입력 항목입니다.";
+    public static final String PRODUCT_INFO_REQUEST_REQUIRED_MESSAGE =
+            "상품 상세 정보는 필수 입력 항목입니다.";
 
     public static final String INVALID_SEQUENCE_MIN_MESSAGE =
             "SKU 일련번호 순번은 " + SEQUENCE_MIN_BOUND + " 이상이어야 합니다.";
