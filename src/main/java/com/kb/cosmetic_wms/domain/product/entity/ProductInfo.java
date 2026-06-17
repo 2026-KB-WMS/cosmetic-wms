@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.domain.product.entity;
 
 import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import lombok.AccessLevel;
@@ -11,15 +12,23 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class ProductInfo {
-    
+
+    @Column(name = "skin_type", length = 50)
     private String skinType;
+
+    @Column(name = "function_type", length = 100)
     private String functionType;
 
     @Embedded
     private Volume volume;
 
+    @Column(columnDefinition = "TEXT")
     private String ingredients;
+
+    @Column(columnDefinition = "TEXT")
     private String cautions;
+
+    @Column(name = "storage_condition", length = 255)
     private String storageCondition;
 
     private ProductInfo(String skinType, String functionType, Volume volume,
