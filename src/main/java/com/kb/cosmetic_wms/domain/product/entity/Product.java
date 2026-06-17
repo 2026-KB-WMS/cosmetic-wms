@@ -64,6 +64,19 @@ public class Product extends BaseEntity {
         );
     }
 
+    public void update(String productName, int productPrice,
+                       TemperatureType temperatureType, ProductInfo productInfo) {
+        validateProductName(productName);
+        validateProductPrice(productPrice);
+        validateTemperatureType(temperatureType);
+        validateRequiredObjects(this.category, this.productType, productInfo);
+
+        this.productName = productName;
+        this.productPrice = productPrice;
+        this.temperatureType = temperatureType;
+        this.productInfo = productInfo;
+    }
+
     private String generateSkuCode(int sequence) {
         return String.format(ProductConstants.SKU_FORMAT,
                 this.brandName.trim().toUpperCase(),
