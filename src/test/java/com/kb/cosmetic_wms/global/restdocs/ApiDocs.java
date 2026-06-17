@@ -9,4 +9,5 @@ public final class ApiDocs {
     public static final String MEMBER = "Member API";
     public static final String PARTNER = "Partner API";
     public static final String STORE = "Store API";
+    public static final String PRODUCT = "Product API";
 }

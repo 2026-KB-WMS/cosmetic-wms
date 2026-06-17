@@ -23,6 +23,12 @@ public final class ApiSchemas {
     public static final String MEMBER_LOGIN_REQUEST = "MemberLoginRequest";
     public static final String MEMBER_DETAIL_RESPONSE = "MemberDetailResponse";
 
+    // Product
+    public static final String PRODUCT_CREATE_REQUEST = "ProductCreateRequest";
+    public static final String PRODUCT_UPDATE_REQUEST = "ProductUpdateRequest";
+    public static final String PRODUCT_SUMMARY_RESPONSE = "ProductSummaryResponse";
+    public static final String PRODUCT_DETAIL_RESPONSE = "ProductDetailResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }

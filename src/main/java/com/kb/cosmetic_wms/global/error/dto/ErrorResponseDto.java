@@ -16,4 +16,8 @@ public record ErrorResponseDto(
                 LocalDateTime.now()
         );
     }
+
+    public static ErrorResponseDto ofValidation(String message) {
+        return new ErrorResponseDto("INVALID_INPUT", message, LocalDateTime.now());
+    }
 }
