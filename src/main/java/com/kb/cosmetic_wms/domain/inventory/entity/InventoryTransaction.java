@@ -10,42 +10,53 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "inventory_transaction")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class InventoryTransaction extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "transaction_id")
     private Long id;
 
+    @Column(name = "inventory_id", nullable = false)
+    private Long inventoryId;
+
     @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_type", length = 20, nullable = false)
     private TransactionType transactionType;
 
+    @Column(name = "transaction_qty", nullable = false)
     private int transactionQuantity;
+
+    @Column(name = "balance_qty", nullable = false)
     private int balanceQuantity;
 
+    @Column(name = "reference_id")
     private Long referenceId;
 
     @Embedded
     @AttributeOverrides({
-            @AttributeOverride(name = "allocStatus", column = @Column(name = "prev_alloc_status")),
-            @AttributeOverride(name = "qualityStatus", column = @Column(name = "prev_quality_status")),
-            @AttributeOverride(name = "locStatus", column = @Column(name = "prev_loc_status"))
+            @AttributeOverride(name = "allocStatus", column = @Column(name = "prev_alloc_status", length = 20)),
+            @AttributeOverride(name = "qualityStatus", column = @Column(name = "prev_quality_status", length = 20)),
+            @AttributeOverride(name = "locStatus", column = @Column(name = "prev_loc_status", length = 20))
     })
     private InventoryStatusSet prevStatusSet;
 
     @Embedded
     @AttributeOverrides({
-            @AttributeOverride(name = "allocStatus", column = @Column(name = "curr_alloc_status")),
-            @AttributeOverride(name = "qualityStatus", column = @Column(name = "curr_quality_status")),
-            @AttributeOverride(name = "locStatus", column = @Column(name = "curr_loc_status"))
+            @AttributeOverride(name = "allocStatus", column = @Column(name = "curr_alloc_status", length = 20, nullable = false)),
+            @AttributeOverride(name = "qualityStatus", column = @Column(name = "curr_quality_status", length = 20, nullable = false)),
+            @AttributeOverride(name = "locStatus", column = @Column(name = "curr_loc_status", length = 20, nullable = false))
     })
     private InventoryStatusSet currStatusSet;
 
-    private String changeReason;
-
-    private Long inventoryId;
+    @Column(name = "member_id", nullable = false)
     private Long memberId;
+
+    @Column(name = "change_reason", length = 255)
+    private String changeReason;
 
     @Builder(access = AccessLevel.PRIVATE)
     private InventoryTransaction(
