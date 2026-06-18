@@ -148,8 +148,8 @@ class InventoryServiceTest {
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(100).referenceId(10L).memberId(1L).build();
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
 
             // when
@@ -173,8 +173,8 @@ class InventoryServiceTest {
                     .allocStatus(AllocStatus.ALLOCATED).build();
             ReflectionTestUtils.setField(existingAllocated, "id", 2L);
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.of(existingAllocated));
 
             // when
@@ -201,8 +201,8 @@ class InventoryServiceTest {
                     .allocStatus(AllocStatus.ALLOCATED).build();
             ReflectionTestUtils.setField(splitResult, "id", 2L);
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
             given(inventoryRepository.save(any(Inventory.class))).willReturn(splitResult);
 
@@ -245,8 +245,8 @@ class InventoryServiceTest {
                     .allocStatus(AllocStatus.ALLOCATED).build();
             ReflectionTestUtils.setField(existingAllocated, "id", 2L);
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.of(existingAllocated));
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
@@ -277,8 +277,8 @@ class InventoryServiceTest {
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(100).referenceId(10L).memberId(1L).build();
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
@@ -297,7 +297,7 @@ class InventoryServiceTest {
         @Test
         void 재고가_없으면_InventoryNotFoundException이_발생한다() {
             // given
-            given(inventoryRepository.findById(999L)).willReturn(Optional.empty());
+            given(inventoryRepository.findByIdForUpdate(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inventoryService.allocate(999L,
@@ -308,7 +308,7 @@ class InventoryServiceTest {
         @Test
         void 가용_수량을_초과하는_할당_요청은_IllegalArgumentException이_전파된다() {
             // given - 가용 수량(100)을 초과하는 요청
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
 
             // when & then
             assertThatThrownBy(() -> inventoryService.allocate(1L,
@@ -336,8 +336,8 @@ class InventoryServiceTest {
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(50).referenceId(10L).memberId(1L).build();
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(allocated));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(allocated));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
@@ -354,7 +354,7 @@ class InventoryServiceTest {
         @Test
         void UNALLOCATED_재고에_할당_취소를_요청하면_IllegalStateException이_전파된다() {
             // given - 이미 UNALLOCATED 상태
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
 
             // when & then
             assertThatThrownBy(() -> inventoryService.unallocate(1L,
@@ -366,7 +366,7 @@ class InventoryServiceTest {
         @Test
         void 재고가_없으면_InventoryNotFoundException이_발생한다() {
             // given
-            given(inventoryRepository.findById(999L)).willReturn(Optional.empty());
+            given(inventoryRepository.findByIdForUpdate(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inventoryService.unallocate(999L,
@@ -388,8 +388,8 @@ class InventoryServiceTest {
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(100).buildWithoutRef();
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -412,8 +412,8 @@ class InventoryServiceTest {
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(100).buildWithoutRef();
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(movingInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(movingInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -433,7 +433,7 @@ class InventoryServiceTest {
                     .allocStatus(AllocStatus.ALLOCATED).availableQuantity(0).build();
             ReflectionTestUtils.setField(allocated, "id", 1L);
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(allocated));
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(allocated));
 
             // when & then
             assertThatThrownBy(() -> inventoryService.startMoving(1L,
@@ -445,7 +445,7 @@ class InventoryServiceTest {
         @Test
         void 재고가_없으면_startMoving에서_InventoryNotFoundException이_발생한다() {
             // given
-            given(inventoryRepository.findById(999L)).willReturn(Optional.empty());
+            given(inventoryRepository.findByIdForUpdate(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inventoryService.startMoving(999L,
@@ -467,8 +467,8 @@ class InventoryServiceTest {
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(100).buildWithoutRef();
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -489,8 +489,8 @@ class InventoryServiceTest {
                     .qualityStatus(QualityStatus.INSPECTING).availableQuantity(0).build();
             ReflectionTestUtils.setField(inspecting, "id", 1L);
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(inspecting));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(inspecting));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -510,8 +510,8 @@ class InventoryServiceTest {
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(100).buildWithoutRef();
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -528,8 +528,8 @@ class InventoryServiceTest {
         @Test
         void 정상_재고를_폐기_예정으로_변경하면_DISCARD_SCHEDULED_상태가_되고_이력이_기록된다() {
             // given
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
-            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTargetForUpdate(any(), any(), any(), any(), any()))
                     .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -550,7 +550,7 @@ class InventoryServiceTest {
                     .allocStatus(AllocStatus.ALLOCATED).availableQuantity(0).build();
             ReflectionTestUtils.setField(allocated, "id", 1L);
 
-            given(inventoryRepository.findById(1L)).willReturn(Optional.of(allocated));
+            given(inventoryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(allocated));
 
             // when & then
             assertThatThrownBy(() -> inventoryService.holdForQualityIssue(1L,
@@ -562,7 +562,7 @@ class InventoryServiceTest {
         @Test
         void 재고가_없으면_품질_상태_변경에서_InventoryNotFoundException이_발생한다() {
             // given
-            given(inventoryRepository.findById(999L)).willReturn(Optional.empty());
+            given(inventoryRepository.findByIdForUpdate(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inventoryService.startInspecting(999L,

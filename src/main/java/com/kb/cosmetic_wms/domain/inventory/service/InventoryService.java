@@ -100,7 +100,7 @@ public class InventoryService {
     }
 
     private Inventory findOrThrow(Long inventoryId) {
-        return inventoryRepository.findById(inventoryId)
+        return inventoryRepository.findByIdForUpdate(inventoryId)
                 .orElseThrow(InventoryNotFoundException::new);
     }
 
@@ -124,14 +124,15 @@ public class InventoryService {
 
     /**
      * 분할 결과를 DB에 반영한다.
-     *
-     * - mergeTarget 존재: 기존 동일 상태 재고에 수량 합산. 전체 수량 변경(isSplit=false)으로
-     *   원본 자체가 상태 변경된 경우 uk 충돌 방지를 위해 원본을 삭제한다.
-     * - mergeTarget 없음 + isSplit=true: 분할된 새 재고를 저장한다.
-     * - mergeTarget 없음 + isSplit=false: Dirty Checking이 UPDATE를 처리한다.
+     * <p>
+     * mergeTarget 존재: 기존 동일 상태 재고에 수량 합산. 전체 수량 변경(isSplit=false)으로
+     * 원본 자체가 상태 변경된 경우 uk 충돌 방지를 위해 원본을 삭제한다.
+     * mergeTarget 없음 + isSplit=true: 분할된 새 재고를 저장한다.
+     * mergeTarget 없음 + isSplit=false: Dirty Checking이 UPDATE를 처리한다.
+     * </p>
      */
     private Inventory persistSplitResult(Inventory inventory, Inventory result, boolean isSplit) {
-        Optional<Inventory> mergeTarget = inventoryRepository.findMergeTarget(
+        Optional<Inventory> mergeTarget = inventoryRepository.findMergeTargetForUpdate(
                 result.getProductId(), result.getLotId(), result.getSectionId(),
                 result.getStatusSet(), inventory.getId()
         );
@@ -154,8 +155,8 @@ public class InventoryService {
     /**
      * 오퍼레이션 이력을 기록한다.
      *
-     * 분할(isSplit=true)이 발생한 경우 원본 재고의 수량 차감 이력(SPLIT_DEDUCT)을 먼저 기록하고,
-     * 이후 실제 오퍼레이션 타입으로 결과 재고의 이력을 기록한다.
+     * <p>분할(isSplit=true)이 발생한 경우 원본 재고의 수량 차감 이력(SPLIT_DEDUCT)을 먼저 기록하고,
+     * 이후 실제 오퍼레이션 타입으로 결과 재고의 이력을 기록한다.</p>
      */
     private void recordTransactions(
             Inventory inventory, Inventory result, boolean isSplit,
