@@ -11,4 +11,5 @@ public final class ApiDocs {
     public static final String STORE = "Store API";
     public static final String PRODUCT = "Product API";
     public static final String LOT = "Lot API";
+    public static final String INVENTORY = "Inventory API";
 }
