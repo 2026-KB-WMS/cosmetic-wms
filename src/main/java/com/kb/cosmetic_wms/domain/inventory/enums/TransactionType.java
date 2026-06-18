@@ -26,7 +26,10 @@ public enum TransactionType {
     QUALITY_RELEASE("품질 정상 복구(NORMAL)", false),
 
     // ==== 폐기 트랜잭션 ====
-    DISCARD("실물 폐기 처리", false);
+    DISCARD("실물 폐기 처리", false),
+
+    // ==== 내부 분할 트랜잭션 ====
+    SPLIT_DEDUCT("재고 분할 — 원본 수량 차감", false);
 
     private final String description;
 

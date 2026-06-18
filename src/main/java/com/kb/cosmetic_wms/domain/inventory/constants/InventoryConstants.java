@@ -60,6 +60,9 @@ public final class InventoryConstants {
     public static final String DISCARD_FOR_UNALLOCATED_ONLY_MESSAGE =
             "할당된 재고는 폐기 처리할 수 없습니다. 할당 취소부터 진행해주세요.";
 
+    public static final String MERGE_STATUS_MISMATCH_MESSAGE =
+            "동일 상태의 재고만 병합 가능합니다.";
+
     // ==== 재고 트랜잭션 이력(InventoryTransaction) 전용 예외 상수 ====
     public static final String INVENTORY_ID_REQUIRED_MESSAGE =
             "재고 식별자(ID)는 필수입니다.";
