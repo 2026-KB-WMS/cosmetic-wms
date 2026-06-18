@@ -7,25 +7,39 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(
+        name = "lot",
+        uniqueConstraints = @UniqueConstraint(name = "uq_lot_number", columnNames = "lot_number")
+)
+@Check(name = "chk_lot_date", constraints = "manufacturing_date <= expiration_date")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Lot extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    @Column(name = "lot_id")
+    private Long id;
 
+    @Column(name = "lot_number", nullable = false, length = 50)
     private String lotNumber;
+
+    @Column(name = "manufacturing_date", nullable = false)
     private LocalDateTime manufacturingDate;
+
+    @Column(name = "expiration_date", nullable = false)
     private LocalDateTime expirationDate;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
     private LotStatus status;
 
+    @Column(name = "product_id", nullable = false)
     private Long productId;
 
     private Lot(
@@ -68,6 +82,10 @@ public class Lot extends BaseEntity {
         if (!LotConstants.LOT_NO_PATTERN.matcher(lotNumber).matches()) {
             throw new IllegalArgumentException(LotConstants.INVALID_LOT_NO_FORMAT_MESSAGE);
         }
+    }
+
+    public void changeStatus(LotStatus newStatus) {
+        this.status = newStatus;
     }
 
     private static void validateProductId(Long productId) {
