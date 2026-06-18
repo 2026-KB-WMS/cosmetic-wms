@@ -34,6 +34,10 @@ public final class ApiSchemas {
     public static final String LOT_STATUS_UPDATE_REQUEST = "LotStatusUpdateRequest";
     public static final String LOT_DETAIL_RESPONSE = "LotDetailResponse";
 
+    // Inventory
+    public static final String INVENTORY_STATUS_CHANGE_REQUEST = "InventoryStatusChangeRequest";
+    public static final String INVENTORY_DETAIL_RESPONSE = "InventoryDetailResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }
