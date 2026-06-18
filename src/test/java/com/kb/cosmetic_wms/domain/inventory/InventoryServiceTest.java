@@ -144,11 +144,13 @@ class InventoryServiceTest {
 
         @Test
         void 전체_수량을_할당하면_해당_재고가_ALLOCATED_상태로_변경되어_반환된다() {
-            // given - quantity=100 전체 할당
+            // given - quantity=100 전체 할당, 동일 상태 기존 재고 없음
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(100).referenceId(10L).memberId(1L).build();
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
 
             // when
             InventoryDetailResponseDto result = inventoryService.allocate(1L, request);
@@ -156,13 +158,41 @@ class InventoryServiceTest {
             // then
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             assertThat(result.availableQuantity()).isEqualTo(0);
-            // 전체 할당 → split 없음 → save() 호출 안 됨
+            // 전체 할당(isSplit=false), merge 없음 → save() 호출 안 됨
             verify(inventoryRepository, never()).save(any());
         }
 
         @Test
-        void 부분_수량을_할당하면_원본_수량이_감소하고_ALLOCATED_분할_재고가_저장된다() {
-            // given - 100 중 30만 할당
+        void 전체_수량을_할당할_때_동일_상태_재고가_이미_존재하면_원본을_삭제하고_수량을_합산한다() {
+            // given - quantity=100 전체 할당, 이미 ALLOCATED 재고(id=2, 50개)가 존재
+            InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
+                    .quantity(100).referenceId(10L).memberId(1L).build();
+
+            Inventory existingAllocated = new InventoryTestBuilder()
+                    .quantity(50).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(existingAllocated, "id", 2L);
+
+            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.of(existingAllocated));
+
+            // when
+            InventoryDetailResponseDto result = inventoryService.allocate(1L, request);
+
+            // then - 기존 ALLOCATED 재고에 수량 합산 (50 + 100 = 150)
+            assertThat(result.id()).isEqualTo(2L);
+            assertThat(result.quantity()).isEqualTo(150);
+            assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
+            // 원본(inventory)은 uk 충돌 방지를 위해 삭제
+            verify(inventoryRepository).delete(defaultInventory);
+            // 분할 없음 → save() 호출 안 됨
+            verify(inventoryRepository, never()).save(any());
+        }
+
+        @Test
+        void 부분_수량을_할당하면_원본_수량이_감소하고_ALLOCATED_분할_재고가_저장되며_이력이_2건_기록된다() {
+            // given - 100 중 30만 할당, 동일 상태 기존 재고 없음
             InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
                     .quantity(30).referenceId(10L).memberId(1L).build();
 
@@ -172,7 +202,11 @@ class InventoryServiceTest {
             ReflectionTestUtils.setField(splitResult, "id", 2L);
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
             given(inventoryRepository.save(any(Inventory.class))).willReturn(splitResult);
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             // when
             InventoryDetailResponseDto result = inventoryService.allocate(1L, request);
@@ -181,10 +215,60 @@ class InventoryServiceTest {
             assertThat(result.id()).isEqualTo(2L);
             assertThat(result.quantity()).isEqualTo(30);
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
-            // 원본 수량도 감소
             assertThat(defaultInventory.getQuantity()).isEqualTo(70);
-            // split 재고가 save() 됨
             verify(inventoryRepository, times(1)).save(any(Inventory.class));
+
+            // 이력 2건: 원본 차감(SPLIT_DEDUCT) + 결과 할당(ALLOCATE)
+            verify(inventoryTransactionRepository, times(2)).save(txCaptor.capture());
+            List<InventoryTransaction> recorded = txCaptor.getAllValues();
+
+            InventoryTransaction deductTx = recorded.get(0);
+            assertThat(deductTx.getTransactionType()).isEqualTo(TransactionType.SPLIT_DEDUCT);
+            assertThat(deductTx.getInventoryId()).isEqualTo(1L);
+            assertThat(deductTx.getTransactionQuantity()).isEqualTo(30);
+            assertThat(deductTx.getBalanceQuantity()).isEqualTo(70);
+
+            InventoryTransaction allocTx = recorded.get(1);
+            assertThat(allocTx.getTransactionType()).isEqualTo(TransactionType.ALLOCATE);
+            assertThat(allocTx.getInventoryId()).isEqualTo(2L);
+            assertThat(allocTx.getTransactionQuantity()).isEqualTo(30);
+        }
+
+        @Test
+        void 부분_수량을_할당할_때_동일_상태_재고가_이미_존재하면_신규_저장_없이_수량이_합산되며_이력이_2건_기록된다() {
+            // given - 100 중 30만 할당, 이미 ALLOCATED 재고(id=2, 20개)가 존재
+            InventoryStatusChangeRequestDto request = new InventoryDtoBuilder()
+                    .quantity(30).referenceId(10L).memberId(1L).build();
+
+            Inventory existingAllocated = new InventoryTestBuilder()
+                    .quantity(20).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(existingAllocated, "id", 2L);
+
+            given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.of(existingAllocated));
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+
+            // when
+            InventoryDetailResponseDto result = inventoryService.allocate(1L, request);
+
+            // then - 기존 ALLOCATED 재고에 수량이 합산됨 (20 + 30 = 50)
+            assertThat(result.id()).isEqualTo(2L);
+            assertThat(result.quantity()).isEqualTo(50);
+            assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
+            assertThat(defaultInventory.getQuantity()).isEqualTo(70);
+            verify(inventoryRepository, never()).save(any());
+
+            // 이력 2건: 원본 차감(SPLIT_DEDUCT) + merge 결과(ALLOCATE)
+            verify(inventoryTransactionRepository, times(2)).save(txCaptor.capture());
+            List<InventoryTransaction> recorded = txCaptor.getAllValues();
+
+            assertThat(recorded.get(0).getTransactionType()).isEqualTo(TransactionType.SPLIT_DEDUCT);
+            assertThat(recorded.get(0).getInventoryId()).isEqualTo(1L);
+            assertThat(recorded.get(1).getTransactionType()).isEqualTo(TransactionType.ALLOCATE);
+            assertThat(recorded.get(1).getInventoryId()).isEqualTo(2L);
         }
 
         @Test
@@ -194,6 +278,8 @@ class InventoryServiceTest {
                     .quantity(100).referenceId(10L).memberId(1L).build();
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -251,6 +337,8 @@ class InventoryServiceTest {
                     .quantity(50).referenceId(10L).memberId(1L).build();
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(allocated));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
@@ -301,6 +389,8 @@ class InventoryServiceTest {
                     .quantity(100).buildWithoutRef();
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             // when
@@ -323,6 +413,8 @@ class InventoryServiceTest {
                     .quantity(100).buildWithoutRef();
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(movingInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             // when
@@ -376,6 +468,8 @@ class InventoryServiceTest {
                     .quantity(100).buildWithoutRef();
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             // when
@@ -396,6 +490,8 @@ class InventoryServiceTest {
             ReflectionTestUtils.setField(inspecting, "id", 1L);
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(inspecting));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             // when
@@ -415,6 +511,8 @@ class InventoryServiceTest {
                     .quantity(100).buildWithoutRef();
 
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             // when
@@ -431,6 +529,8 @@ class InventoryServiceTest {
         void 정상_재고를_폐기_예정으로_변경하면_DISCARD_SCHEDULED_상태가_되고_이력이_기록된다() {
             // given
             given(inventoryRepository.findById(1L)).willReturn(Optional.of(defaultInventory));
+            given(inventoryRepository.findMergeTarget(any(), any(), any(), any(), any()))
+                    .willReturn(Optional.empty());
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             // when
