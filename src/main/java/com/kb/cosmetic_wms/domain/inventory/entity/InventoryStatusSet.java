@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.domain.inventory.constants.InventoryConstants;
 import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.QualityStatus;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -11,12 +12,15 @@ import jakarta.persistence.Enumerated;
 @Embeddable
 public record InventoryStatusSet(
         @Enumerated(EnumType.STRING)
+        @Column(name = "alloc_status", length = 20, nullable = false)
         AllocStatus allocStatus,
 
         @Enumerated(EnumType.STRING)
+        @Column(name = "quality_status", length = 20, nullable = false)
         QualityStatus qualityStatus,
 
         @Enumerated(EnumType.STRING)
+        @Column(name = "loc_status", length = 20, nullable = false)
         LocStatus locStatus
 ) {
     public static InventoryStatusSet of(

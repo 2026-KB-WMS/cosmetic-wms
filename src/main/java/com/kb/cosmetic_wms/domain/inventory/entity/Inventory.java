@@ -9,23 +9,43 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Check;
 
 @Entity
+@Table(
+        name = "inventory",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_inventory_unit",
+                columnNames = {"product_id", "lot_id", "section_id"}
+        )
+)
+@Check(name = "chk_inventory_quantity", constraints = "quantity >= 0")
+@Check(name = "chk_inventory_available_quantity", constraints = "available_quantity >= 0 AND available_quantity <= quantity")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Inventory extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "inventory_id")
     private Long id;
 
+    @Column(name = "product_id", nullable = false)
     private Long productId;
+
+    @Column(name = "lot_id", nullable = false)
     private Long lotId;
+
+    @Column(name = "section_id", nullable = false)
     private Long sectionId;
+
+    @Column(name = "warehouse_id", nullable = false)
     private Long warehouseId;
 
+    @Column(nullable = false)
     private int quantity;
 
+    @Column(name = "available_quantity", nullable = false)
     private int availableQuantity;
 
     @Embedded
