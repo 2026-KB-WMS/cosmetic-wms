@@ -16,7 +16,7 @@ import org.hibernate.annotations.Check;
         name = "inventory",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_inventory_unit",
-                columnNames = {"product_id", "lot_id", "section_id"}
+                columnNames = {"product_id", "lot_id", "section_id", "alloc_status", "quality_status", "loc_status"}
         )
 )
 @Check(name = "chk_inventory_quantity", constraints = "quantity >= 0")
@@ -275,6 +275,14 @@ public class Inventory extends BaseEntity {
                 this.productId, this.lotId, this.sectionId, this.warehouseId,
                 targetQuantity, nextAvailableQuantity, nextStatusSet
         );
+    }
+
+    public void mergeFrom(Inventory other) {
+        if (!this.statusSet.equals(other.statusSet)) {
+            throw new IllegalArgumentException(InventoryConstants.MERGE_STATUS_MISMATCH_MESSAGE);
+        }
+        this.quantity += other.quantity;
+        this.availableQuantity += other.availableQuantity;
     }
 
     private static void validateQuantity(int quantity) {
