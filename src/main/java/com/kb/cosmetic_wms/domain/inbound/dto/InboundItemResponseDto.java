@@ -3,14 +3,14 @@ package com.kb.cosmetic_wms.domain.inbound.dto;
 import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
 import com.kb.cosmetic_wms.domain.inbound.enums.InspectionStatus;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public record InboundItemResponseDto(
         Long id,
         Long productId,
         int quantity,
-        LocalDateTime manufactureDate,
-        LocalDateTime expirationDate,
+        LocalDate manufactureDate,
+        LocalDate expirationDate,
         InspectionStatus inspectionStatus,
         Long lotId,
         Long sectionId

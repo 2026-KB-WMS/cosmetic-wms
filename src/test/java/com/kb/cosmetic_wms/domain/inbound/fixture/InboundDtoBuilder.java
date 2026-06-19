@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.domain.inbound.dto.InboundCreateRequestDto;
 import com.kb.cosmetic_wms.domain.inbound.dto.InboundItemAddRequestDto;
 import com.kb.cosmetic_wms.domain.inbound.dto.InboundPutawayRequestDto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class InboundDtoBuilder {
@@ -48,8 +49,8 @@ public class InboundDtoBuilder {
     public InboundItemAddRequestDto buildAddItemRequest() {
         return new InboundItemAddRequestDto(
                 productId, quantity,
-                LocalDateTime.now().minusDays(10),
-                LocalDateTime.now().plusYears(2)
+                LocalDate.now().minusDays(10),
+                LocalDate.now().plusYears(2)
         );
     }
 

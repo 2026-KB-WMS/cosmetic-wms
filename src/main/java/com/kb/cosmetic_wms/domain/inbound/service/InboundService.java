@@ -8,9 +8,12 @@ import com.kb.cosmetic_wms.domain.inbound.dto.InboundItemResponseDto;
 import com.kb.cosmetic_wms.domain.inbound.dto.InboundPutawayRequestDto;
 import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
 import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
+import com.kb.cosmetic_wms.domain.inbound.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
+import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.domain.partner.exception.PartnerNotFoundException;
 import com.kb.cosmetic_wms.domain.partner.repository.PartnerRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
@@ -29,6 +32,7 @@ public class InboundService {
     private final WarehouseRepository warehouseRepository;
     private final PartnerRepository partnerRepository;
     private final ProductRepository productRepository;
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public InboundDetailResponseDto registerInbound(InboundCreateRequestDto request) {
@@ -43,7 +47,7 @@ public class InboundService {
 
     @Transactional
     public InboundDetailResponseDto addItem(Long inboundId, InboundItemAddRequestDto request) {
-        Inbound inbound = findInboundOrThrow(inboundId);
+        Inbound inbound = findInboundWithItemsOrThrow(inboundId);
         productRepository.findById(request.productId())
                 .orElseThrow(InboundProductNotFoundException::new);
 
@@ -57,7 +61,10 @@ public class InboundService {
 
     @Transactional
     public InboundDetailResponseDto startInbound(Long inboundId) {
-        Inbound inbound = findInboundOrThrow(inboundId);
+        Inbound inbound = findInboundWithItemsOrThrow(inboundId);
+        if (inbound.getInboundItems().isEmpty()) {
+            throw new InboundEmptyItemsException();
+        }
         inbound.startExecution();
         return InboundDetailResponseDto.from(inbound);
     }
@@ -82,25 +89,22 @@ public class InboundService {
 
     @Transactional
     public InboundDetailResponseDto completeInbound(Long inboundId) {
-        Inbound inbound = findInboundOrThrow(inboundId);
+        Inbound inbound = inboundRepository.findByIdWithItemsForUpdate(inboundId)
+                .orElseThrow(InboundNotFoundException::new);
         inbound.completeExecution();
+        eventPublisher.publish(InboundCompletedEvent.from(inbound));
         return InboundDetailResponseDto.from(inbound);
     }
 
     @Transactional
     public InboundDetailResponseDto cancelInbound(Long inboundId) {
-        Inbound inbound = findInboundOrThrow(inboundId);
+        Inbound inbound = findInboundWithItemsOrThrow(inboundId);
         inbound.cancel();
         return InboundDetailResponseDto.from(inbound);
     }
 
     public InboundDetailResponseDto getInbound(Long inboundId) {
-        return InboundDetailResponseDto.from(findInboundOrThrow(inboundId));
-    }
-
-    private Inbound findInboundOrThrow(Long inboundId) {
-        return inboundRepository.findById(inboundId)
-                .orElseThrow(InboundNotFoundException::new);
+        return InboundDetailResponseDto.from(findInboundWithItemsOrThrow(inboundId));
     }
 
     private Inbound findInboundWithItemsOrThrow(Long inboundId) {

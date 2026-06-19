@@ -23,6 +23,11 @@ public enum InboundErrorCode implements ErrorCode {
             HttpStatus.NOT_FOUND,
             "INBOUND_PRODUCT_NOT_FOUND",
             "입고 등록 대상 상품이 존재하지 않습니다."
+    ),
+    INBOUND_EMPTY_ITEMS(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "INBOUND_EMPTY_ITEMS",
+            "입고 품목이 하나도 없어 작업을 시작할 수 없습니다."
     );
 
     private final HttpStatus status;
