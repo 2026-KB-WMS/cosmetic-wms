@@ -104,6 +104,40 @@ public class InventoryService {
                 TransactionType.DISCARD, request.quantity(), null, request.memberId());
     }
 
+    @Transactional
+    public void createFromInbound(InboundPutawayCommand command) {
+        InventoryStatusSet statusSet = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
+        );
+
+        long NO_EXCLUDE_ID = -1L;
+        Optional<Inventory> mergeTarget = inventoryRepository.findMergeTargetForUpdate(
+                command.productId(), command.lotId(), command.sectionId(), statusSet, NO_EXCLUDE_ID
+        );
+
+        if (mergeTarget.isPresent()) {
+            Inventory existing = mergeTarget.get();
+            existing.mergeFrom(Inventory.create(
+                    command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                    command.quantity(), command.quantity(), statusSet
+            ));
+            inventoryTransactionRepository.save(InventoryTransaction.create(
+                    existing.getId(), TransactionType.INBOUND_PUTAWAY, command.quantity(), existing.getQuantity(),
+                    command.inboundId(), statusSet, statusSet, command.memberId(), null
+            ));
+            return;
+        }
+
+        Inventory saved = inventoryRepository.save(
+                Inventory.create(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                        command.quantity(), command.quantity(), statusSet)
+        );
+        inventoryTransactionRepository.save(InventoryTransaction.create(
+                saved.getId(), TransactionType.INBOUND_PUTAWAY, command.quantity(), command.quantity(),
+                command.inboundId(), null, statusSet, command.memberId(), null
+        ));
+    }
+
     private Inventory findOrThrow(Long inventoryId) {
         return inventoryRepository.findByIdForUpdate(inventoryId)
                 .orElseThrow(InventoryNotFoundException::new);
