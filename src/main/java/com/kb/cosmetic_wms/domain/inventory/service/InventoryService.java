@@ -1,10 +1,15 @@
 package com.kb.cosmetic_wms.domain.inventory.service;
 
+import com.kb.cosmetic_wms.domain.inventory.dto.InboundPutawayCommand;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryDetailResponseDto;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryStatusChangeRequestDto;
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
 import com.kb.cosmetic_wms.domain.inventory.entity.InventoryStatusSet;
 import com.kb.cosmetic_wms.domain.inventory.entity.InventoryTransaction;
+import com.kb.cosmetic_wms.domain.inventory.entity.SplitResult;
+import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
+import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
+import com.kb.cosmetic_wms.domain.inventory.enums.QualityStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.TransactionType;
 import com.kb.cosmetic_wms.domain.inventory.exception.InventoryNotFoundException;
 import com.kb.cosmetic_wms.domain.inventory.repository.InventoryRepository;
@@ -106,15 +111,16 @@ public class InventoryService {
 
     private InventoryDetailResponseDto applyAndRecord(
             Inventory inventory,
-            Function<Inventory, Inventory> operation,
+            Function<Inventory, SplitResult> operation,
             TransactionType type,
             int quantity,
             Long referenceId,
             Long memberId
     ) {
         InventoryStatusSet prevStatusSet = inventory.getStatusSet();
-        Inventory result = operation.apply(inventory);
-        boolean isSplit = (result != inventory);
+        SplitResult splitResult = operation.apply(inventory);
+        boolean isSplit = splitResult.wasSplit();
+        Inventory result = splitResult.result();
 
         result = persistSplitResult(inventory, result, isSplit);
         recordTransactions(inventory, result, isSplit, prevStatusSet, type, quantity, referenceId, memberId);
