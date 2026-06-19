@@ -42,6 +42,11 @@ public final class InboundConstants {
 
     public static final String INVALID_PUTAWAY_STATUS_MESSAGE =
             "이미 적재가 완료되었거나 검수가 진행된 품목입니다. (현재 상태: %s)";
+    public static final String MANUFACTURE_DATE_REQUIRED_MESSAGE =
+            "제조일자는 필수입니다.";
+    public static final String EXPIRATION_DATE_REQUIRED_MESSAGE =
+            "유통기한은 필수입니다.";
+
     public static final String INVALID_NORMAL_STATUS_MESSAGE =
             "검수 중 상태에서만 정상 완료 처리가 가능합니다.";
     public static final String INVALID_HOLD_STATUS_MESSAGE =

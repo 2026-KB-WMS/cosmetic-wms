@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.domain.inbound.InboundLine;
 import com.kb.cosmetic_wms.domain.inbound.constants.InboundConstants;
 import com.kb.cosmetic_wms.domain.inbound.enums.InboundStatus;
 import com.kb.cosmetic_wms.domain.inbound.enums.InspectionStatus;
+import com.kb.cosmetic_wms.domain.inbound.exception.InboundItemNotFoundException;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -16,19 +17,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "inbound")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Inbound extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "inbound_id")
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
     private InboundStatus inboundStatus;
 
+    @Column(name = "inbound_date", nullable = false)
     private LocalDateTime inboundDate;
+
+    @Column(name = "warehouse_id", nullable = false)
     private Long warehouseId;
+
+    @Column(name = "partner_id", nullable = false)
     private Long partnerId;
 
     @OneToMany(mappedBy = "inbound", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -66,6 +75,31 @@ public class Inbound extends BaseEntity {
         this.inboundItems.add(item);
 
         return item;
+    }
+
+    public InboundItem putawayItem(Long itemId, Long lotId, Long sectionId) {
+        InboundItem item = findItemById(itemId);
+        item.completePutaway(lotId, sectionId);
+        return item;
+    }
+
+    public InboundItem approveItem(Long itemId) {
+        InboundItem item = findItemById(itemId);
+        item.changeToNormal();
+        return item;
+    }
+
+    public InboundItem holdItem(Long itemId) {
+        InboundItem item = findItemById(itemId);
+        item.changeToHold();
+        return item;
+    }
+
+    private InboundItem findItemById(Long itemId) {
+        return inboundItems.stream()
+                .filter(i -> i.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(InboundItemNotFoundException::new);
     }
 
     /**

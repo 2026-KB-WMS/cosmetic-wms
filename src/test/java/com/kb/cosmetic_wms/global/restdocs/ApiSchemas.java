@@ -38,6 +38,13 @@ public final class ApiSchemas {
     public static final String INVENTORY_STATUS_CHANGE_REQUEST = "InventoryStatusChangeRequest";
     public static final String INVENTORY_DETAIL_RESPONSE = "InventoryDetailResponse";
 
+    // Inbound
+    public static final String INBOUND_CREATE_REQUEST = "InboundCreateRequest";
+    public static final String INBOUND_DETAIL_RESPONSE = "InboundDetailResponse";
+    public static final String INBOUND_ITEM_ADD_REQUEST = "InboundItemAddRequest";
+    public static final String INBOUND_PUTAWAY_REQUEST = "InboundPutawayRequest";
+    public static final String INBOUND_ITEM_RESPONSE = "InboundItemResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }
