@@ -6,6 +6,8 @@ import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
 import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
 import com.kb.cosmetic_wms.domain.inbound.enums.InboundStatus;
 import com.kb.cosmetic_wms.domain.inbound.enums.InspectionStatus;
+import com.kb.cosmetic_wms.domain.inbound.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundErrorCode;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundItemNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundNotFoundException;
@@ -24,23 +26,25 @@ import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
 import com.kb.cosmetic_wms.domain.storage.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.domain.storage.exception.WarehouseNotFoundException;
 import com.kb.cosmetic_wms.domain.storage.repository.WarehouseRepository;
+import com.kb.cosmetic_wms.global.event.EventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class InboundServiceTest {
@@ -56,6 +60,8 @@ class InboundServiceTest {
     private PartnerRepository partnerRepository;
     @Mock
     private ProductRepository productRepository;
+    @Mock
+    private EventPublisher eventPublisher;
 
     private Inbound defaultInbound;
 
@@ -128,7 +134,7 @@ class InboundServiceTest {
         void SCHEDULED_상태의_입고_전표에_품목을_추가하면_WAITING_상태의_품목이_포함된_전표가_반환된다() {
             // given
             InboundItemAddRequestDto request = new InboundDtoBuilder().buildAddItemRequest();
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(defaultInbound));
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
             given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
 
             // when
@@ -143,7 +149,7 @@ class InboundServiceTest {
         @Test
         void 존재하지_않는_입고_ID로_품목을_추가하면_InboundNotFoundException이_발생한다() {
             // given
-            given(inboundRepository.findById(999L)).willReturn(Optional.empty());
+            given(inboundRepository.findByIdWithItems(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inboundService.addItem(999L, new InboundDtoBuilder().buildAddItemRequest()))
@@ -155,7 +161,7 @@ class InboundServiceTest {
         void 존재하지_않는_상품_ID로_품목을_추가하면_InboundProductNotFoundException이_발생한다() {
             // given
             InboundItemAddRequestDto request = new InboundDtoBuilder().productId(999L).buildAddItemRequest();
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(defaultInbound));
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
             given(productRepository.findById(999L)).willReturn(Optional.empty());
 
             // when & then
@@ -166,10 +172,10 @@ class InboundServiceTest {
 
         @Test
         void SCHEDULED_이외_상태의_입고_전표에_품목_추가를_시도하면_IllegalStateException이_전파된다() {
-            // given - IN_PROGRESS 상태의 입고 전표
+            // given - IN_PROGRESS 상태의 입고 전표 (품목 포함)
             Inbound inProgress = new InboundTestBuilder().buildInProgress();
             ReflectionTestUtils.setField(inProgress, "id", 1L);
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(inProgress));
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(inProgress));
             given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
 
             // when & then
@@ -187,9 +193,12 @@ class InboundServiceTest {
     class 입고_작업_시작 {
 
         @Test
-        void SCHEDULED_상태의_입고_전표를_시작하면_IN_PROGRESS_상태로_전환된다() {
-            // given
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(defaultInbound));
+        void SCHEDULED_상태이고_품목이_존재하면_IN_PROGRESS_상태로_전환된다() {
+            // given - 품목이 있는 SCHEDULED 입고 전표
+            Inbound inbound = new InboundTestBuilder().build();
+            inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(1)));
+            ReflectionTestUtils.setField(inbound, "id", 1L);
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(inbound));
 
             // when
             InboundDetailResponseDto result = inboundService.startInbound(1L);
@@ -199,9 +208,20 @@ class InboundServiceTest {
         }
 
         @Test
+        void 품목이_없는_입고_전표를_시작하려고_하면_InboundEmptyItemsException이_발생한다() {
+            // given - 품목이 없는 SCHEDULED 입고 전표
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
+
+            // when & then
+            assertThatThrownBy(() -> inboundService.startInbound(1L))
+                    .isInstanceOf(InboundEmptyItemsException.class)
+                    .hasMessage(InboundErrorCode.INBOUND_EMPTY_ITEMS.getMessage());
+        }
+
+        @Test
         void 존재하지_않는_입고_ID로_작업_시작을_요청하면_InboundNotFoundException이_발생한다() {
             // given
-            given(inboundRepository.findById(999L)).willReturn(Optional.empty());
+            given(inboundRepository.findByIdWithItems(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inboundService.startInbound(999L))
@@ -211,10 +231,10 @@ class InboundServiceTest {
 
         @Test
         void 이미_진행_중인_입고_전표에_작업_시작을_요청하면_IllegalStateException이_전파된다() {
-            // given
+            // given - 품목을 가진 IN_PROGRESS 입고 전표
             Inbound inProgress = new InboundTestBuilder().buildInProgress();
             ReflectionTestUtils.setField(inProgress, "id", 1L);
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(inProgress));
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(inProgress));
 
             // when & then
             assertThatThrownBy(() -> inboundService.startInbound(1L))
@@ -234,7 +254,7 @@ class InboundServiceTest {
         void WAITING_상태의_품목에_로트와_섹션을_지정하면_INSPECTING_상태로_전환되고_ID가_할당된다() {
             // given
             Inbound inbound = new InboundTestBuilder().build();
-            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2)));
+            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(2)));
             ReflectionTestUtils.setField(inbound, "id", 1L);
             ReflectionTestUtils.setField(item, "id", 1L);
             given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(inbound));
@@ -265,7 +285,7 @@ class InboundServiceTest {
         void 이미_적재가_완료된_품목에_다시_적재를_요청하면_IllegalStateException이_전파된다() {
             // given - INSPECTING 상태 품목을 가진 Inbound
             Inbound inbound = new InboundTestBuilder().build();
-            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2)));
+            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(2)));
             item.completePutaway(100L, 200L);
             ReflectionTestUtils.setField(inbound, "id", 1L);
             ReflectionTestUtils.setField(item, "id", 1L);
@@ -289,7 +309,7 @@ class InboundServiceTest {
         void INSPECTING_상태의_품목을_정상_완료하면_NORMAL_상태로_전환된다() {
             // given
             Inbound inbound = new InboundTestBuilder().build();
-            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2)));
+            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(2)));
             item.completePutaway(100L, 200L);
             ReflectionTestUtils.setField(inbound, "id", 1L);
             ReflectionTestUtils.setField(item, "id", 1L);
@@ -319,7 +339,7 @@ class InboundServiceTest {
         void 적재_전_WAITING_상태의_품목에_정상_완료를_요청하면_IllegalStateException이_전파된다() {
             // given - WAITING 상태 품목을 가진 Inbound
             Inbound inbound = new InboundTestBuilder().build();
-            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2)));
+            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(2)));
             ReflectionTestUtils.setField(inbound, "id", 1L);
             ReflectionTestUtils.setField(item, "id", 1L);
             given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(inbound));
@@ -342,7 +362,7 @@ class InboundServiceTest {
         void INSPECTING_상태의_품목을_보류_처리하면_HOLD_상태로_전환된다() {
             // given
             Inbound inbound = new InboundTestBuilder().build();
-            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2)));
+            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(2)));
             item.completePutaway(100L, 200L);
             ReflectionTestUtils.setField(inbound, "id", 1L);
             ReflectionTestUtils.setField(item, "id", 1L);
@@ -372,7 +392,7 @@ class InboundServiceTest {
         void 이미_NORMAL_상태인_품목에_보류를_요청하면_IllegalStateException을_던진다() {
             // given - NORMAL 상태 품목을 가진 Inbound
             Inbound inbound = new InboundTestBuilder().build();
-            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2)));
+            InboundItem item = inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(2)));
             item.completePutaway(100L, 200L);
             item.changeToNormal();
             ReflectionTestUtils.setField(inbound, "id", 1L);
@@ -398,7 +418,7 @@ class InboundServiceTest {
             // given - 모든 품목이 NORMAL인 IN_PROGRESS 입고
             Inbound inbound = buildInboundWithInspectedItem(true);
             ReflectionTestUtils.setField(inbound, "id", 1L);
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(inbound));
+            given(inboundRepository.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(inbound));
 
             // when
             InboundDetailResponseDto result = inboundService.completeInbound(1L);
@@ -412,7 +432,7 @@ class InboundServiceTest {
             // given - 품목이 HOLD인 IN_PROGRESS 입고
             Inbound inbound = buildInboundWithHoldItem();
             ReflectionTestUtils.setField(inbound, "id", 1L);
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(inbound));
+            given(inboundRepository.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(inbound));
 
             // when
             InboundDetailResponseDto result = inboundService.completeInbound(1L);
@@ -425,11 +445,11 @@ class InboundServiceTest {
         void 검수_미완료_품목이_남아있으면_입고_완료_처리_시_IllegalStateException이_전파된다() {
             // given - WAITING 상태 품목이 포함된 IN_PROGRESS 입고
             Inbound inbound = new InboundTestBuilder().build();
-            InboundLine line = new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(1));
+            InboundLine line = new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(1));
             inbound.addItem(line); // WAITING 상태
             inbound.startExecution();
             ReflectionTestUtils.setField(inbound, "id", 1L);
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(inbound));
+            given(inboundRepository.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(inbound));
 
             // when & then
             assertThatThrownBy(() -> inboundService.completeInbound(1L))
@@ -440,7 +460,7 @@ class InboundServiceTest {
         @Test
         void 존재하지_않는_입고_ID로_완료를_요청하면_InboundNotFoundException이_발생한다() {
             // given
-            given(inboundRepository.findById(999L)).willReturn(Optional.empty());
+            given(inboundRepository.findByIdWithItemsForUpdate(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inboundService.completeInbound(999L))
@@ -451,7 +471,7 @@ class InboundServiceTest {
         @Test
         void SCHEDULED_상태의_입고에_완료를_요청하면_IllegalStateException이_전파된다() {
             // given - SCHEDULED(기본) 상태 그대로 사용
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(defaultInbound));
+            given(inboundRepository.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(defaultInbound));
 
             // when & then
             assertThatThrownBy(() -> inboundService.completeInbound(1L))
@@ -459,9 +479,46 @@ class InboundServiceTest {
                     .hasMessageContaining("작업이 진행 중인 상태에서만 입고 완료 처리가 가능합니다");
         }
 
+        @Test
+        void 입고_완료_시_InboundCompletedEvent가_발행된다() {
+            // given
+            Inbound inbound = buildInboundWithInspectedItem(true);
+            ReflectionTestUtils.setField(inbound, "id", 10L);
+            given(inboundRepository.findByIdWithItemsForUpdate(10L)).willReturn(Optional.of(inbound));
+
+            // when
+            inboundService.completeInbound(10L);
+
+            // then
+            ArgumentCaptor<InboundCompletedEvent> captor = ArgumentCaptor.forClass(InboundCompletedEvent.class);
+            verify(eventPublisher).publish(captor.capture());
+            InboundCompletedEvent event = captor.getValue();
+            assertThat(event.inboundId()).isEqualTo(10L);
+            assertThat(event.warehouseId()).isEqualTo(1L);
+            assertThat(event.items()).hasSize(1);
+            assertThat(event.items().get(0).inspectionStatus()).isEqualTo(InspectionStatus.NORMAL);
+            assertThat(event.items().get(0).quantity()).isEqualTo(100);
+        }
+
+        @Test
+        void 입고_완료_실패_시_이벤트가_발행되지_않는다() {
+            // given - 검수 미완료 품목이 존재하는 IN_PROGRESS 입고
+            Inbound inbound = new InboundTestBuilder().build();
+            inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(1)));
+            inbound.startExecution();
+            ReflectionTestUtils.setField(inbound, "id", 1L);
+            given(inboundRepository.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(inbound));
+
+            // when & then
+            assertThatThrownBy(() -> inboundService.completeInbound(1L))
+                    .isInstanceOf(IllegalStateException.class);
+
+            verify(eventPublisher, never()).publish(any());
+        }
+
         private Inbound buildInboundWithInspectedItem(boolean isNormal) {
             Inbound inbound = new InboundTestBuilder().build();
-            InboundLine line = new InboundLine(1L, 100, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(1));
+            InboundLine line = new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(1));
             InboundItem item = inbound.addItem(line);
             inbound.startExecution();
             item.completePutaway(100L, 200L);
@@ -488,7 +545,7 @@ class InboundServiceTest {
         @Test
         void SCHEDULED_상태의_입고_전표를_취소하면_CANCELED_상태로_전환된다() {
             // given
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(defaultInbound));
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
 
             // when
             InboundDetailResponseDto result = inboundService.cancelInbound(1L);
@@ -500,7 +557,7 @@ class InboundServiceTest {
         @Test
         void 존재하지_않는_입고_ID로_취소를_요청하면_InboundNotFoundException이_발생한다() {
             // given
-            given(inboundRepository.findById(999L)).willReturn(Optional.empty());
+            given(inboundRepository.findByIdWithItems(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inboundService.cancelInbound(999L))
@@ -513,7 +570,7 @@ class InboundServiceTest {
             // given
             Inbound inProgress = new InboundTestBuilder().buildInProgress();
             ReflectionTestUtils.setField(inProgress, "id", 1L);
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(inProgress));
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(inProgress));
 
             // when & then
             assertThatThrownBy(() -> inboundService.cancelInbound(1L))
@@ -532,7 +589,7 @@ class InboundServiceTest {
         @Test
         void 존재하는_ID로_조회하면_입고_전표_상세정보를_반환한다() {
             // given
-            given(inboundRepository.findById(1L)).willReturn(Optional.of(defaultInbound));
+            given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
 
             // when
             InboundDetailResponseDto result = inboundService.getInbound(1L);
@@ -548,7 +605,7 @@ class InboundServiceTest {
         @Test
         void 존재하지_않는_ID로_조회하면_InboundNotFoundException이_발생한다() {
             // given
-            given(inboundRepository.findById(999L)).willReturn(Optional.empty());
+            given(inboundRepository.findByIdWithItems(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inboundService.getInbound(999L))
