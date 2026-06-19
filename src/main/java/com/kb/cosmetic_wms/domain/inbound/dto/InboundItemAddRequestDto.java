@@ -4,7 +4,7 @@ import com.kb.cosmetic_wms.domain.inbound.constants.InboundConstants;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public record InboundItemAddRequestDto(
         @NotNull(message = InboundConstants.INBOUND_PRODUCT_REQUIRED_MESSAGE)
@@ -14,9 +14,9 @@ public record InboundItemAddRequestDto(
         int quantity,
 
         @NotNull(message = InboundConstants.MANUFACTURE_DATE_REQUIRED_MESSAGE)
-        LocalDateTime manufactureDate,
+        LocalDate manufactureDate,
 
         @NotNull(message = InboundConstants.EXPIRATION_DATE_REQUIRED_MESSAGE)
-        LocalDateTime expirationDate
+        LocalDate expirationDate
 ) {
 }

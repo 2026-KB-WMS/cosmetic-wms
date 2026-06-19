@@ -6,6 +6,7 @@ import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
 import com.kb.cosmetic_wms.domain.inbound.enums.InboundStatus;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,7 +101,7 @@ public class InboundEntityTest {
     void 모든_품목의_검수_및_적재가_완료되지_않은_상태에서_입고_완료를_시도하면_예외를_던진다() {
         // given
         Inbound inbound = Inbound.create(LocalDateTime.now().plusDays(1), 1L, 1L);
-        InboundLine line = new InboundLine(1L, 100, LocalDateTime.now(), LocalDateTime.now().plusYears(3));
+        InboundLine line = new InboundLine(1L, 100, LocalDate.now(), LocalDate.now().plusYears(3));
         InboundItem item = inbound.addItem(line);
 
         inbound.startExecution();
@@ -114,8 +115,8 @@ public class InboundEntityTest {
     void 모든_품목이_NORMAL_또는_HOLD_상태로_검수가_끝나면_정상적으로_입고_완료_처리된다() {
         // given
         Inbound inbound = Inbound.create(LocalDateTime.now().plusDays(1), 1L, 1L);
-        InboundLine line1 = new InboundLine(1L, 50, LocalDateTime.now(), LocalDateTime.now().plusYears(3));
-        InboundLine line2 = new InboundLine(2L, 30, LocalDateTime.now(), LocalDateTime.now().plusYears(3));
+        InboundLine line1 = new InboundLine(1L, 50, LocalDate.now(), LocalDate.now().plusYears(3));
+        InboundLine line2 = new InboundLine(2L, 30, LocalDate.now(), LocalDate.now().plusYears(3));
 
         InboundItem item1 = inbound.addItem(line1);
         InboundItem item2 = inbound.addItem(line2);

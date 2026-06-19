@@ -1,10 +1,15 @@
 package com.kb.cosmetic_wms.domain.inventory.service;
 
+import com.kb.cosmetic_wms.domain.inventory.dto.InboundPutawayCommand;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryDetailResponseDto;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryStatusChangeRequestDto;
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
 import com.kb.cosmetic_wms.domain.inventory.entity.InventoryStatusSet;
 import com.kb.cosmetic_wms.domain.inventory.entity.InventoryTransaction;
+import com.kb.cosmetic_wms.domain.inventory.entity.SplitResult;
+import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
+import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
+import com.kb.cosmetic_wms.domain.inventory.enums.QualityStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.TransactionType;
 import com.kb.cosmetic_wms.domain.inventory.exception.InventoryNotFoundException;
 import com.kb.cosmetic_wms.domain.inventory.repository.InventoryRepository;
@@ -99,6 +104,40 @@ public class InventoryService {
                 TransactionType.DISCARD, request.quantity(), null, request.memberId());
     }
 
+    @Transactional
+    public void createFromInbound(InboundPutawayCommand command) {
+        InventoryStatusSet statusSet = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
+        );
+
+        long NO_EXCLUDE_ID = -1L;
+        Optional<Inventory> mergeTarget = inventoryRepository.findMergeTargetForUpdate(
+                command.productId(), command.lotId(), command.sectionId(), statusSet, NO_EXCLUDE_ID
+        );
+
+        if (mergeTarget.isPresent()) {
+            Inventory existing = mergeTarget.get();
+            existing.mergeFrom(Inventory.create(
+                    command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                    command.quantity(), command.quantity(), statusSet
+            ));
+            inventoryTransactionRepository.save(InventoryTransaction.create(
+                    existing.getId(), TransactionType.INBOUND_PUTAWAY, command.quantity(), existing.getQuantity(),
+                    command.inboundId(), statusSet, statusSet, command.memberId(), null
+            ));
+            return;
+        }
+
+        Inventory saved = inventoryRepository.save(
+                Inventory.create(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                        command.quantity(), command.quantity(), statusSet)
+        );
+        inventoryTransactionRepository.save(InventoryTransaction.create(
+                saved.getId(), TransactionType.INBOUND_PUTAWAY, command.quantity(), command.quantity(),
+                command.inboundId(), null, statusSet, command.memberId(), null
+        ));
+    }
+
     private Inventory findOrThrow(Long inventoryId) {
         return inventoryRepository.findByIdForUpdate(inventoryId)
                 .orElseThrow(InventoryNotFoundException::new);
@@ -106,15 +145,16 @@ public class InventoryService {
 
     private InventoryDetailResponseDto applyAndRecord(
             Inventory inventory,
-            Function<Inventory, Inventory> operation,
+            Function<Inventory, SplitResult> operation,
             TransactionType type,
             int quantity,
             Long referenceId,
             Long memberId
     ) {
         InventoryStatusSet prevStatusSet = inventory.getStatusSet();
-        Inventory result = operation.apply(inventory);
-        boolean isSplit = (result != inventory);
+        SplitResult splitResult = operation.apply(inventory);
+        boolean isSplit = splitResult.wasSplit();
+        Inventory result = splitResult.result();
 
         result = persistSplitResult(inventory, result, isSplit);
         recordTransactions(inventory, result, isSplit, prevStatusSet, type, quantity, referenceId, memberId);

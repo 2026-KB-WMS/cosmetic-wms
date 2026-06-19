@@ -63,6 +63,9 @@ public final class InventoryConstants {
     public static final String MERGE_STATUS_MISMATCH_MESSAGE =
             "동일 상태의 재고만 병합 가능합니다.";
 
+    public static final String MERGE_KEY_MISMATCH_MESSAGE =
+            "상품·로트·섹션이 동일한 재고만 병합 가능합니다.";
+
     // ==== 재고 트랜잭션 이력(InventoryTransaction) 전용 예외 상수 ====
     public static final String INVENTORY_ID_REQUIRED_MESSAGE =
             "재고 식별자(ID)는 필수입니다.";

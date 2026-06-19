@@ -1,11 +1,11 @@
 package com.kb.cosmetic_wms.domain.inbound;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public record InboundLine(
         Long productId,
         int quantity,
-        LocalDateTime manufactureDate,
-        LocalDateTime expirationDate
+        LocalDate manufactureDate,
+        LocalDate expirationDate
 ) {
 }

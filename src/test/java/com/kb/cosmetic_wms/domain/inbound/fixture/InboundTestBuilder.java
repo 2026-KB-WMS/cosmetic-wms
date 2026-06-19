@@ -1,7 +1,9 @@
 package com.kb.cosmetic_wms.domain.inbound.fixture;
 
+import com.kb.cosmetic_wms.domain.inbound.InboundLine;
 import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class InboundTestBuilder {
@@ -31,6 +33,7 @@ public class InboundTestBuilder {
 
     public Inbound buildInProgress() {
         Inbound inbound = build();
+        inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(10), LocalDate.now().plusYears(2)));
         inbound.startExecution();
         return inbound;
     }

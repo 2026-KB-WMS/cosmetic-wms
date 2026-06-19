@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.domain.inventory;
 
 import com.kb.cosmetic_wms.domain.inventory.constants.InventoryConstants;
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
+import com.kb.cosmetic_wms.domain.inventory.entity.SplitResult;
 import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.QualityStatus;
@@ -67,7 +68,8 @@ public class InventoryEntityTest {
                 .build();
 
         // when
-        Inventory allocatedInventory = originalInventory.allocate(40);
+        SplitResult splitResult = originalInventory.allocate(40);
+        Inventory allocatedInventory = splitResult.result();
 
         // then 1: 원본 재고는 60개로 깎이고 여전히 미할당(UNALLOCATED) 상태여야 함
         assertThat(originalInventory.getQuantity()).isEqualTo(60);
@@ -78,6 +80,7 @@ public class InventoryEntityTest {
         assertThat(allocatedInventory.getQuantity()).isEqualTo(40);
         assertThat(allocatedInventory.getAvailableQuantity()).isEqualTo(0);
         assertThat(allocatedInventory.getStatusSet().allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
+        assertThat(splitResult.wasSplit()).isTrue();
     }
 
     @Test
@@ -90,9 +93,10 @@ public class InventoryEntityTest {
                 .build();
 
         // when
-        Inventory resultInventory = inventory.allocate(50);
+        SplitResult splitResult = inventory.allocate(50);
 
-        assertThat(resultInventory).isSameAs(inventory);
+        assertThat(splitResult.wasSplit()).isFalse();
+        assertThat(splitResult.result()).isSameAs(inventory);
         assertThat(inventory.getQuantity()).isEqualTo(50);
         assertThat(inventory.getAvailableQuantity()).isEqualTo(0);
         assertThat(inventory.getStatusSet().allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
@@ -121,7 +125,8 @@ public class InventoryEntityTest {
         int targetQuantity = 30;
 
         // when
-        Inventory brokenInventory = inventory.holdForQualityIssue(targetQuantity);
+        SplitResult splitResult = inventory.holdForQualityIssue(targetQuantity);
+        Inventory brokenInventory = splitResult.result();
 
         // then 1: 원본 재고 검증 (100개 중 30개가 빠져나가서 70개의 가용 수량 남아야 함)
         assertThat(inventory.getAvailableQuantity()).isEqualTo(70);
@@ -131,6 +136,7 @@ public class InventoryEntityTest {
         assertThat(brokenInventory.getQuantity()).isEqualTo(targetQuantity);
         assertThat(brokenInventory.getAvailableQuantity()).isZero();
         assertThat(brokenInventory.getStatusSet().qualityStatus()).isEqualTo(QualityStatus.HOLD);
+        assertThat(splitResult.wasSplit()).isTrue();
     }
 
     @Test
@@ -143,10 +149,11 @@ public class InventoryEntityTest {
                 .build();
 
         // when
-        Inventory resultInventory = inventory.holdForQualityIssue(totalQuantity);
+        SplitResult splitResult = inventory.holdForQualityIssue(totalQuantity);
 
         // then
-        assertThat(resultInventory).isSameAs(inventory);
+        assertThat(splitResult.wasSplit()).isFalse();
+        assertThat(splitResult.result()).isSameAs(inventory);
         assertThat(inventory.getQuantity()).isEqualTo(totalQuantity);
         assertThat(inventory.getAvailableQuantity()).isEqualTo(0);
         assertThat(inventory.getStatusSet().qualityStatus()).isEqualTo(QualityStatus.HOLD);
@@ -215,10 +222,11 @@ public class InventoryEntityTest {
     void 일부_수량을_할당_취소하면_원래_재고의_수량은_유지되고_가용_수량이_복구된_새_객체가_반환된다() {
         // given: inventory의 수량은 100
         Inventory inventory = new InventoryTestBuilder().build();
-        Inventory allocatedInventory = inventory.allocate(30);
+        Inventory allocatedInventory = inventory.allocate(30).result();
 
         // when: 할당 재고 30개 중 20개를 할당 취소
-        Inventory returnedInventory = allocatedInventory.unallocate(20);
+        SplitResult unallocSplit = allocatedInventory.unallocate(20);
+        Inventory returnedInventory = unallocSplit.result();
 
         // then 1: 할당 재고 30개 중 20개를 취소했으므로 남은 할당 재고는 10개
         assertThat(allocatedInventory.getQuantity()).isEqualTo(10);
@@ -250,7 +258,8 @@ public class InventoryEntityTest {
 
         // when
         int movingQuantity = 40;
-        Inventory movingInventory = inventory.startMoving(movingQuantity);
+        SplitResult splitResult = inventory.startMoving(movingQuantity);
+        Inventory movingInventory = splitResult.result();
 
         // then 1: 원래 재고의 수량과 가용 수량이 차감된다
         assertThat(inventory.getQuantity()).isEqualTo(60);
@@ -259,6 +268,7 @@ public class InventoryEntityTest {
         // then 2: 이동 중 상태인 새 객체를 반환한다.
         assertThat(movingInventory.getStatusSet().locStatus()).isEqualTo(LocStatus.MOVING);
         assertThat(movingInventory.getAvailableQuantity()).isEqualTo(movingQuantity);
+        assertThat(splitResult.wasSplit()).isTrue();
     }
 
     @Test
@@ -278,10 +288,11 @@ public class InventoryEntityTest {
     void 이동_중인_재고의_일부_수량이_도착하면_원래_재고의_수량은_차감되고_STORED_및_가용_수량이_복구된_새_객체가_반환된다() {
         // given
         Inventory inventory = new InventoryTestBuilder().build();
-        Inventory movingInventory = inventory.startMoving(30);
+        Inventory movingInventory = inventory.startMoving(30).result();
 
         // when
-        Inventory finishedInventory = movingInventory.finishMoving(10);
+        SplitResult finishSplit = movingInventory.finishMoving(10);
+        Inventory finishedInventory = finishSplit.result();
 
         // then 1: 이동 중인 재고의 수량이 30 - 10 이 된다
         assertThat(movingInventory.getQuantity()).isEqualTo(20);
@@ -313,7 +324,8 @@ public class InventoryEntityTest {
                 .build();
 
         // when
-        Inventory inspectingInventory = inventory.startInspecting(30);
+        SplitResult splitResult = inventory.startInspecting(30);
+        Inventory inspectingInventory = splitResult.result();
 
         // then 1: 원래 재고 검증
         assertThat(inventory.getQuantity()).isEqualTo(70);
@@ -323,6 +335,7 @@ public class InventoryEntityTest {
         assertThat(inspectingInventory.getQuantity()).isEqualTo(30);
         assertThat(inspectingInventory.getAvailableQuantity()).isZero(); // 검수 중이므로 가용 수량 0
         assertThat(inspectingInventory.getStatusSet().qualityStatus()).isEqualTo(QualityStatus.INSPECTING);
+        assertThat(splitResult.wasSplit()).isTrue();
     }
 
     @Test
@@ -334,10 +347,11 @@ public class InventoryEntityTest {
                 .build();
 
         // when
-        Inventory resultInventory = inventory.startInspecting(50);
+        SplitResult splitResult = inventory.startInspecting(50);
 
         // then
-        assertThat(resultInventory).isSameAs(inventory);
+        assertThat(splitResult.wasSplit()).isFalse();
+        assertThat(splitResult.result()).isSameAs(inventory);
         assertThat(inventory.getQuantity()).isEqualTo(50);
         assertThat(inventory.getAvailableQuantity()).isZero();
         assertThat(inventory.getStatusSet().qualityStatus()).isEqualTo(QualityStatus.INSPECTING);
@@ -353,7 +367,8 @@ public class InventoryEntityTest {
                 .build();
 
         // when: 20개 검수 통과 (정상 복구)
-        Inventory restoredInventory = inventory.restoreToNormalQuality(20);
+        SplitResult splitResult = inventory.restoreToNormalQuality(20);
+        Inventory restoredInventory = splitResult.result();
 
         // then 1: 원본 검수 재고는 30개로 차감
         assertThat(inventory.getQuantity()).isEqualTo(30);
@@ -363,6 +378,7 @@ public class InventoryEntityTest {
         assertThat(restoredInventory.getQuantity()).isEqualTo(20);
         assertThat(restoredInventory.getAvailableQuantity()).isEqualTo(20);
         assertThat(restoredInventory.getStatusSet().qualityStatus()).isEqualTo(QualityStatus.NORMAL);
+        assertThat(splitResult.wasSplit()).isTrue();
     }
 
     @Test
@@ -375,10 +391,11 @@ public class InventoryEntityTest {
                 .build();
 
         // when
-        Inventory resultInventory = inventory.restoreToNormalQuality(40);
+        SplitResult splitResult = inventory.restoreToNormalQuality(40);
 
         // then
-        assertThat(resultInventory).isSameAs(inventory);
+        assertThat(splitResult.wasSplit()).isFalse();
+        assertThat(splitResult.result()).isSameAs(inventory);
         assertThat(inventory.getQuantity()).isEqualTo(40);
         assertThat(inventory.getAvailableQuantity()).isEqualTo(40); // 가용 수량 전량 복구
         assertThat(inventory.getStatusSet().qualityStatus()).isEqualTo(QualityStatus.NORMAL);

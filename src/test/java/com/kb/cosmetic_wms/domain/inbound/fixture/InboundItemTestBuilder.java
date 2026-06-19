@@ -4,14 +4,15 @@ import com.kb.cosmetic_wms.domain.inbound.InboundLine;
 import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
 import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class InboundItemTestBuilder {
 
     private Long productId = 1L;
     private int quantity = 100;
-    private final LocalDateTime manufactureDate = LocalDateTime.now().minusDays(10);
-    private final LocalDateTime expirationDate = LocalDateTime.now().plusYears(2);
+    private final LocalDate manufactureDate = LocalDate.now().minusDays(10);
+    private final LocalDate expirationDate = LocalDate.now().plusYears(2);
     private Long lotId = 100L;
     private Long sectionId = 200L;
 
