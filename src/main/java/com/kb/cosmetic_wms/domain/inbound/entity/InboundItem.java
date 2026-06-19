@@ -12,26 +12,40 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "inbound_item")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class InboundItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "inbound_item_id")
     private Long id;
 
+    @Column(nullable = false)
     private int quantity;
+
+    @Column(name = "manufacture_date", nullable = false)
     private LocalDateTime manufactureDate;
+
+    @Column(name = "expiration_date", nullable = false)
     private LocalDateTime expirationDate;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "inspection_status", nullable = false, length = 20)
     private InspectionStatus inspectionStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inbound_id", nullable = false)
     private Inbound inbound;
 
+    @Column(name = "product_id", nullable = false)
     private Long productId;
+
+    @Column(name = "lot_id")
     private Long lotId;
+
+    @Column(name = "section_id")
     private Long sectionId;
 
     InboundItem(Inbound inbound, InboundLine line) {
