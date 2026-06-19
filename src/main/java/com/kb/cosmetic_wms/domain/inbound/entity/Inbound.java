@@ -27,6 +27,9 @@ public class Inbound extends BaseEntity {
     @Column(name = "inbound_id")
     private Long id;
 
+    @Version
+    private Long version;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private InboundStatus inboundStatus;
@@ -41,7 +44,7 @@ public class Inbound extends BaseEntity {
     private Long partnerId;
 
     @OneToMany(mappedBy = "inbound", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<InboundItem> inboundItems = new ArrayList<>();
+    private List<InboundItem> inboundItems = new ArrayList<>();
 
     private Inbound(LocalDateTime inboundDate, Long warehouseId, Long partnerId) {
         this.inboundDate = inboundDate;
