@@ -33,6 +33,7 @@ import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -616,8 +617,8 @@ public class InboundControllerTest extends RestDocsSupport {
     private static InboundDetailResponseDto buildInboundResponseWithItem() {
         InboundItemResponseDto item = new InboundItemResponseDto(
                 1L, 1L, 100,
-                LocalDateTime.of(2026, 1, 1, 0, 0),
-                LocalDateTime.of(2028, 1, 1, 0, 0),
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2028, 1, 1),
                 InspectionStatus.WAITING, null, null
         );
         return new InboundDetailResponseDto(
@@ -631,8 +632,8 @@ public class InboundControllerTest extends RestDocsSupport {
             InspectionStatus status, Long lotId, Long sectionId) {
         return new InboundItemResponseDto(
                 1L, 1L, 100,
-                LocalDateTime.of(2026, 1, 1, 0, 0),
-                LocalDateTime.of(2028, 1, 1, 0, 0),
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2028, 1, 1),
                 status, lotId, sectionId
         );
     }

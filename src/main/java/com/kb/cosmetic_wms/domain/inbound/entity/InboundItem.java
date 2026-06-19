@@ -9,7 +9,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "inbound_item")
@@ -26,10 +26,10 @@ public class InboundItem extends BaseEntity {
     private int quantity;
 
     @Column(name = "manufacture_date", nullable = false)
-    private LocalDateTime manufactureDate;
+    private LocalDate manufactureDate;
 
     @Column(name = "expiration_date", nullable = false)
-    private LocalDateTime expirationDate;
+    private LocalDate expirationDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "inspection_status", nullable = false, length = 20)

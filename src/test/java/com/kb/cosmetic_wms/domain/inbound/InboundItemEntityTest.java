@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,10 +21,10 @@ public class InboundItemEntityTest {
     private static final Long SECTION_ID = 10L;
 
     private static final int QUANTITY = 100;
-    private static final LocalDateTime MANUFACTURE_DATE =
-            LocalDateTime.now();
-    private static final LocalDateTime EXPIRATION_DATE =
-            LocalDateTime.now().plusYears(3);
+    private static final LocalDate MANUFACTURE_DATE =
+            LocalDate.now();
+    private static final LocalDate EXPIRATION_DATE =
+            LocalDate.now().plusYears(3);
     private static final LocalDateTime INBOUND_DATE =
             LocalDateTime.now().plusYears(1);
 

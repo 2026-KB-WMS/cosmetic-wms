@@ -3,7 +3,9 @@ package com.kb.cosmetic_wms.domain.inventory;
 import com.kb.cosmetic_wms.domain.inventory.constants.InventoryConstants;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryDetailResponseDto;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryStatusChangeRequestDto;
+import com.kb.cosmetic_wms.domain.inventory.dto.InboundPutawayCommand;
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
+import com.kb.cosmetic_wms.domain.inventory.entity.InventoryStatusSet;
 import com.kb.cosmetic_wms.domain.inventory.entity.InventoryTransaction;
 import com.kb.cosmetic_wms.domain.inventory.enums.AllocStatus;
 import com.kb.cosmetic_wms.domain.inventory.enums.LocStatus;
@@ -568,6 +570,115 @@ class InventoryServiceTest {
             assertThatThrownBy(() -> inventoryService.startInspecting(999L,
                     new InventoryDtoBuilder().quantity(10).buildWithoutRef()))
                     .isInstanceOf(InventoryNotFoundException.class);
+        }
+    }
+
+    // =========================================================
+    // 입고 반영 (createFromInbound)
+    // =========================================================
+
+    @Nested
+    class 입고_반영 {
+
+        private static final Long PRODUCT_ID = 1L;
+        private static final Long LOT_ID = 10L;
+        private static final Long SECTION_ID = 1000L;
+        private static final Long WAREHOUSE_ID = 100L;
+        private static final Long INBOUND_ID = 99L;
+        private static final Long MEMBER_ID = 1L;
+
+        private final InventoryStatusSet putawayStatus = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
+        );
+
+        @Test
+        void 동일_복합키_재고가_없으면_새_재고가_생성되고_INBOUND_PUTAWAY_이력이_기록된다() {
+            // given
+            Inventory saved = new InventoryTestBuilder().quantity(50).availableQuantity(50).build();
+            ReflectionTestUtils.setField(saved, "id", 10L);
+
+            given(inventoryRepository.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, putawayStatus, -1L))
+                    .willReturn(Optional.empty());
+            given(inventoryRepository.save(any(Inventory.class))).willReturn(saved);
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+
+            // when
+            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 50, INBOUND_ID, MEMBER_ID));
+
+            // then
+            verify(inventoryRepository).save(any(Inventory.class));
+            verify(inventoryTransactionRepository).save(txCaptor.capture());
+
+            InventoryTransaction tx = txCaptor.getValue();
+            assertThat(tx.getInventoryId()).isEqualTo(10L);
+            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INBOUND_PUTAWAY);
+            assertThat(tx.getTransactionQuantity()).isEqualTo(50);
+            assertThat(tx.getBalanceQuantity()).isEqualTo(50);
+            assertThat(tx.getReferenceId()).isEqualTo(INBOUND_ID);
+            assertThat(tx.getPrevStatusSet()).isNull();
+            assertThat(tx.getCurrStatusSet()).isEqualTo(putawayStatus);
+        }
+
+        @Test
+        void 동일_복합키_재고가_이미_존재하면_수량이_합산되고_새_재고는_생성되지_않는다() {
+            // given - 기존 재고: 100개
+            Inventory existing = new InventoryTestBuilder().quantity(100).availableQuantity(100).build();
+            ReflectionTestUtils.setField(existing, "id", 5L);
+
+            given(inventoryRepository.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, putawayStatus, -1L))
+                    .willReturn(Optional.of(existing));
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+
+            // when - 50개 추가 입고
+            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 50, INBOUND_ID, MEMBER_ID));
+
+            // then - 새 Inventory INSERT 없이 기존 재고에 합산
+            verify(inventoryRepository, never()).save(any(Inventory.class));
+            assertThat(existing.getQuantity()).isEqualTo(150);
+            assertThat(existing.getAvailableQuantity()).isEqualTo(150);
+
+            // 트랜잭션: 거래량=50, 잔고=합산 후 총량 150
+            verify(inventoryTransactionRepository).save(txCaptor.capture());
+            InventoryTransaction tx = txCaptor.getValue();
+            assertThat(tx.getInventoryId()).isEqualTo(5L);
+            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INBOUND_PUTAWAY);
+            assertThat(tx.getTransactionQuantity()).isEqualTo(50);
+            assertThat(tx.getBalanceQuantity()).isEqualTo(150);
+            assertThat(tx.getReferenceId()).isEqualTo(INBOUND_ID);
+            assertThat(tx.getPrevStatusSet()).isEqualTo(putawayStatus);
+            assertThat(tx.getCurrStatusSet()).isEqualTo(putawayStatus);
+        }
+
+        @Test
+        void 같은_입고_내_동일_복합키_품목이_두_건이면_두_번째_호출에서_수량이_합산된다() {
+            // given - 첫 번째 createFromInbound가 저장한 재고
+            Inventory firstSaved = new InventoryTestBuilder().quantity(60).availableQuantity(60).build();
+            ReflectionTestUtils.setField(firstSaved, "id", 7L);
+            given(inventoryRepository.save(any(Inventory.class))).willReturn(firstSaved);
+
+            // 첫 번째 호출: 기존 재고 없음, 두 번째 호출: 첫 번째가 저장한 재고를 머지 대상으로 반환
+            given(inventoryRepository.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, putawayStatus, -1L))
+                    .willReturn(Optional.empty())
+                    .willReturn(Optional.of(firstSaved));
+
+            // when
+            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 60, INBOUND_ID, MEMBER_ID));
+            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 40, INBOUND_ID, MEMBER_ID));
+
+            // then - INSERT는 첫 번째 호출에서만 발생
+            verify(inventoryRepository, times(1)).save(any(Inventory.class));
+            assertThat(firstSaved.getQuantity()).isEqualTo(100);
+            assertThat(firstSaved.getAvailableQuantity()).isEqualTo(100);
+
+            // 트랜잭션은 각 호출마다 1건씩 총 2건
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+            verify(inventoryTransactionRepository, times(2)).save(txCaptor.capture());
+
+            InventoryTransaction mergeTx = txCaptor.getAllValues().get(1);
+            assertThat(mergeTx.getTransactionQuantity()).isEqualTo(40);
+            assertThat(mergeTx.getBalanceQuantity()).isEqualTo(100);
         }
     }
 }
