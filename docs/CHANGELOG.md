@@ -27,6 +27,25 @@
 
 <br>
 
+### [1.4.0] - 2026-06-20
+
+#### Changed
+
+- **[DB] `quality_inspection` 테이블 — 수량 기반 검사 결과 추적 구조로 개선**
+    - `result VARCHAR(20)` 컬럼 제거 — 단순 PASS/FAIL 플래그 대신 `passed_quantity` / `failed_quantity` 수량 단위 추적으로 대체
+    - `inspector_id BIGINT` 복구 — v1.3.0에서 제거됐던 검사관 컬럼을 nullable FK로 재추가 (미배정 허용)
+    - `defect_reason VARCHAR(50)` → `VARCHAR(100)` 확장
+    - `inspection_quantity INT NOT NULL` 신규 추가 — 검사 대상 총 수량
+    - `passed_quantity INT NOT NULL DEFAULT 0` 신규 추가 — 합격 수량
+    - `failed_quantity INT NOT NULL DEFAULT 0` 신규 추가 — 불합격 수량
+    - `chk_quality_inspection_qty_positive` CHECK 제약 추가 — 모든 수량 컬럼 음수 방지
+    - `chk_quality_inspection_qty_balance` CHECK 제약 추가 — `COMPLETED` 상태에서 `passed_quantity + failed_quantity = inspection_quantity` 강제
+    - `chk_quality_inspection_defect_reason` CHECK 제약 추가 — `failed_quantity > 0` 이면 `defect_reason` 필수
+    - `fk_quality_inspection_member` FK 추가 (`inspector_id` → `member.member_id`)
+    - 테이블 COMMENT: `'입고 품질 검사 기록 테이블'` → `'품질 검사 수행 및 기록 테이블'`
+
+<br>
+
 ### [1.3.0] - 2026-06-20
 
 #### Changed
