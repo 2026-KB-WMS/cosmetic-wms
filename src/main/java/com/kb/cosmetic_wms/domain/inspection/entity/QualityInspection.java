@@ -3,28 +3,37 @@ package com.kb.cosmetic_wms.domain.inspection.entity;
 import com.kb.cosmetic_wms.domain.inspection.constants.QualityConstants;
 import com.kb.cosmetic_wms.domain.inspection.enums.InspectionResult;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "quality_inspection")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class QualityInspection extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "inspection_id")
     private Long id;
 
+    @Column(name = "inbound_item_id", nullable = false)
     private Long inboundItemId;
+
+    @Column(name = "inventory_id", nullable = false)
     private Long inventoryId;
+
+    @Column(name = "inspector_id", nullable = false)
     private Long inspectorId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "result", nullable = false, length = 20)
     private InspectionResult result;
+
+    @Column(name = "defect_reason", length = 50)
     private String defectReason;
 
     @Builder(access = AccessLevel.PRIVATE)
