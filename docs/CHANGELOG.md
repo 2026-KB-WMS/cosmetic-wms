@@ -27,6 +27,23 @@
 
 <br>
 
+### [1.3.0] - 2026-06-20
+
+#### Changed
+
+- **[DB] `quality_inspection` 테이블 구조 재설계**
+    - `inbound_item_id` (FK → inbound_item) 컬럼 제거
+    - `inspector_id` (FK → member) 컬럼 제거
+    - `source_id BIGINT NOT NULL` 신규 추가 — 검사 요청 출처 도메인의 PK ID
+    - `source_type VARCHAR(20) NOT NULL` 신규 추가 — 출처 도메인 구분 (`INBOUND` 등)
+    - `status VARCHAR(20) NOT NULL` 신규 추가 — 검사 진행 상태 (`READY`, `IN_PROGRESS`, `COMPLETED`)
+    - `inventory_id`: `NOT NULL` → nullable 완화 (검사 시점에 재고 미확정 허용)
+    - `result`: `NOT NULL` → nullable 완화 (검사 미완료 상태에서 null 허용)
+    - `fk_quality_inspection_inbound_item` FK 제거
+    - Polymorphic Association 패턴 도입으로 입고 외 다른 도메인(반품, 리콜 등)의 검사 요청도 단일 테이블에서 처리 가능하도록 구조 개방
+
+<br>
+
 ### [1.2.0] - 2026-06-18
 
 #### Added
