@@ -1,0 +1,286 @@
+CREATE TABLE member (
+    member_id         BIGINT       NOT NULL AUTO_INCREMENT,
+    login_id          VARCHAR(50)  NOT NULL,
+    password          VARCHAR(255) NOT NULL,
+    role              VARCHAR(50)  NOT NULL,
+    member_name       VARCHAR(50)  NOT NULL,
+    email             VARCHAR(50)  NOT NULL,
+    phone_number      VARCHAR(50)  NOT NULL,
+    created_by        BIGINT       NOT NULL,
+    created_at        DATETIME(6)  NOT NULL,
+    updated_by        BIGINT,
+    updated_at        DATETIME(6),
+    PRIMARY KEY (member_id),
+    CONSTRAINT uq_login_id     UNIQUE (login_id),
+    CONSTRAINT uq_email        UNIQUE (email),
+    CONSTRAINT uq_phone_number UNIQUE (phone_number)
+);
+
+CREATE TABLE partner (
+    partner_id      BIGINT       NOT NULL AUTO_INCREMENT,
+    partner_name    VARCHAR(100) NOT NULL,
+    partner_type    VARCHAR(30)  NOT NULL,
+    business_number VARCHAR(20),
+    created_by      BIGINT       NOT NULL,
+    created_at      DATETIME(6)  NOT NULL,
+    updated_by      BIGINT,
+    updated_at      DATETIME(6),
+    PRIMARY KEY (partner_id),
+    CONSTRAINT uq_partner_business_number UNIQUE (business_number)
+);
+
+CREATE TABLE store (
+    store_id   BIGINT       NOT NULL AUTO_INCREMENT,
+    store_name VARCHAR(100) NOT NULL,
+    address    VARCHAR(100) NOT NULL,
+    created_by BIGINT       NOT NULL,
+    created_at DATETIME(6)  NOT NULL,
+    updated_by BIGINT,
+    updated_at DATETIME(6),
+    PRIMARY KEY (store_id),
+    CONSTRAINT uq_store_name_address UNIQUE (store_name, address)
+);
+
+CREATE TABLE warehouse (
+    warehouse_id   BIGINT       NOT NULL AUTO_INCREMENT,
+    warehouse_name VARCHAR(100) NOT NULL,
+    address        VARCHAR(255) NOT NULL,
+    target_temp    VARCHAR(20)  NOT NULL,
+    capacity       INT          NOT NULL,
+    created_by     BIGINT       NOT NULL,
+    created_at     DATETIME(6)  NOT NULL,
+    updated_by     BIGINT,
+    updated_at     DATETIME(6),
+    PRIMARY KEY (warehouse_id)
+);
+
+CREATE TABLE section (
+    section_id        BIGINT      NOT NULL AUTO_INCREMENT,
+    warehouse_id      BIGINT      NOT NULL,
+    section_code      VARCHAR(20) NOT NULL,
+    section_name      VARCHAR(50) NOT NULL,
+    section_type      VARCHAR(20) NOT NULL,
+    quality_status    VARCHAR(10) NOT NULL,
+    allocation_status VARCHAR(10) NOT NULL,
+    temperature_type  VARCHAR(10) NOT NULL,
+    max_capacity      INT         NOT NULL,
+    current_capacity  INT         NOT NULL,
+    created_by        BIGINT      NOT NULL,
+    created_at        DATETIME(6) NOT NULL,
+    updated_by        BIGINT,
+    updated_at        DATETIME(6),
+    PRIMARY KEY (section_id),
+    CONSTRAINT uq_section_code UNIQUE (warehouse_id, section_code)
+);
+
+CREATE TABLE category (
+    category_id   BIGINT      NOT NULL AUTO_INCREMENT,
+    category_code CHAR(3)     NOT NULL,
+    category_name VARCHAR(50) NOT NULL,
+    created_by    BIGINT      NOT NULL,
+    created_at    DATETIME(6) NOT NULL,
+    updated_by    BIGINT,
+    updated_at    DATETIME(6),
+    PRIMARY KEY (category_id)
+);
+
+CREATE TABLE product_type (
+    type_id    BIGINT      NOT NULL AUTO_INCREMENT,
+    type_code  CHAR(3)     NOT NULL,
+    type_name  VARCHAR(50) NOT NULL,
+    created_by BIGINT      NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_by BIGINT,
+    updated_at DATETIME(6),
+    PRIMARY KEY (type_id)
+);
+
+CREATE TABLE product (
+    product_id        BIGINT       NOT NULL AUTO_INCREMENT,
+    sku_code          VARCHAR(50)  NOT NULL,
+    brand_name        VARCHAR(50)  NOT NULL,
+    product_name      VARCHAR(100) NOT NULL,
+    product_price     INT          NOT NULL,
+    temperature_type  VARCHAR(20)  NOT NULL,
+    category_id       BIGINT       NOT NULL,
+    type_id           BIGINT       NOT NULL,
+    skin_type         VARCHAR(50),
+    function_type     VARCHAR(100),
+    volume            INT          NOT NULL,
+    unit              VARCHAR(10)  NOT NULL,
+    ingredients       TEXT,
+    cautions          TEXT,
+    storage_condition VARCHAR(255),
+    created_by        BIGINT       NOT NULL,
+    created_at        DATETIME(6)  NOT NULL,
+    updated_by        BIGINT,
+    updated_at        DATETIME(6),
+    PRIMARY KEY (product_id),
+    CONSTRAINT uq_product_sku_code            UNIQUE (sku_code),
+    CONSTRAINT chk_product_price_non_negative CHECK  (product_price >= 0),
+    CONSTRAINT chk_volume_positive            CHECK  (volume > 0)
+);
+
+CREATE TABLE sku_sequence (
+    brand_name    VARCHAR(255) NOT NULL,
+    category_code VARCHAR(255) NOT NULL,
+    type_code     VARCHAR(255) NOT NULL,
+    volume        INT          NOT NULL,
+    current_seq   INT          NOT NULL,
+    PRIMARY KEY (brand_name, category_code, type_code, volume)
+);
+
+CREATE TABLE lot (
+    lot_id             BIGINT      NOT NULL AUTO_INCREMENT,
+    lot_number         VARCHAR(50) NOT NULL,
+    manufacturing_date DATETIME(6) NOT NULL,
+    expiration_date    DATETIME(6) NOT NULL,
+    status             VARCHAR(20) NOT NULL,
+    product_id         BIGINT      NOT NULL,
+    created_by         BIGINT      NOT NULL,
+    created_at         DATETIME(6) NOT NULL,
+    updated_by         BIGINT,
+    updated_at         DATETIME(6),
+    PRIMARY KEY (lot_id),
+    CONSTRAINT uq_lot_number UNIQUE (lot_number),
+    CONSTRAINT chk_lot_date  CHECK  (manufacturing_date <= expiration_date)
+);
+
+CREATE TABLE inventory (
+    inventory_id       BIGINT      NOT NULL AUTO_INCREMENT,
+    product_id         BIGINT      NOT NULL,
+    lot_id             BIGINT      NOT NULL,
+    section_id         BIGINT      NOT NULL,
+    warehouse_id       BIGINT      NOT NULL,
+    quantity           INT         NOT NULL,
+    available_quantity INT         NOT NULL,
+    alloc_status       VARCHAR(20) NOT NULL,
+    quality_status     VARCHAR(20) NOT NULL,
+    loc_status         VARCHAR(20) NOT NULL,
+    created_by         BIGINT      NOT NULL,
+    created_at         DATETIME(6) NOT NULL,
+    updated_by         BIGINT,
+    updated_at         DATETIME(6),
+    PRIMARY KEY (inventory_id),
+    CONSTRAINT uk_inventory_unit                UNIQUE (product_id, lot_id, section_id, alloc_status, quality_status, loc_status),
+    CONSTRAINT chk_inventory_quantity           CHECK  (quantity >= 0),
+    CONSTRAINT chk_inventory_available_quantity CHECK  (available_quantity >= 0 AND available_quantity <= quantity)
+);
+
+CREATE TABLE inventory_transaction (
+    transaction_id      BIGINT      NOT NULL AUTO_INCREMENT,
+    inventory_id        BIGINT      NOT NULL,
+    transaction_type    VARCHAR(20) NOT NULL,
+    transaction_qty     INT         NOT NULL,
+    balance_qty         INT         NOT NULL,
+    reference_id        BIGINT,
+    prev_alloc_status   VARCHAR(20),
+    prev_quality_status VARCHAR(20),
+    prev_loc_status     VARCHAR(20),
+    curr_alloc_status   VARCHAR(20) NOT NULL,
+    curr_quality_status VARCHAR(20) NOT NULL,
+    curr_loc_status     VARCHAR(20) NOT NULL,
+    member_id           BIGINT      NOT NULL,
+    change_reason       VARCHAR(255),
+    created_by          BIGINT      NOT NULL,
+    created_at          DATETIME(6) NOT NULL,
+    updated_by          BIGINT,
+    updated_at          DATETIME(6),
+    PRIMARY KEY (transaction_id)
+);
+
+CREATE TABLE inbound (
+    inbound_id   BIGINT      NOT NULL AUTO_INCREMENT,
+    version      BIGINT,
+    status       VARCHAR(20) NOT NULL,
+    inbound_date DATETIME(6) NOT NULL,
+    warehouse_id BIGINT      NOT NULL,
+    partner_id   BIGINT      NOT NULL,
+    created_by   BIGINT      NOT NULL,
+    created_at   DATETIME(6) NOT NULL,
+    updated_by   BIGINT,
+    updated_at   DATETIME(6),
+    PRIMARY KEY (inbound_id)
+);
+
+CREATE TABLE inbound_item (
+    inbound_item_id   BIGINT      NOT NULL AUTO_INCREMENT,
+    inbound_id        BIGINT      NOT NULL,
+    product_id        BIGINT      NOT NULL,
+    quantity          INT         NOT NULL,
+    manufacture_date  DATE        NOT NULL,
+    expiration_date   DATE        NOT NULL,
+    inspection_status VARCHAR(20) NOT NULL,
+    lot_id            BIGINT,
+    section_id        BIGINT,
+    created_by        BIGINT      NOT NULL,
+    created_at        DATETIME(6) NOT NULL,
+    updated_by        BIGINT,
+    updated_at        DATETIME(6),
+    PRIMARY KEY (inbound_item_id)
+);
+
+CREATE TABLE quality_inspection (
+    inspection_id       BIGINT      NOT NULL AUTO_INCREMENT,
+    source_type         VARCHAR(20) NOT NULL,
+    source_id           BIGINT      NOT NULL,
+    inventory_id        BIGINT,
+    inspector_id        BIGINT,
+    status              VARCHAR(20) NOT NULL,
+    inspection_quantity INT         NOT NULL,
+    passed_quantity     INT         NOT NULL,
+    failed_quantity     INT         NOT NULL,
+    defect_reason       VARCHAR(100),
+    created_by          BIGINT      NOT NULL,
+    created_at          DATETIME(6) NOT NULL,
+    updated_by          BIGINT,
+    updated_at          DATETIME(6),
+    PRIMARY KEY (inspection_id)
+);
+
+CREATE TABLE `order` (
+    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    order_status VARCHAR(255),
+    store_id     BIGINT,
+    warehouse_id BIGINT,
+    created_by   BIGINT       NOT NULL,
+    created_at   DATETIME(6)  NOT NULL,
+    updated_by   BIGINT,
+    updated_at   DATETIME(6),
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE order_item (
+    id         BIGINT      NOT NULL AUTO_INCREMENT,
+    order_id   BIGINT,
+    product_id BIGINT,
+    quantity   INT         NOT NULL,
+    created_by BIGINT      NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_by BIGINT,
+    updated_at DATETIME(6),
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE outbound (
+    id              BIGINT       NOT NULL AUTO_INCREMENT,
+    order_id        BIGINT,
+    warehouse_id    BIGINT,
+    outbound_status VARCHAR(255),
+    outbound_date   DATETIME(6),
+    created_by      BIGINT       NOT NULL,
+    created_at      DATETIME(6)  NOT NULL,
+    updated_by      BIGINT,
+    updated_at      DATETIME(6),
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE outbound_item (
+    id              BIGINT NOT NULL AUTO_INCREMENT,
+    outbound_id     BIGINT,
+    order_item_id   BIGINT,
+    inventory_id    BIGINT,
+    target_quantity INT    NOT NULL,
+    picked_quantity INT    NOT NULL,
+    PRIMARY KEY (id)
+);
