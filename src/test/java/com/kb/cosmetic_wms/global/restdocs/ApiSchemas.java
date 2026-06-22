@@ -45,6 +45,11 @@ public final class ApiSchemas {
     public static final String INBOUND_PUTAWAY_REQUEST = "InboundPutawayRequest";
     public static final String INBOUND_ITEM_RESPONSE = "InboundItemResponse";
 
+    // Inspection
+    public static final String INSPECTION_START_REQUEST = "InspectionStartRequest";
+    public static final String INSPECTION_COMPLETE_REQUEST = "InspectionCompleteRequest";
+    public static final String INSPECTION_DETAIL_RESPONSE = "InspectionDetailResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }

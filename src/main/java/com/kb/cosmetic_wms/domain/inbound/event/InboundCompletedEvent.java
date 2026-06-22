@@ -12,16 +12,19 @@ public record InboundCompletedEvent(
 ) {
 
     public record ItemSnapshot(
+            Long inboundItemId,
             Long productId,
             Long lotId,
             Long sectionId,
             int quantity,
             InspectionStatus inspectionStatus
-    ) {}
+    ) {
+    }
 
     public static InboundCompletedEvent from(Inbound inbound) {
         List<ItemSnapshot> snapshots = inbound.getInboundItems().stream()
                 .map(item -> new ItemSnapshot(
+                        item.getId(),
                         item.getProductId(),
                         item.getLotId(),
                         item.getSectionId(),

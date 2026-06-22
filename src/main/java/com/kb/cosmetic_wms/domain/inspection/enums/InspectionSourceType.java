@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum InspectionResult {
-    PASSED("합격"),
-    FAILED("불합격");
+public enum InspectionSourceType {
+    INBOUND("입고"),
+    RETURN("반품");
 
     private final String description;
 }
