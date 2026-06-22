@@ -80,7 +80,7 @@ ALTER TABLE orders
 
 ALTER TABLE orders_item
     ADD CONSTRAINT fk_orders_item_orders
-        FOREIGN KEY (orders_id) REFERENCES orders (id) ON DELETE CASCADE;
+        FOREIGN KEY (orders_id) REFERENCES orders (orders_id) ON DELETE CASCADE;
 
 ALTER TABLE orders_item
     ADD CONSTRAINT fk_orders_item_product
@@ -88,20 +88,25 @@ ALTER TABLE orders_item
 
 ALTER TABLE outbound
     ADD CONSTRAINT fk_outbound_orders
-        FOREIGN KEY (orders_id) REFERENCES orders (id);
+        FOREIGN KEY (orders_id)
+            REFERENCES orders (orders_id);
 
 ALTER TABLE outbound
     ADD CONSTRAINT fk_outbound_warehouse
-        FOREIGN KEY (warehouse_id) REFERENCES warehouse (warehouse_id);
+        FOREIGN KEY (warehouse_id)
+            REFERENCES warehouse (warehouse_id);
 
 ALTER TABLE outbound_item
     ADD CONSTRAINT fk_outbound_item_outbound
-        FOREIGN KEY (outbound_id) REFERENCES outbound (id);
+        FOREIGN KEY (outbound_id)
+            REFERENCES outbound (outbound_id);
 
 ALTER TABLE outbound_item
-    ADD CONSTRAINT fk_outbound_item_orders_item
-        FOREIGN KEY (orders_item_id) REFERENCES orders_item (id);
+    ADD CONSTRAINT fk_outbound_item_order_item
+        FOREIGN KEY (orders_item_id)
+            REFERENCES orders_item (orders_item_id);
 
 ALTER TABLE outbound_item
     ADD CONSTRAINT fk_outbound_item_inventory
-        FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id);
+        FOREIGN KEY (inventory_id)
+            REFERENCES inventory (inventory_id);

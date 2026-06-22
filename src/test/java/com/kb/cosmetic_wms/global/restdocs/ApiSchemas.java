@@ -54,6 +54,10 @@ public final class ApiSchemas {
     public static final String ORDER_CREATE_REQUEST = "OrderCreateRequest";
     public static final String ORDER_RESPONSE = "OrderResponse";
 
+    // Outbound
+    public static final String OUTBOUND_CREATE_REQUEST = "OutboundCreateRequest";
+    public static final String OUTBOUND_RESPONSE = "OutboundResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }
