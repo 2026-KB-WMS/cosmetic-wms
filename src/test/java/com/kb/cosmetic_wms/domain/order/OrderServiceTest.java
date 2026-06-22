@@ -1,12 +1,11 @@
 package com.kb.cosmetic_wms.domain.order;
 
-import com.kb.cosmetic_wms.domain.order.constants.OrderConstants;
 import com.kb.cosmetic_wms.domain.order.dto.CreateOrderRequestDto;
 import com.kb.cosmetic_wms.domain.order.dto.OrderResponseDto;
 import com.kb.cosmetic_wms.domain.order.entity.Orders;
 import com.kb.cosmetic_wms.domain.order.enums.OrderStatus;
 import com.kb.cosmetic_wms.domain.order.event.OrderConfirmedEvent;
-import com.kb.cosmetic_wms.domain.order.exception.OrderNotFoundException;
+import com.kb.cosmetic_wms.domain.order.exception.*;
 import com.kb.cosmetic_wms.domain.order.fixture.OrderTestBuilder;
 import com.kb.cosmetic_wms.domain.order.repository.OrderRepository;
 import com.kb.cosmetic_wms.domain.order.service.OrderService;
@@ -66,41 +65,32 @@ public class OrderServiceTest {
 
         @Test
         void 발주_신청_시_가맹점_정보가_누락되면_예외가_발생한다() {
-            // given
             CreateOrderRequestDto request = new CreateOrderRequestDto(
                     null, 10L,
                     List.of(new CreateOrderRequestDto.OrderItemRequestDto(1L, 10))
             );
 
-            // when & then
             assertThatThrownBy(() -> orderService.createOrder(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage(OrderConstants.STORE_REQUIRED_MESSAGE);
+                    .isInstanceOf(OrderStoreRequiredException.class);
         }
 
         @Test
         void 발주_신청_시_물류창고_정보가_누락되면_예외가_발생한다() {
-            // given
             CreateOrderRequestDto request = new CreateOrderRequestDto(
                     1L, null,
                     List.of(new CreateOrderRequestDto.OrderItemRequestDto(1L, 10))
             );
 
-            // when & then
             assertThatThrownBy(() -> orderService.createOrder(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage(OrderConstants.WAREHOUSE_REQUIRED_MESSAGE);
+                    .isInstanceOf(OrderWarehouseRequiredException.class);
         }
 
         @Test
         void 발주_신청_시_발주_품목_목록이_비어있으면_예외가_발생한다() {
-            // given
             CreateOrderRequestDto request = new CreateOrderRequestDto(1L, 10L, List.of());
 
-            // when & then
             assertThatThrownBy(() -> orderService.createOrder(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage(OrderConstants.ORDER_ITEM_MINIMUM_MESSAGE);
+                    .isInstanceOf(OrderItemsRequiredException.class);
         }
     }
 
@@ -131,8 +121,7 @@ public class OrderServiceTest {
 
             // when & then
             assertThatThrownBy(() -> orderService.confirmOrder(orderId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(OrderConstants.INVALID_CONFIRM_STATUS_MESSAGE);
+                    .isInstanceOf(OrderConfirmNotAllowedException.class);
         }
 
         @Test
@@ -210,8 +199,7 @@ public class OrderServiceTest {
 
             // when & then
             assertThatThrownBy(() -> orderService.startPreparation(orderId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(OrderConstants.INVALID_START_STATUS_MESSAGE);
+                    .isInstanceOf(OrderPreparationNotAllowedException.class);
         }
     }
 
@@ -239,13 +227,12 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
-            order.confirm();
+            order.confirm(); // CONFIRMED, not PREPARING
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.ship(orderId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(OrderConstants.INVALID_SHIP_STATUS_MESSAGE);
+                    .isInstanceOf(OrderShipNotAllowedException.class);
         }
     }
 
@@ -275,13 +262,12 @@ public class OrderServiceTest {
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
             order.confirm();
-            order.startPreparation();
+            order.startPreparation(); // PREPARING, not SHIPPED
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.completeDelivery(orderId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(OrderConstants.INVALID_DELIVERY_STATUS_MESSAGE);
+                    .isInstanceOf(OrderDeliveryCompleteNotAllowedException.class);
         }
     }
 
@@ -307,13 +293,12 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
-            order.confirm(); // CONFIRMED
+            order.confirm();
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.cancelOrder(orderId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(OrderConstants.INVALID_CANCEL_STATUS_MESSAGE);
+                    .isInstanceOf(OrderCancelNotAllowedException.class);
         }
 
         @Test
@@ -321,13 +306,12 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
-            order.cancel(); // CANCELED
+            order.cancel();
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.cancelOrder(orderId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(OrderConstants.INVALID_CANCEL_STATUS_MESSAGE);
+                    .isInstanceOf(OrderCancelNotAllowedException.class);
         }
 
         @Test

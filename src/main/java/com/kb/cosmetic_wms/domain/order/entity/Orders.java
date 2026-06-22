@@ -1,8 +1,8 @@
 package com.kb.cosmetic_wms.domain.order.entity;
 
 import com.kb.cosmetic_wms.domain.order.OrderLine;
-import com.kb.cosmetic_wms.domain.order.constants.OrderConstants;
 import com.kb.cosmetic_wms.domain.order.enums.OrderStatus;
+import com.kb.cosmetic_wms.domain.order.exception.*;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -42,9 +42,9 @@ public class Orders extends BaseEntity {
     }
 
     public static Orders create(Long storeId, Long warehouseId, List<OrderLine> lines) {
-        validateStore(storeId);
-        validateWarehouse(warehouseId);
-        validateOrderLine(lines);
+        if (storeId == null) throw new OrderStoreRequiredException();
+        if (warehouseId == null) throw new OrderWarehouseRequiredException();
+        if (lines == null || lines.isEmpty()) throw new OrderItemsRequiredException();
 
         Orders order = new Orders(storeId, warehouseId);
         lines.forEach(order::addOrderItem);
@@ -56,55 +56,27 @@ public class Orders extends BaseEntity {
     }
 
     public void cancel() {
-        if (this.orderStatus != OrderStatus.PENDING) {
-            throw new IllegalStateException(OrderConstants.INVALID_CANCEL_STATUS_MESSAGE);
-        }
+        if (this.orderStatus != OrderStatus.PENDING) throw new OrderCancelNotAllowedException();
         this.orderStatus = OrderStatus.CANCELED;
     }
 
     public void confirm() {
-        if (this.orderStatus != OrderStatus.PENDING) {
-            throw new IllegalStateException(OrderConstants.INVALID_CONFIRM_STATUS_MESSAGE);
-        }
+        if (this.orderStatus != OrderStatus.PENDING) throw new OrderConfirmNotAllowedException();
         this.orderStatus = OrderStatus.CONFIRMED;
     }
 
     public void startPreparation() {
-        if (this.orderStatus != OrderStatus.CONFIRMED) {
-            throw new IllegalStateException(OrderConstants.INVALID_START_STATUS_MESSAGE);
-        }
+        if (this.orderStatus != OrderStatus.CONFIRMED) throw new OrderPreparationNotAllowedException();
         this.orderStatus = OrderStatus.PREPARING;
     }
 
     public void ship() {
-        if (this.orderStatus != OrderStatus.PREPARING) {
-            throw new IllegalStateException(OrderConstants.INVALID_SHIP_STATUS_MESSAGE);
-        }
+        if (this.orderStatus != OrderStatus.PREPARING) throw new OrderShipNotAllowedException();
         this.orderStatus = OrderStatus.SHIPPED;
     }
 
     public void completeDelivery() {
-        if (this.orderStatus != OrderStatus.SHIPPED) {
-            throw new IllegalStateException(OrderConstants.INVALID_DELIVERY_STATUS_MESSAGE);
-        }
+        if (this.orderStatus != OrderStatus.SHIPPED) throw new OrderDeliveryCompleteNotAllowedException();
         this.orderStatus = OrderStatus.DELIVERED;
-    }
-
-    private static void validateStore(Long storeId) {
-        if (storeId == null) {
-            throw new IllegalArgumentException(OrderConstants.STORE_REQUIRED_MESSAGE);
-        }
-    }
-
-    private static void validateWarehouse(Long warehouseId) {
-        if (warehouseId == null) {
-            throw new IllegalArgumentException(OrderConstants.WAREHOUSE_REQUIRED_MESSAGE);
-        }
-    }
-
-    private static void validateOrderLine(List<OrderLine> lines) {
-        if (lines == null || lines.isEmpty()) {
-            throw new IllegalArgumentException(OrderConstants.ORDER_ITEM_MINIMUM_MESSAGE);
-        }
     }
 }
