@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.inspection.service;
 
+import com.kb.cosmetic_wms.domain.inspection.dto.QualityInspectionDetailResponseDto;
 import com.kb.cosmetic_wms.domain.inspection.entity.QualityInspection;
 import com.kb.cosmetic_wms.domain.inspection.enums.InspectionSourceType;
 import com.kb.cosmetic_wms.domain.inspection.event.InspectionCompletedEvent;
@@ -25,18 +26,26 @@ public class InspectionService {
         return inspectionRepository.save(inspection);
     }
 
-    @Transactional
-    public void startInspection(Long inspectionId, Long inspectorId) {
-        QualityInspection inspection = inspectionRepository.findByIdForUpdate(inspectionId)
+    public QualityInspectionDetailResponseDto getInspection(Long inspectionId) {
+        QualityInspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
-        inspection.startInspection(inspectorId);
+        return QualityInspectionDetailResponseDto.from(inspection);
     }
 
     @Transactional
-    public void completeInspection(Long inspectionId, int passedQty, int failedQty, String defectReason) {
+    public QualityInspectionDetailResponseDto startInspection(Long inspectionId, Long inspectorId) {
+        QualityInspection inspection = inspectionRepository.findByIdForUpdate(inspectionId)
+                .orElseThrow(InspectionNotFoundException::new);
+        inspection.startInspection(inspectorId);
+        return QualityInspectionDetailResponseDto.from(inspection);
+    }
+
+    @Transactional
+    public QualityInspectionDetailResponseDto completeInspection(Long inspectionId, int passedQty, int failedQty, String defectReason) {
         QualityInspection inspection = inspectionRepository.findByIdForUpdate(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
         inspection.completeInspection(passedQty, failedQty, defectReason);
         eventPublisher.publish(InspectionCompletedEvent.from(inspection));
+        return QualityInspectionDetailResponseDto.from(inspection);
     }
 }
