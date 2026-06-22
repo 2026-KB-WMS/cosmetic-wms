@@ -2,8 +2,9 @@ package com.kb.cosmetic_wms.domain.outbound.fixture;
 
 import com.kb.cosmetic_wms.domain.outbound.OutboundLine;
 import com.kb.cosmetic_wms.domain.outbound.entity.Outbound;
-import com.kb.cosmetic_wms.domain.outbound.entity.OutboundItem;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
+
+import java.util.List;
 
 public class OutboundTestBuilder {
 
@@ -22,9 +23,7 @@ public class OutboundTestBuilder {
     }
 
     public Outbound build() {
-        Outbound outbound = Outbound.create(ordersId, warehouseId, outboundType);
-        outbound.addItem(new OutboundLine(1L, 1L, 10));
-        return outbound;
+        return Outbound.create(ordersId, warehouseId, outboundType, List.of(new OutboundLine(1L, 1L, 10)));
     }
 
     public Outbound buildAllocated() {

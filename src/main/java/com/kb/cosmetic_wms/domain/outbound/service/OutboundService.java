@@ -3,7 +3,6 @@ package com.kb.cosmetic_wms.domain.outbound.service;
 import com.kb.cosmetic_wms.domain.outbound.OutboundLine;
 import com.kb.cosmetic_wms.domain.outbound.dto.OutboundResponseDto;
 import com.kb.cosmetic_wms.domain.outbound.entity.Outbound;
-import com.kb.cosmetic_wms.domain.outbound.enums.OutboundStatus;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundAllocatedEvent;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundCanceledEvent;
@@ -27,8 +26,7 @@ public class OutboundService {
 
     @Transactional
     public OutboundResponseDto createOutbound(Long ordersId, Long warehouseId, OutboundType outboundType, List<OutboundLine> lines) {
-        Outbound outbound = Outbound.create(ordersId, warehouseId, outboundType);
-        lines.forEach(outbound::addItem);
+        Outbound outbound = Outbound.create(ordersId, warehouseId, outboundType, lines);
         return OutboundResponseDto.from(outboundRepository.save(outbound));
     }
 
@@ -58,9 +56,10 @@ public class OutboundService {
     @Transactional
     public OutboundResponseDto cancel(Long outboundId) {
         Outbound outbound = findByIdForUpdateOrThrow(outboundId);
-        boolean wasAllocated = outbound.getOutboundStatus() == OutboundStatus.ALLOCATED;
-        outbound.cancel();
-        if (wasAllocated) {
+
+        boolean shouldReleaseStock = outbound.cancel();
+
+        if (shouldReleaseStock) {
             eventPublisher.publish(OutboundCanceledEvent.from(outbound));
         }
         return OutboundResponseDto.from(outbound);

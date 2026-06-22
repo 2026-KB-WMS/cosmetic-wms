@@ -54,20 +54,27 @@ public class Outbound extends BaseEntity {
         this.outboundDate = null;
     }
 
-    public static Outbound create(Long ordersId, Long warehouseId, OutboundType outboundType) {
+    public static Outbound create(Long ordersId, Long warehouseId,
+                                  OutboundType outboundType, List<OutboundLine> lines
+    ) {
         if (ordersId == null) throw new OutboundOrderIdRequiredException();
         if (warehouseId == null) throw new OutboundWarehouseRequiredException();
         if (outboundType == null) throw new OutboundTypeRequiredException();
-        return new Outbound(ordersId, warehouseId, outboundType);
+
+        if (lines == null || lines.isEmpty()) {
+            throw new IllegalArgumentException(OutboundConstants.MINIMUM_ITEM_REQUIRED_MESSAGE);
+        }
+
+        Outbound outbound = new Outbound(ordersId, warehouseId, outboundType);
+
+        lines.forEach(outbound::addInitialItem);
+
+        return outbound;
     }
 
-    public OutboundItem addItem(OutboundLine line) {
-        if (this.outboundStatus != OutboundStatus.PENDING) {
-            throw new IllegalStateException(OutboundConstants.INVALID_ADD_ITEM_STATUS_MESSAGE);
-        }
+    private void addInitialItem(OutboundLine line) {
         OutboundItem item = new OutboundItem(this, line);
         this.outboundItems.add(item);
-        return item;
     }
 
     /**
@@ -109,11 +116,16 @@ public class Outbound extends BaseEntity {
     /**
      * 출고 취소 (PENDING 또는 ALLOCATED → CANCELED)
      */
-    public void cancel() {
+    public boolean cancel() {
         if (this.outboundStatus != OutboundStatus.PENDING
                 && this.outboundStatus != OutboundStatus.ALLOCATED) {
             throw new OutboundCancelNotAllowedException();
         }
+
+        boolean isAllocatedBefore = (this.outboundStatus == OutboundStatus.ALLOCATED);
+
         this.outboundStatus = OutboundStatus.CANCELED;
+
+        return isAllocatedBefore;
     }
 }

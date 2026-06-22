@@ -5,8 +5,8 @@ public final class OutboundConstants {
     private OutboundConstants() {
     }
 
-    public static final String INVALID_ADD_ITEM_STATUS_MESSAGE =
-            "출고 대기(PENDING) 상태일 때만 품목을 추가할 수 있습니다.";
+    public static final String MINIMUM_ITEM_REQUIRED_MESSAGE =
+            "출고 전표에는 최소 1개 이상의 품목이 필요합니다.";
     public static final String INCOMPLETE_PICKING_MESSAGE =
             "모든 출고 품목의 피킹이 완료되지 않아 출고 확정을 할 수 없습니다.";
 
