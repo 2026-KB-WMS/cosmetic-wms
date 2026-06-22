@@ -20,6 +20,7 @@ public class Orders extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "orders_id")
     Long id;
 
     @Enumerated(EnumType.STRING)
