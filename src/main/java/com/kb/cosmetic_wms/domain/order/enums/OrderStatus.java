@@ -4,8 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum OrderStatus {
-    PENDING("발주 대기"),
-    IN_PROGRESS("작업 중"),
+    PENDING("발주 신청"),
+    CONFIRMED("발주 확정"),
+    PREPARING("배송 준비 중"),
     SHIPPED("배송 중"),
     DELIVERED("배송 완료"),
     CANCELED("발주 취소");

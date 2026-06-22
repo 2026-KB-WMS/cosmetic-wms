@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.order.fixture;
 
 import com.kb.cosmetic_wms.domain.order.OrderLine;
-import com.kb.cosmetic_wms.domain.order.entity.Order;
+import com.kb.cosmetic_wms.domain.order.entity.Orders;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class OrderTestBuilder {
         return this;
     }
 
-    public Order build() {
-        return Order.create(this.storeId, this.warehouseId, this.orderLines);
+    public Orders build() {
+        return Orders.create(this.storeId, this.warehouseId, this.orderLines);
     }
 }

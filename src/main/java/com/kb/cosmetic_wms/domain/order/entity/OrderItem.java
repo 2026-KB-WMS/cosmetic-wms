@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "orders_item")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class OrderItem extends BaseEntity {
@@ -16,14 +17,17 @@ public class OrderItem extends BaseEntity {
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private Order order;
+    @JoinColumn(name = "orders_id", nullable = false, foreignKey = @ForeignKey(name = "fk_orders_item_orders"))
+    private Orders orders;
 
+    @Column(name = "product_id", nullable = false)
     private Long productId;
 
+    @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    OrderItem(Order order, Long productId, int quantity) {
-        this.order = order;
+    OrderItem(Orders orders, Long productId, int quantity) {
+        this.orders = orders;
         this.productId = productId;
         this.quantity = quantity;
     }

@@ -20,6 +20,7 @@ public class OutboundItem {
     @ManyToOne(fetch = FetchType.LAZY)
     private Outbound outbound;
 
+    @Column(name = "orders_item_id")
     private Long orderItemId;
     private Long inventoryId;
 
