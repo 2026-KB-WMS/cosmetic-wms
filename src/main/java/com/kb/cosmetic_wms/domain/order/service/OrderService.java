@@ -33,7 +33,7 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDto confirmOrder(Long orderId) {
-        Orders order = findOrderOrThrow(orderId);
+        Orders order = findByIdWithOrderItemsForUpdateOrThrow(orderId);
         order.confirm();
         eventPublisher.publish(OrderConfirmedEvent.from(order));
         return OrderResponseDto.from(order);
@@ -41,33 +41,39 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDto startPreparation(Long orderId) {
-        Orders order = findOrderOrThrow(orderId);
+        Orders order = findByIdForUpdateOrThrow(orderId);
         order.startPreparation();
         return OrderResponseDto.from(order);
     }
 
     @Transactional
     public OrderResponseDto ship(Long orderId) {
-        Orders order = findOrderOrThrow(orderId);
+        Orders order = findByIdForUpdateOrThrow(orderId);
         order.ship();
         return OrderResponseDto.from(order);
     }
 
     @Transactional
     public OrderResponseDto completeDelivery(Long orderId) {
-        Orders order = findOrderOrThrow(orderId);
+        Orders order = findByIdForUpdateOrThrow(orderId);
         order.completeDelivery();
         return OrderResponseDto.from(order);
     }
 
     @Transactional
     public OrderResponseDto cancelOrder(Long orderId) {
-        Orders order = findOrderOrThrow(orderId);
+        Orders order = findByIdForUpdateOrThrow(orderId);
         order.cancel();
         return OrderResponseDto.from(order);
     }
 
-    private Orders findOrderOrThrow(Long orderId) {
-        return orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
+    private Orders findByIdForUpdateOrThrow(Long orderId) {
+        return orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(OrderNotFoundException::new);
+    }
+
+    private Orders findByIdWithOrderItemsForUpdateOrThrow(Long orderId) {
+        return orderRepository.findByIdWithOrderItemsForUpdate(orderId)
+                .orElseThrow(OrderNotFoundException::new);
     }
 }

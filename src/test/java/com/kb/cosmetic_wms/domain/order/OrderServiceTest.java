@@ -102,7 +102,7 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdWithOrderItemsForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             OrderResponseDto response = orderService.confirmOrder(orderId);
@@ -117,7 +117,7 @@ public class OrderServiceTest {
             Long orderId = 1L;
             Orders confirmedOrder = new OrderTestBuilder().build();
             confirmedOrder.confirm();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(confirmedOrder));
+            given(orderRepository.findByIdWithOrderItemsForUpdate(orderId)).willReturn(Optional.of(confirmedOrder));
 
             // when & then
             assertThatThrownBy(() -> orderService.confirmOrder(orderId))
@@ -128,7 +128,7 @@ public class OrderServiceTest {
         void 존재하지_않는_발주_ID로_확정을_요청하면_예외가_발생한다() {
             // given
             Long nonExistentOrderId = 999L;
-            given(orderRepository.findById(nonExistentOrderId)).willReturn(Optional.empty());
+            given(orderRepository.findByIdWithOrderItemsForUpdate(nonExistentOrderId)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> orderService.confirmOrder(nonExistentOrderId))
@@ -140,7 +140,7 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdWithOrderItemsForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             orderService.confirmOrder(orderId);
@@ -155,7 +155,7 @@ public class OrderServiceTest {
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
             ReflectionTestUtils.setField(order, "id", orderId);
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdWithOrderItemsForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             orderService.confirmOrder(orderId);
@@ -181,7 +181,7 @@ public class OrderServiceTest {
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
             order.confirm();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             OrderResponseDto response = orderService.startPreparation(orderId);
@@ -195,7 +195,7 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build(); // PENDING 상태
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.startPreparation(orderId))
@@ -213,7 +213,7 @@ public class OrderServiceTest {
             Orders order = new OrderTestBuilder().build();
             order.confirm();
             order.startPreparation();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             OrderResponseDto response = orderService.ship(orderId);
@@ -228,7 +228,7 @@ public class OrderServiceTest {
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
             order.confirm(); // CONFIRMED, not PREPARING
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.ship(orderId))
@@ -247,7 +247,7 @@ public class OrderServiceTest {
             order.confirm();
             order.startPreparation();
             order.ship();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             OrderResponseDto response = orderService.completeDelivery(orderId);
@@ -263,7 +263,7 @@ public class OrderServiceTest {
             Orders order = new OrderTestBuilder().build();
             order.confirm();
             order.startPreparation(); // PREPARING, not SHIPPED
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.completeDelivery(orderId))
@@ -279,7 +279,7 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             OrderResponseDto response = orderService.cancelOrder(orderId);
@@ -294,7 +294,7 @@ public class OrderServiceTest {
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
             order.confirm();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.cancelOrder(orderId))
@@ -307,7 +307,7 @@ public class OrderServiceTest {
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
             order.cancel();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.cancelOrder(orderId))
@@ -319,7 +319,7 @@ public class OrderServiceTest {
             // given
             Long orderId = 1L;
             Orders order = new OrderTestBuilder().build();
-            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when
             orderService.cancelOrder(orderId);
