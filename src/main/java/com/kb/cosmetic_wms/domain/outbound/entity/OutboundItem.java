@@ -9,22 +9,30 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "outbound_item")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class OutboundItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "outbound_item_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outbound_id", nullable = false, foreignKey = @ForeignKey(name = "fk_outbound_item_outbound"))
     private Outbound outbound;
 
-    @Column(name = "orders_item_id")
+    @Column(name = "orders_item_id", nullable = false)
     private Long orderItemId;
+
+    @Column(name = "inventory_id", nullable = false)
     private Long inventoryId;
 
+    @Column(name = "target_quantity", nullable = false)
     private int targetQuantity;
+
+    @Column(name = "picked_quantity", nullable = false)
     private int pickedQuantity;
 
     OutboundItem(Outbound outbound, OutboundLine line) {
@@ -45,7 +53,7 @@ public class OutboundItem {
      * @throws IllegalArgumentException 피킹 수량이 음수이거나 지시 수량을 초과한 경우
      */
     public void changePickedQuantity(int pickedQuantity) {
-        if (this.outbound.getOutboundStatus() != OutboundStatus.PICKING) {
+        if (this.outbound.getOutboundStatus() != OutboundStatus.PROCESSING) {
             throw new IllegalStateException(OutboundConstants.INVALID_PICKING_STATUS_MESSAGE);
         }
 
