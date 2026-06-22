@@ -22,7 +22,9 @@ public class Outbound extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long orderId;
+    @Column(name = "orders_id")
+    private Long ordersId;
+
     private Long warehouseId;
 
     @Enumerated(EnumType.STRING)
@@ -33,18 +35,18 @@ public class Outbound extends BaseEntity {
     @OneToMany(mappedBy = "outbound", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<OutboundItem> outboundItems = new ArrayList<>();
 
-    private Outbound(Long orderId, Long warehouseId, OutboundStatus outboundStatus) {
-        this.orderId = orderId;
+    private Outbound(Long ordersId, Long warehouseId, OutboundStatus outboundStatus) {
+        this.ordersId = ordersId;
         this.warehouseId = warehouseId;
         this.outboundStatus = outboundStatus;
         this.outboundDate = null;
     }
 
-    public static Outbound create(Long orderId, Long warehouseId) {
-        validateOrderId(orderId);
+    public static Outbound create(Long ordersId, Long warehouseId) {
+        validateOrderId(ordersId);
         validateWarehouseId(warehouseId);
 
-        return new Outbound(orderId, warehouseId, OutboundStatus.PENDING);
+        return new Outbound(ordersId, warehouseId, OutboundStatus.PENDING);
     }
 
     /**
@@ -110,8 +112,8 @@ public class Outbound extends BaseEntity {
         this.outboundStatus = OutboundStatus.CANCELED;
     }
 
-    private static void validateOrderId(Long orderId) {
-        if (orderId == null) {
+    private static void validateOrderId(Long ordersId) {
+        if (ordersId == null) {
             throw new IllegalArgumentException(OutboundConstants.ORDER_ID_REQUIRED_MESSAGE);
         }
     }
