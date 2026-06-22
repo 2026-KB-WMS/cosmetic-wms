@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.domain.outbound.OutboundLine;
 import com.kb.cosmetic_wms.domain.outbound.entity.Outbound;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class OutboundTestBuilder {
@@ -46,7 +47,7 @@ public class OutboundTestBuilder {
 
     public Outbound buildShipped() {
         Outbound outbound = buildFullyPickedProcessing();
-        outbound.ship();
+        outbound.ship(LocalDateTime.now());
         return outbound;
     }
 

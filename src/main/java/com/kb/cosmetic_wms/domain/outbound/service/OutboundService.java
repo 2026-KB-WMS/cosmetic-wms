@@ -7,6 +7,7 @@ import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundAllocatedEvent;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundCanceledEvent;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundShippedEvent;
+import com.kb.cosmetic_wms.domain.outbound.event.OutboundStockReleaseRequestedEvent;
 import com.kb.cosmetic_wms.domain.outbound.exception.OutboundNotFoundException;
 import com.kb.cosmetic_wms.domain.outbound.repository.OutboundRepository;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -48,7 +50,7 @@ public class OutboundService {
     @Transactional
     public OutboundResponseDto ship(Long outboundId) {
         Outbound outbound = findByIdForUpdateOrThrow(outboundId);
-        outbound.ship();
+        outbound.ship(LocalDateTime.now());
         eventPublisher.publish(OutboundShippedEvent.from(outbound));
         return OutboundResponseDto.from(outbound);
     }
@@ -57,10 +59,12 @@ public class OutboundService {
     public OutboundResponseDto cancel(Long outboundId) {
         Outbound outbound = findByIdForUpdateOrThrow(outboundId);
 
-        boolean shouldReleaseStock = outbound.cancel();
+        boolean wasAllocated = outbound.cancel();
 
-        if (shouldReleaseStock) {
-            eventPublisher.publish(OutboundCanceledEvent.from(outbound));
+        eventPublisher.publish(OutboundCanceledEvent.from(outbound));
+
+        if (wasAllocated) {
+            eventPublisher.publish(OutboundStockReleaseRequestedEvent.from(outbound));
         }
         return OutboundResponseDto.from(outbound);
     }

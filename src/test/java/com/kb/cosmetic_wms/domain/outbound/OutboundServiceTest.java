@@ -8,6 +8,7 @@ import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundAllocatedEvent;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundCanceledEvent;
 import com.kb.cosmetic_wms.domain.outbound.event.OutboundShippedEvent;
+import com.kb.cosmetic_wms.domain.outbound.event.OutboundStockReleaseRequestedEvent;
 import com.kb.cosmetic_wms.domain.outbound.exception.*;
 import com.kb.cosmetic_wms.domain.outbound.fixture.OutboundTestBuilder;
 import com.kb.cosmetic_wms.domain.outbound.repository.OutboundRepository;
@@ -238,7 +239,22 @@ public class OutboundServiceTest {
         }
 
         @Test
-        void 재고_할당_상태에서_출고_취소_성공_시_묶여있던_재고_해제를_위해_출고_취소_이벤트가_발행된다() {
+        void 출고_대기_상태에서_취소_시_출고_취소_이벤트만_발행되고_재고_환원_이벤트는_발행되지_않는다() {
+            // given
+            Long outboundId = 1L;
+            given(outboundRepository.findByIdForUpdate(outboundId))
+                    .willReturn(Optional.of(new OutboundTestBuilder().build())); // PENDING
+
+            // when
+            outboundService.cancel(outboundId);
+
+            // then
+            verify(eventPublisher, times(1)).publish(any(OutboundCanceledEvent.class));
+            verify(eventPublisher, never()).publish(any(OutboundStockReleaseRequestedEvent.class));
+        }
+
+        @Test
+        void 재고_할당_상태에서_취소_시_출고_취소_이벤트와_재고_환원_요청_이벤트가_각각_1번씩_발행된다() {
             // given
             Long outboundId = 1L;
             given(outboundRepository.findByIdForUpdate(outboundId))
@@ -249,6 +265,7 @@ public class OutboundServiceTest {
 
             // then
             verify(eventPublisher, times(1)).publish(any(OutboundCanceledEvent.class));
+            verify(eventPublisher, times(1)).publish(any(OutboundStockReleaseRequestedEvent.class));
         }
 
         @Test

@@ -100,7 +100,7 @@ public class Outbound extends BaseEntity {
     /**
      * 출하 완료 (PROCESSING → SHIPPED)
      */
-    public void ship() {
+    public void ship(LocalDateTime shippedAt) {
         if (this.outboundStatus != OutboundStatus.PROCESSING) {
             throw new OutboundShipNotAllowedException();
         }
@@ -110,7 +110,7 @@ public class Outbound extends BaseEntity {
             throw new IllegalStateException(OutboundConstants.INCOMPLETE_PICKING_MESSAGE);
         }
         this.outboundStatus = OutboundStatus.SHIPPED;
-        this.outboundDate = LocalDateTime.now();
+        this.outboundDate = shippedAt;
     }
 
     /**

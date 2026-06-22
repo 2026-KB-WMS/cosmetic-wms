@@ -8,6 +8,7 @@ import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
 import com.kb.cosmetic_wms.domain.outbound.exception.*;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +28,7 @@ public class OutboundEntityTest {
         outbound.allocate();
         outbound.startProcessing();
         outbound.getOutboundItems().get(0).changePickedQuantity(DEFAULT_LINE.targetQuantity());
-        outbound.ship();
+        outbound.ship(LocalDateTime.now());
         return outbound;
     }
 
@@ -111,7 +112,7 @@ public class OutboundEntityTest {
         outbound.startProcessing();
         outbound.getOutboundItems().get(0).changePickedQuantity(DEFAULT_LINE.targetQuantity());
 
-        outbound.ship();
+        outbound.ship(LocalDateTime.now());
 
         assertThat(outbound.getOutboundStatus()).isEqualTo(OutboundStatus.SHIPPED);
         assertThat(outbound.getOutboundDate()).isNotNull();
@@ -154,7 +155,7 @@ public class OutboundEntityTest {
         assertThatThrownBy(outbound::allocate)
                 .isInstanceOf(OutboundAllocateNotAllowedException.class);
 
-        assertThatThrownBy(outbound::ship)
+        assertThatThrownBy(() -> outbound.ship(LocalDateTime.now()))
                 .isInstanceOf(OutboundShipNotAllowedException.class);
     }
 
@@ -167,7 +168,7 @@ public class OutboundEntityTest {
         outbound.startProcessing();
         item.changePickedQuantity(8);
 
-        assertThatThrownBy(outbound::ship)
+        assertThatThrownBy(() -> outbound.ship(LocalDateTime.now()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage(OutboundConstants.INCOMPLETE_PICKING_MESSAGE);
     }
@@ -183,7 +184,7 @@ public class OutboundEntityTest {
         item1.changePickedQuantity(10);
         item2.changePickedQuantity(5);
 
-        outbound.ship();
+        outbound.ship(LocalDateTime.now());
 
         assertThat(outbound.getOutboundStatus()).isEqualTo(OutboundStatus.SHIPPED);
         assertThat(outbound.getOutboundDate()).isNotNull();
