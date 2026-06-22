@@ -50,6 +50,10 @@ public final class ApiSchemas {
     public static final String INSPECTION_COMPLETE_REQUEST = "InspectionCompleteRequest";
     public static final String INSPECTION_DETAIL_RESPONSE = "InspectionDetailResponse";
 
+    // Order
+    public static final String ORDER_CREATE_REQUEST = "OrderCreateRequest";
+    public static final String ORDER_RESPONSE = "OrderResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }

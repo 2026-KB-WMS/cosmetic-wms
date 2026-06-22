@@ -21,7 +21,7 @@ public class OutboundEntityTest {
         Outbound outbound = Outbound.create(orderId, warehouseId);
 
         // then
-        assertThat(outbound.getOrderId()).isEqualTo(orderId);
+        assertThat(outbound.getOrdersId()).isEqualTo(orderId);
         assertThat(outbound.getOutboundStatus()).isEqualTo(OutboundStatus.PENDING);
         assertThat(outbound.getOutboundDate()).isNull();
     }
