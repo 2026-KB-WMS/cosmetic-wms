@@ -239,7 +239,7 @@ CREATE TABLE quality_inspection (
 );
 
 CREATE TABLE orders (
-    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    orders_id    BIGINT       NOT NULL AUTO_INCREMENT,
     order_status VARCHAR(50)  NOT NULL,
     store_id     BIGINT       NOT NULL,
     warehouse_id BIGINT       NOT NULL,
@@ -247,41 +247,42 @@ CREATE TABLE orders (
     created_at   DATETIME(6)  NOT NULL,
     updated_by   BIGINT,
     updated_at   DATETIME(6),
-    PRIMARY KEY (id)
+    PRIMARY KEY (orders_id)
 );
 
 CREATE TABLE orders_item (
-     id         BIGINT      NOT NULL AUTO_INCREMENT,
-     orders_id  BIGINT      NOT NULL,
-     product_id BIGINT      NOT NULL,
-     quantity   INT         NOT NULL,
-     created_by BIGINT      NOT NULL,
-     created_at DATETIME(6) NOT NULL,
-     updated_by BIGINT,
-     updated_at DATETIME(6),
-     PRIMARY KEY (id),
-     CONSTRAINT chk_orders_item_quantity CHECK (quantity > 0)
+    orders_item_id BIGINT      NOT NULL AUTO_INCREMENT,
+    orders_id      BIGINT      NOT NULL,
+    product_id     BIGINT      NOT NULL,
+    quantity       INT         NOT NULL,
+    created_by     BIGINT      NOT NULL,
+    created_at     DATETIME(6) NOT NULL,
+    updated_by     BIGINT,
+    updated_at     DATETIME(6),
+    PRIMARY KEY (orders_item_id),
+    CONSTRAINT chk_orders_item_quantity CHECK (quantity > 0)
 );
 
 CREATE TABLE outbound (
-    id              BIGINT       NOT NULL AUTO_INCREMENT,
-    orders_id        BIGINT,
-    warehouse_id    BIGINT,
-    outbound_status VARCHAR(255),
+    outbound_id     BIGINT      NOT NULL AUTO_INCREMENT,
+    orders_id       BIGINT      NOT NULL,
+    warehouse_id    BIGINT      NOT NULL,
+    outbound_type   VARCHAR(20) NOT NULL,
+    outbound_status VARCHAR(20) NOT NULL,
     outbound_date   DATETIME(6),
-    created_by      BIGINT       NOT NULL,
-    created_at      DATETIME(6)  NOT NULL,
+    created_by      BIGINT      NOT NULL,
+    created_at      DATETIME(6) NOT NULL,
     updated_by      BIGINT,
     updated_at      DATETIME(6),
-    PRIMARY KEY (id)
+    PRIMARY KEY (outbound_id)
 );
 
 CREATE TABLE outbound_item (
-    id              BIGINT NOT NULL AUTO_INCREMENT,
-    outbound_id     BIGINT,
-    orders_item_id   BIGINT,
-    inventory_id    BIGINT,
-    target_quantity INT    NOT NULL,
-    picked_quantity INT    NOT NULL,
-    PRIMARY KEY (id)
+    outbound_item_id BIGINT NOT NULL AUTO_INCREMENT,
+    outbound_id      BIGINT NOT NULL,
+    orders_item_id   BIGINT NOT NULL,
+    inventory_id     BIGINT NOT NULL,
+    target_quantity  INT    NOT NULL,
+    picked_quantity  INT    NOT NULL,
+    PRIMARY KEY (outbound_item_id)
 );

@@ -14,6 +14,7 @@ public class OrderItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "orders_item_id")
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
