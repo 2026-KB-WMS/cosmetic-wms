@@ -238,11 +238,11 @@ CREATE TABLE quality_inspection (
     PRIMARY KEY (inspection_id)
 );
 
-CREATE TABLE `order` (
+CREATE TABLE orders (
     id           BIGINT       NOT NULL AUTO_INCREMENT,
-    order_status VARCHAR(255),
-    store_id     BIGINT,
-    warehouse_id BIGINT,
+    order_status VARCHAR(50)  NOT NULL,
+    store_id     BIGINT       NOT NULL,
+    warehouse_id BIGINT       NOT NULL,
     created_by   BIGINT       NOT NULL,
     created_at   DATETIME(6)  NOT NULL,
     updated_by   BIGINT,
@@ -250,21 +250,22 @@ CREATE TABLE `order` (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE order_item (
-    id         BIGINT      NOT NULL AUTO_INCREMENT,
-    order_id   BIGINT,
-    product_id BIGINT,
-    quantity   INT         NOT NULL,
-    created_by BIGINT      NOT NULL,
-    created_at DATETIME(6) NOT NULL,
-    updated_by BIGINT,
-    updated_at DATETIME(6),
-    PRIMARY KEY (id)
+CREATE TABLE orders_item (
+     id         BIGINT      NOT NULL AUTO_INCREMENT,
+     orders_id  BIGINT      NOT NULL,
+     product_id BIGINT      NOT NULL,
+     quantity   INT         NOT NULL,
+     created_by BIGINT      NOT NULL,
+     created_at DATETIME(6) NOT NULL,
+     updated_by BIGINT,
+     updated_at DATETIME(6),
+     PRIMARY KEY (id),
+     CONSTRAINT chk_orders_item_quantity CHECK (quantity > 0)
 );
 
 CREATE TABLE outbound (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
-    order_id        BIGINT,
+    orders_id        BIGINT,
     warehouse_id    BIGINT,
     outbound_status VARCHAR(255),
     outbound_date   DATETIME(6),
@@ -278,7 +279,7 @@ CREATE TABLE outbound (
 CREATE TABLE outbound_item (
     id              BIGINT NOT NULL AUTO_INCREMENT,
     outbound_id     BIGINT,
-    order_item_id   BIGINT,
+    orders_item_id   BIGINT,
     inventory_id    BIGINT,
     target_quantity INT    NOT NULL,
     picked_quantity INT    NOT NULL,

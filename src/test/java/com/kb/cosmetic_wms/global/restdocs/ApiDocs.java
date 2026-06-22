@@ -14,4 +14,5 @@ public final class ApiDocs {
     public static final String INVENTORY = "Inventory API";
     public static final String INBOUND = "Inbound API";
     public static final String INSPECTION = "Inspection API";
+    public static final String ORDER = "Order API";
 }
