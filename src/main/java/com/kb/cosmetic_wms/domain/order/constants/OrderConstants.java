@@ -14,11 +14,13 @@ public final class OrderConstants {
             "발주 수량은 0보다 커야 합니다.";
 
     public static final String INVALID_CANCEL_STATUS_MESSAGE =
-            "발주 대기(PENDING) 상태에서만 취소가 가능합니다.";
+            "발주 신청(PENDING) 상태에서만 취소가 가능합니다.";
+    public static final String INVALID_CONFIRM_STATUS_MESSAGE =
+            "발주 신청(PENDING) 상태에서만 확정이 가능합니다.";
     public static final String INVALID_START_STATUS_MESSAGE =
-            "발주 대기(PENDING) 상태에서만 작업을 시작할 수 있습니다.";
+            "발주 확정(CONFIRMED) 상태에서만 배송 준비를 시작할 수 있습니다.";
     public static final String INVALID_SHIP_STATUS_MESSAGE =
-            "작업 중(IN_PROGRESS) 상태에서만 배송을 시작할 수 있습니다.";
+            "배송 준비 중(PREPARING) 상태에서만 배송을 시작할 수 있습니다.";
     public static final String INVALID_DELIVERY_STATUS_MESSAGE =
             "배송 중(SHIPPED) 상태에서만 배송 완료 처리가 가능합니다.";
 }

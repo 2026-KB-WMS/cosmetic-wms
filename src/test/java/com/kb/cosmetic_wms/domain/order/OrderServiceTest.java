@@ -1,53 +1,106 @@
 package com.kb.cosmetic_wms.domain.order;
 
+import com.kb.cosmetic_wms.domain.order.constants.OrderConstants;
+import com.kb.cosmetic_wms.domain.order.dto.CreateOrderRequestDto;
+import com.kb.cosmetic_wms.domain.order.dto.OrderResponseDto;
+import com.kb.cosmetic_wms.domain.order.entity.Orders;
+import com.kb.cosmetic_wms.domain.order.enums.OrderStatus;
+import com.kb.cosmetic_wms.domain.order.event.OrderConfirmedEvent;
+import com.kb.cosmetic_wms.domain.order.exception.OrderNotFoundException;
+import com.kb.cosmetic_wms.domain.order.fixture.OrderTestBuilder;
+import com.kb.cosmetic_wms.domain.order.repository.OrderRepository;
+import com.kb.cosmetic_wms.domain.order.service.OrderService;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
 
-//    @InjectMocks
-//    private OrderService orderService;
-//
-//    @Mock
-//    private OrderRepository orderRepository;
+    @InjectMocks
+    private OrderService orderService;
+
+    @Mock
+    private OrderRepository orderRepository;
 
     @Mock
     private EventPublisher eventPublisher;
 
     @Nested
-    class 발주_등록_및_생성 {
+    class 발주_신청 {
 
         @Test
-        void 올바른_발주_요청_정보가_주어지면_발주_전표가_성공적으로_생성된다() {
+        void 올바른_발주_정보가_주어지면_발주_신청_상태로_전표가_성공적으로_생성된다() {
+            // given
+            CreateOrderRequestDto request = new CreateOrderRequestDto(
+                    1L, 10L,
+                    List.of(new CreateOrderRequestDto.OrderItemRequestDto(1L, 10))
+            );
+            Orders savedOrder = new OrderTestBuilder().build();
+            ReflectionTestUtils.setField(savedOrder, "id", 1L);
+            given(orderRepository.save(any(Orders.class))).willReturn(savedOrder);
+
+            // when
+            OrderResponseDto response = orderService.createOrder(request);
+
+            // then
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.PENDING);
+            assertThat(response.storeId()).isEqualTo(1L);
+            assertThat(response.warehouseId()).isEqualTo(10L);
         }
 
         @Test
-        void 발주_요청_시_납품_예정일이_과거_날짜이거나_누락되면_예외가_발생한다() {
-        }
-    }
+        void 발주_신청_시_가맹점_정보가_누락되면_예외가_발생한다() {
+            // given
+            CreateOrderRequestDto request = new CreateOrderRequestDto(
+                    null, 10L,
+                    List.of(new CreateOrderRequestDto.OrderItemRequestDto(1L, 10))
+            );
 
-    @Nested
-    class 발주_품목_추가_및_변경 {
-
-        @Test
-        void 임시저장_상태인_발주_전표에는_새로운_발주_대상_상품과_수량을_정상적으로_추가한다() {
-        }
-
-        @Test
-        void 이미_확정되었거나_취소된_발주_전표에_품목을_추가하려고_하면_예외가_발생한다() {
+            // when & then
+            assertThatThrownBy(() -> orderService.createOrder(request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(OrderConstants.STORE_REQUIRED_MESSAGE);
         }
 
         @Test
-        void 추가하려는_발주_품목의_수량이_0_이하인_경우_예외가_발생한다() {
+        void 발주_신청_시_물류창고_정보가_누락되면_예외가_발생한다() {
+            // given
+            CreateOrderRequestDto request = new CreateOrderRequestDto(
+                    1L, null,
+                    List.of(new CreateOrderRequestDto.OrderItemRequestDto(1L, 10))
+            );
+
+            // when & then
+            assertThatThrownBy(() -> orderService.createOrder(request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(OrderConstants.WAREHOUSE_REQUIRED_MESSAGE);
         }
 
         @Test
-        void 기존에_등록된_발주_품목의_수량을_변경하면_전표의_총_발주_수량과_금액이_재계산된다() {
+        void 발주_신청_시_발주_품목_목록이_비어있으면_예외가_발생한다() {
+            // given
+            CreateOrderRequestDto request = new CreateOrderRequestDto(1L, 10L, List.of());
+
+            // when & then
+            assertThatThrownBy(() -> orderService.createOrder(request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(OrderConstants.ORDER_ITEM_MINIMUM_MESSAGE);
         }
     }
 
@@ -55,19 +108,180 @@ public class OrderServiceTest {
     class 발주_확정 {
 
         @Test
-        void 임시저장_상태의_발주를_확정하면_상태가_변경되고_다운스트림_연동을_위한_발주_확정_이벤트가_발행된다() {
+        void 발주_신청_상태의_전표를_확정하면_발주_확정_상태로_정상_전환된다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            OrderResponseDto response = orderService.confirmOrder(orderId);
+
+            // then
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.CONFIRMED);
         }
 
         @Test
-        void 발주_품목이_단_1개도_존재하지_않는_공백_전표를_확정하려고_하면_예외가_발생한다() {
+        void 이미_발주_확정되었거나_취소된_전표에_대해_다시_확정을_요청하면_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Orders confirmedOrder = new OrderTestBuilder().build();
+            confirmedOrder.confirm();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(confirmedOrder));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.confirmOrder(orderId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(OrderConstants.INVALID_CONFIRM_STATUS_MESSAGE);
         }
 
         @Test
-        void 이미_확정되었거나_취소된_발주_전표를_다시_확정하려고_하면_예외가_발생한다() {
+        void 존재하지_않는_발주_ID로_확정을_요청하면_예외가_발생한다() {
+            // given
+            Long nonExistentOrderId = 999L;
+            given(orderRepository.findById(nonExistentOrderId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> orderService.confirmOrder(nonExistentOrderId))
+                    .isInstanceOf(OrderNotFoundException.class);
         }
 
         @Test
-        void 존재하지_않는_발주_전표_ID로_확정을_요청하면_예외가_발생한다() {
+        void 발주_확정_성공_시_발주_확정_이벤트가_정확히_1번_발행된다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            orderService.confirmOrder(orderId);
+
+            // then
+            verify(eventPublisher, times(1)).publish(any(OrderConfirmedEvent.class));
+        }
+
+        @Test
+        void 발주_확정_이벤트_발행_시_출고_도메인에_필요한_발주_ID와_품목_스냅샷_정보가_정확히_실려있어야_한다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            ReflectionTestUtils.setField(order, "id", orderId);
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            orderService.confirmOrder(orderId);
+
+            // then
+            ArgumentCaptor<OrderConfirmedEvent> captor = ArgumentCaptor.forClass(OrderConfirmedEvent.class);
+            verify(eventPublisher).publish(captor.capture());
+
+            OrderConfirmedEvent event = captor.getValue();
+            assertThat(event.orderId()).isEqualTo(orderId);
+            assertThat(event.items()).hasSize(1);
+            assertThat(event.items().get(0).productId()).isEqualTo(1L);
+            assertThat(event.items().get(0).quantity()).isEqualTo(10);
+        }
+    }
+
+    @Nested
+    class 배송_준비_시작 {
+
+        @Test
+        void 발주_확정_상태의_전표는_물류센터_작업_시작_시_배송_준비_중_상태로_정상_전환된다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            order.confirm();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            OrderResponseDto response = orderService.startPreparation(orderId);
+
+            // then
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.PREPARING);
+        }
+
+        @Test
+        void 발주_확정_이외의_상태인_전표에_대해_배송_준비_시작을_요청하면_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build(); // PENDING 상태
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.startPreparation(orderId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(OrderConstants.INVALID_START_STATUS_MESSAGE);
+        }
+    }
+
+    @Nested
+    class 배송_출하 {
+
+        @Test
+        void 배송_준비_중_상태의_전표는_출고_완료_시_배송_중_상태로_정상_전환된다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            order.confirm();
+            order.startPreparation();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            OrderResponseDto response = orderService.ship(orderId);
+
+            // then
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.SHIPPED);
+        }
+
+        @Test
+        void 배송_준비_중_이외의_상태인_전표에_대해_배송_출하를_요청하면_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            order.confirm();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.ship(orderId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(OrderConstants.INVALID_SHIP_STATUS_MESSAGE);
+        }
+    }
+
+    @Nested
+    class 배송_완료 {
+
+        @Test
+        void 배송_중_상태의_전표는_가맹점_인입_시_배송_완료_상태로_정상_전환된다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            order.confirm();
+            order.startPreparation();
+            order.ship();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            OrderResponseDto response = orderService.completeDelivery(orderId);
+
+            // then
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.DELIVERED);
+        }
+
+        @Test
+        void 배송_중_이외의_상태인_전표에_대해_배송_완료를_요청하면_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            order.confirm();
+            order.startPreparation();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.completeDelivery(orderId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(OrderConstants.INVALID_DELIVERY_STATUS_MESSAGE);
         }
     }
 
@@ -75,16 +289,59 @@ public class OrderServiceTest {
     class 발주_취소 {
 
         @Test
-        void 확정_또는_임시저장_상태의_발주는_취소가_가능하며_상태가_취소로_정상_전환된다() {
+        void 발주_신청_상태의_발주는_취소가_가능하며_발주_취소_상태로_정상_전환된다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            OrderResponseDto response = orderService.cancelOrder(orderId);
+
+            // then
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.CANCELED);
         }
 
         @Test
-        void 이미_창고에_입고가_시작되었거나_완료된_발주_전표는_취소할_수_없고_예외가_발생한다() {
+        void 발주_확정_이후_단계의_전표는_취소할_수_없고_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            order.confirm(); // CONFIRMED
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.cancelOrder(orderId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(OrderConstants.INVALID_CANCEL_STATUS_MESSAGE);
         }
 
         @Test
-        void 이미_취소된_발주_전표에_대해_중복으로_취소를_요청하면_예외가_발생한다() {
+        void 이미_발주_취소된_전표에_대해_중복으로_취소를_요청하면_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            order.cancel(); // CANCELED
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.cancelOrder(orderId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(OrderConstants.INVALID_CANCEL_STATUS_MESSAGE);
+        }
+
+        @Test
+        void 발주_취소_성공_시_발주_확정_이벤트가_절대_발행되지_않는다() {
+            // given
+            Long orderId = 1L;
+            Orders order = new OrderTestBuilder().build();
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            // when
+            orderService.cancelOrder(orderId);
+
+            // then
+            verify(eventPublisher, never()).publish(any(OrderConfirmedEvent.class));
         }
     }
-
 }

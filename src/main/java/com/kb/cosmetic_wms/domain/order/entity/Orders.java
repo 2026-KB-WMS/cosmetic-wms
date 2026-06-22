@@ -62,15 +62,22 @@ public class Orders extends BaseEntity {
         this.orderStatus = OrderStatus.CANCELED;
     }
 
-    public void startOrderProcess() {
+    public void confirm() {
         if (this.orderStatus != OrderStatus.PENDING) {
+            throw new IllegalStateException(OrderConstants.INVALID_CONFIRM_STATUS_MESSAGE);
+        }
+        this.orderStatus = OrderStatus.CONFIRMED;
+    }
+
+    public void startPreparation() {
+        if (this.orderStatus != OrderStatus.CONFIRMED) {
             throw new IllegalStateException(OrderConstants.INVALID_START_STATUS_MESSAGE);
         }
-        this.orderStatus = OrderStatus.IN_PROGRESS;
+        this.orderStatus = OrderStatus.PREPARING;
     }
 
     public void ship() {
-        if (this.orderStatus != OrderStatus.IN_PROGRESS) {
+        if (this.orderStatus != OrderStatus.PREPARING) {
             throw new IllegalStateException(OrderConstants.INVALID_SHIP_STATUS_MESSAGE);
         }
         this.orderStatus = OrderStatus.SHIPPED;

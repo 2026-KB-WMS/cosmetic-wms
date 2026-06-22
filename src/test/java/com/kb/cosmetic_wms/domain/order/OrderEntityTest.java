@@ -55,6 +55,15 @@ public class OrderEntityTest {
     }
 
     @Test
+    void 발주_생성_시_발주_항목_리스트가_null이면_예외를_던진다() {
+        assertThatThrownBy(() ->
+                Orders.create(1L, 10L, null)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(OrderConstants.ORDER_ITEM_MINIMUM_MESSAGE);
+    }
+
+    @Test
     void 발주_대기_상태에서는_발주를_취소할_수_있다() {
         // given
         Orders order = new OrderTestBuilder().build();
@@ -67,10 +76,10 @@ public class OrderEntityTest {
     }
 
     @Test
-    void 이미_작업이_시작된_발주_건은_취소_시_예외를_던진다() {
+    void 발주_확정_상태의_발주_건은_취소_시_예외를_던진다() {
         // given
         Orders order = new OrderTestBuilder().build();
-        order.startOrderProcess();
+        order.confirm();
 
         // when & then
         assertThatThrownBy(order::cancel)
@@ -82,7 +91,8 @@ public class OrderEntityTest {
     void 배송_중인_발주_건은_취소_시_예외를_던진다() {
         // given
         Orders order = new OrderTestBuilder().build();
-        order.startOrderProcess();
+        order.confirm();
+        order.startPreparation();
         order.ship();
 
         // when & then
@@ -95,7 +105,8 @@ public class OrderEntityTest {
     void 배송_완료된_발주_건은_취소_시_예외를_던진다() {
         // given
         Orders order = new OrderTestBuilder().build();
-        order.startOrderProcess();
+        order.confirm();
+        order.startPreparation();
         order.ship();
         order.completeDelivery();
 
@@ -118,38 +129,50 @@ public class OrderEntityTest {
     }
 
     @Test
-    void 발주_대기_상태에서_작업을_시작하면_작업_중_상태로_변경된다() {
+    void 발주_대기_상태에서_확정하면_발주_확정_상태로_변경된다() {
         // given
         Orders order = new OrderTestBuilder().build();
 
         // when
-        order.startOrderProcess();
+        order.confirm();
 
         // then
-        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.IN_PROGRESS);
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.CONFIRMED);
     }
 
     @Test
-    void 취소된_발주_건은_작업을_시작할_수_없으며_예외를_던진다() {
+    void 발주_확정_상태에서_배송_준비를_시작하면_배송_준비_중_상태로_변경된다() {
         // given
         Orders order = new OrderTestBuilder().build();
+        order.confirm();
 
         // when
+        order.startPreparation();
+
+        // then
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PREPARING);
+    }
+
+    @Test
+    void 취소된_발주_건은_확정할_수_없으며_예외를_던진다() {
+        // given
+        Orders order = new OrderTestBuilder().build();
         order.cancel();
 
-        // then
-        assertThatThrownBy(order::startOrderProcess)
+        // when & then
+        assertThatThrownBy(order::confirm)
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage(OrderConstants.INVALID_START_STATUS_MESSAGE);
+                .hasMessage(OrderConstants.INVALID_CONFIRM_STATUS_MESSAGE);
     }
 
     @Test
-    void 작업_중인_발주_건은_출고_처리를_통해_배송_중_상태로_변경된다() {
+    void 배송_준비_중_상태의_발주_건은_출고_처리를_통해_배송_중_상태로_변경된다() {
         // given
         Orders order = new OrderTestBuilder().build();
+        order.confirm();
+        order.startPreparation();
 
         // when
-        order.startOrderProcess();
         order.ship();
 
         // then
@@ -160,10 +183,11 @@ public class OrderEntityTest {
     void 배송_중인_발주_건은_배송_완료_상태로_변경될_수_있다() {
         // given
         Orders order = new OrderTestBuilder().build();
+        order.confirm();
+        order.startPreparation();
+        order.ship();
 
         // when
-        order.startOrderProcess();
-        order.ship();
         order.completeDelivery();
 
         // then
@@ -175,23 +199,14 @@ public class OrderEntityTest {
         // given
         Orders order = new OrderTestBuilder().build();
 
-        // when & then 1: PENDING -> SHIPPED 직접 시도
+        // when & then 1: PENDING → SHIPPED 직접 시도
         assertThatThrownBy(order::ship)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage(OrderConstants.INVALID_SHIP_STATUS_MESSAGE);
 
-        // when & then 2: PENDING -> DELIVERED 직접 시도
+        // when & then 2: PENDING → DELIVERED 직접 시도
         assertThatThrownBy(order::completeDelivery)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage(OrderConstants.INVALID_DELIVERY_STATUS_MESSAGE);
-    }
-
-    @Test
-    void 발주_생성_시_발주_항목_리스트가_null이면_예외를_던진다() {
-        assertThatThrownBy(() ->
-                Orders.create(1L, 10L, null)
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(OrderConstants.ORDER_ITEM_MINIMUM_MESSAGE);
     }
 }
