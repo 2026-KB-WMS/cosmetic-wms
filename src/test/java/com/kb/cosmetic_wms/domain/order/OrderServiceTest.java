@@ -4,7 +4,7 @@ import com.kb.cosmetic_wms.domain.order.dto.CreateOrderRequestDto;
 import com.kb.cosmetic_wms.domain.order.dto.OrderResponseDto;
 import com.kb.cosmetic_wms.domain.order.entity.Orders;
 import com.kb.cosmetic_wms.domain.order.enums.OrderStatus;
-import com.kb.cosmetic_wms.domain.order.event.OrderConfirmedEvent;
+import com.kb.cosmetic_wms.global.event.OrderConfirmedEvent;
 import com.kb.cosmetic_wms.domain.order.exception.*;
 import com.kb.cosmetic_wms.domain.order.fixture.OrderTestBuilder;
 import com.kb.cosmetic_wms.domain.order.repository.OrderRepository;

@@ -14,4 +14,8 @@ public interface OutboundRepository extends JpaRepository<Outbound, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Outbound o WHERE o.id = :id")
     Optional<Outbound> findByIdForUpdate(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Outbound o JOIN FETCH o.outboundItems WHERE o.id = :id")
+    Optional<Outbound> findByIdWithItemsForUpdate(@Param("id") Long id);
 }

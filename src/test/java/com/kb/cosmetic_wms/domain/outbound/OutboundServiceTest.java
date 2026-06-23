@@ -5,10 +5,10 @@ import com.kb.cosmetic_wms.domain.outbound.dto.OutboundResponseDto;
 import com.kb.cosmetic_wms.domain.outbound.entity.Outbound;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundStatus;
 import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
-import com.kb.cosmetic_wms.domain.outbound.event.OutboundAllocatedEvent;
-import com.kb.cosmetic_wms.domain.outbound.event.OutboundCanceledEvent;
-import com.kb.cosmetic_wms.domain.outbound.event.OutboundShippedEvent;
-import com.kb.cosmetic_wms.domain.outbound.event.OutboundStockReleaseRequestedEvent;
+import com.kb.cosmetic_wms.global.event.OutboundAllocatedEvent;
+import com.kb.cosmetic_wms.global.event.OutboundCanceledEvent;
+import com.kb.cosmetic_wms.global.event.OutboundShippedEvent;
+import com.kb.cosmetic_wms.global.event.OutboundStockReleaseRequestedEvent;
 import com.kb.cosmetic_wms.domain.outbound.exception.*;
 import com.kb.cosmetic_wms.domain.outbound.fixture.OutboundTestBuilder;
 import com.kb.cosmetic_wms.domain.outbound.repository.OutboundRepository;
@@ -93,7 +93,7 @@ public class OutboundServiceTest {
             // given
             Long outboundId = 1L;
             Outbound outbound = new OutboundTestBuilder().build();
-            given(outboundRepository.findByIdForUpdate(outboundId)).willReturn(Optional.of(outbound));
+            given(outboundRepository.findByIdWithItemsForUpdate(outboundId)).willReturn(Optional.of(outbound));
 
             // when
             OutboundResponseDto response = outboundService.allocateInventory(outboundId);
@@ -106,7 +106,7 @@ public class OutboundServiceTest {
         void 재고_할당_성공_시_재고_도메인에_할당_요청을_전파하기_위한_재고_할당_이벤트가_발행된다() {
             // given
             Long outboundId = 1L;
-            given(outboundRepository.findByIdForUpdate(outboundId))
+            given(outboundRepository.findByIdWithItemsForUpdate(outboundId))
                     .willReturn(Optional.of(new OutboundTestBuilder().build()));
 
             // when
@@ -120,7 +120,7 @@ public class OutboundServiceTest {
         void 이미_출고_준비_중이거나_출하_완료된_전표에_대해_중복으로_재고_할당을_시도하면_예외가_발생한다() {
             // given
             Long outboundId = 1L;
-            given(outboundRepository.findByIdForUpdate(outboundId))
+            given(outboundRepository.findByIdWithItemsForUpdate(outboundId))
                     .willReturn(Optional.of(new OutboundTestBuilder().buildProcessing()));
 
             // when & then
@@ -132,14 +132,14 @@ public class OutboundServiceTest {
         void 재고_할당_프로세스_진입_시_동시성_방어를_위해_출고_전표에_비관적_락을_걸고_조회한다() {
             // given
             Long outboundId = 1L;
-            given(outboundRepository.findByIdForUpdate(outboundId))
+            given(outboundRepository.findByIdWithItemsForUpdate(outboundId))
                     .willReturn(Optional.of(new OutboundTestBuilder().build()));
 
             // when
             outboundService.allocateInventory(outboundId);
 
             // then
-            verify(outboundRepository, times(1)).findByIdForUpdate(outboundId);
+            verify(outboundRepository, times(1)).findByIdWithItemsForUpdate(outboundId);
             verify(outboundRepository, never()).findById(outboundId);
         }
     }

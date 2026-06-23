@@ -13,6 +13,21 @@ import java.util.Optional;
 
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
+    @Query(value = """
+            SELECT i.inventory_id, i.available_quantity
+            FROM inventory i
+            JOIN lot l ON i.lot_id = l.lot_id
+            WHERE i.product_id = :productId
+              AND i.warehouse_id = :warehouseId
+              AND i.alloc_status  = 'UNALLOCATED'
+              AND i.quality_status = 'NORMAL'
+              AND i.loc_status    = 'STORED'
+              AND i.available_quantity > 0
+            ORDER BY l.expiration_date ASC
+            """, nativeQuery = true)
+    List<Object[]> findAvailableForFefo(@Param("productId") Long productId,
+                                        @Param("warehouseId") Long warehouseId);
+
     List<Inventory> findByLotId(Long lotId);
 
     List<Inventory> findByProductId(Long productId);

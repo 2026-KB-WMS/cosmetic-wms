@@ -4,7 +4,7 @@ import com.kb.cosmetic_wms.domain.order.OrderLine;
 import com.kb.cosmetic_wms.domain.order.dto.CreateOrderRequestDto;
 import com.kb.cosmetic_wms.domain.order.dto.OrderResponseDto;
 import com.kb.cosmetic_wms.domain.order.entity.Orders;
-import com.kb.cosmetic_wms.domain.order.event.OrderConfirmedEvent;
+import com.kb.cosmetic_wms.global.event.OrderConfirmedEvent;
 import com.kb.cosmetic_wms.domain.order.exception.OrderNotFoundException;
 import com.kb.cosmetic_wms.domain.order.repository.OrderRepository;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
@@ -35,7 +35,7 @@ public class OrderService {
     public OrderResponseDto confirmOrder(Long orderId) {
         Orders order = findByIdWithOrderItemsForUpdateOrThrow(orderId);
         order.confirm();
-        eventPublisher.publish(OrderConfirmedEvent.from(order));
+        eventPublisher.publish(toOrderConfirmedEvent(order));
         return OrderResponseDto.from(order);
     }
 
@@ -65,6 +65,13 @@ public class OrderService {
         Orders order = findByIdForUpdateOrThrow(orderId);
         order.cancel();
         return OrderResponseDto.from(order);
+    }
+
+    private OrderConfirmedEvent toOrderConfirmedEvent(Orders order) {
+        var snapshots = order.getOrderItems().stream()
+                .map(item -> new OrderConfirmedEvent.ItemSnapshot(item.getId(), item.getProductId(), item.getQuantity()))
+                .toList();
+        return new OrderConfirmedEvent(order.getId(), order.getWarehouseId(), snapshots);
     }
 
     private Orders findByIdForUpdateOrThrow(Long orderId) {
