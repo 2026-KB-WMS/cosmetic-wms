@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.domain.inventory.service;
 
+import com.kb.cosmetic_wms.domain.inventory.dto.FefoInventorySlice;
 import com.kb.cosmetic_wms.domain.inventory.dto.InboundPutawayCommand;
 import com.kb.cosmetic_wms.domain.inventory.dto.InspectionResultCommand;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryDetailResponseDto;
@@ -160,6 +161,39 @@ public class InventoryService {
                 saved.getId(), type, quantity, quantity,
                 referenceId, null, statusSet, memberId, null
         ));
+    }
+
+    public List<FefoInventorySlice> findAvailableForFefo(Long productId, Long warehouseId) {
+        return inventoryRepository.findAvailableForFefo(productId, warehouseId).stream()
+                .map(row -> new FefoInventorySlice(
+                        ((Number) row[0]).longValue(),
+                        ((Number) row[1]).intValue()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public void deductForOutbound(Long outboundId, Long memberId) {
+        List<InventoryTransaction> allocations = inventoryTransactionRepository
+                .findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, outboundId);
+        for (InventoryTransaction alloc : allocations) {
+            Inventory inv = findOrThrow(alloc.getInventoryId());
+            inventoryTransactionRepository.save(InventoryTransaction.create(
+                    inv.getId(), TransactionType.SHIP, alloc.getTransactionQuantity(), 0,
+                    outboundId, inv.getStatusSet(), inv.getStatusSet(), memberId, null
+            ));
+            inventoryRepository.delete(inv);
+        }
+    }
+
+    @Transactional
+    public void releaseForOutbound(Long outboundId, Long memberId) {
+        List<InventoryTransaction> allocations = inventoryTransactionRepository
+                .findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, outboundId);
+        for (InventoryTransaction alloc : allocations) {
+            unallocate(alloc.getInventoryId(),
+                    new InventoryStatusChangeRequestDto(alloc.getTransactionQuantity(), outboundId, memberId));
+        }
     }
 
     private Inventory findOrThrow(Long inventoryId) {
