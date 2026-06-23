@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 public class Member {
 
-    private final Long id;
+    private final Long memberId;
     private final LoginId loginId;
     private final String encodedPassword;
     private final Role role;
@@ -17,9 +17,9 @@ public class Member {
     private final Email email;
     private final PhoneNumber phoneNumber;
 
-    private Member(Long id, LoginId loginId, String encodedPassword, Role role,
+    private Member(Long memberId, LoginId loginId, String encodedPassword, Role role,
                    String memberName, Email email, PhoneNumber phoneNumber) {
-        this.id = id;
+        this.memberId = memberId;
         this.loginId = loginId;
         this.encodedPassword = encodedPassword;
         this.role = role;
@@ -42,10 +42,10 @@ public class Member {
         );
     }
 
-    public static Member reconstitute(Long id, String loginId, String encodedPassword, Role role,
+    public static Member reconstitute(Long memberId, String loginId, String encodedPassword, Role role,
                                       String memberName, String email, String phoneNumber) {
         return new Member(
-                id,
+                memberId,
                 new LoginId(loginId),
                 encodedPassword,
                 role,

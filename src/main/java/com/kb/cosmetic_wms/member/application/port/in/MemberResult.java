@@ -13,7 +13,7 @@ public record MemberResult(
 ) {
     public static MemberResult from(Member member) {
         return new MemberResult(
-                member.getId(),
+                member.getMemberId(),
                 member.getLoginId().value(),
                 member.getMemberName(),
                 member.getEmail().value(),
