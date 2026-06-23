@@ -6,12 +6,7 @@ import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
 import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
 import com.kb.cosmetic_wms.domain.inbound.enums.InboundStatus;
 import com.kb.cosmetic_wms.domain.inbound.enums.InspectionStatus;
-import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
-import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
-import com.kb.cosmetic_wms.domain.inbound.exception.InboundErrorCode;
-import com.kb.cosmetic_wms.domain.inbound.exception.InboundItemNotFoundException;
-import com.kb.cosmetic_wms.domain.inbound.exception.InboundNotFoundException;
-import com.kb.cosmetic_wms.domain.inbound.exception.InboundProductNotFoundException;
+import com.kb.cosmetic_wms.domain.inbound.exception.*;
 import com.kb.cosmetic_wms.domain.inbound.fixture.InboundDtoBuilder;
 import com.kb.cosmetic_wms.domain.inbound.fixture.InboundTestBuilder;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
@@ -22,11 +17,12 @@ import com.kb.cosmetic_wms.domain.partner.exception.PartnerNotFoundException;
 import com.kb.cosmetic_wms.domain.partner.repository.PartnerRepository;
 import com.kb.cosmetic_wms.domain.product.entity.Product;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
-import com.kb.cosmetic_wms.domain.storage.entity.Warehouse;
-import com.kb.cosmetic_wms.domain.storage.exception.StorageErrorCode;
-import com.kb.cosmetic_wms.domain.storage.exception.WarehouseNotFoundException;
-import com.kb.cosmetic_wms.domain.storage.repository.WarehouseRepository;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
+import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
+import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
+import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
+import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,7 +51,7 @@ class InboundServiceTest {
     @Mock
     private InboundRepository inboundRepository;
     @Mock
-    private WarehouseRepository warehouseRepository;
+    private StoragePort storagePort;
     @Mock
     private PartnerRepository partnerRepository;
     @Mock
@@ -83,7 +79,7 @@ class InboundServiceTest {
             // given
             InboundCreateRequestDto request = new InboundDtoBuilder().buildCreateRequest();
 
-            given(warehouseRepository.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
+            given(storagePort.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
             given(partnerRepository.findById(1L)).willReturn(Optional.of(mock(Partner.class)));
             given(inboundRepository.save(any(Inbound.class))).willReturn(defaultInbound);
 
@@ -101,7 +97,7 @@ class InboundServiceTest {
         void 존재하지_않는_창고_ID로_등록하면_WarehouseNotFoundException이_발생한다() {
             // given
             InboundCreateRequestDto request = new InboundDtoBuilder().warehouseId(999L).buildCreateRequest();
-            given(warehouseRepository.findById(999L)).willReturn(Optional.empty());
+            given(storagePort.findById(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inboundService.registerInbound(request))
@@ -113,7 +109,7 @@ class InboundServiceTest {
         void 존재하지_않는_파트너_ID로_등록하면_PartnerNotFoundException이_발생한다() {
             // given
             InboundCreateRequestDto request = new InboundDtoBuilder().partnerId(999L).buildCreateRequest();
-            given(warehouseRepository.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
+            given(storagePort.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
             given(partnerRepository.findById(999L)).willReturn(Optional.empty());
 
             // when & then

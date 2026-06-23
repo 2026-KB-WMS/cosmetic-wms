@@ -10,10 +10,10 @@ import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
 import com.kb.cosmetic_wms.domain.partner.exception.PartnerNotFoundException;
 import com.kb.cosmetic_wms.domain.partner.repository.PartnerRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
-import com.kb.cosmetic_wms.domain.storage.exception.WarehouseNotFoundException;
-import com.kb.cosmetic_wms.domain.storage.repository.WarehouseRepository;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
+import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +24,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class InboundService {
 
     private final InboundRepository inboundRepository;
-    private final WarehouseRepository warehouseRepository;
+    private final StoragePort storagePort;
     private final PartnerRepository partnerRepository;
     private final ProductRepository productRepository;
     private final EventPublisher eventPublisher;
 
     @Transactional
     public InboundDetailResponseDto registerInbound(InboundCreateRequestDto request) {
-        warehouseRepository.findById(request.warehouseId())
+        storagePort.findById(request.warehouseId())
                 .orElseThrow(WarehouseNotFoundException::new);
         partnerRepository.findById(request.partnerId())
                 .orElseThrow(PartnerNotFoundException::new);
