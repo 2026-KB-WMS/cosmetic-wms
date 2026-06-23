@@ -1,0 +1,71 @@
+package com.kb.cosmetic_wms.domain.outbound.event;
+
+import com.kb.cosmetic_wms.domain.inventory.dto.FefoInventorySlice;
+import com.kb.cosmetic_wms.domain.inventory.dto.InventoryStatusChangeRequestDto;
+import com.kb.cosmetic_wms.domain.inventory.service.InventoryService;
+import com.kb.cosmetic_wms.domain.order.service.OrderService;
+import com.kb.cosmetic_wms.domain.outbound.OutboundLine;
+import com.kb.cosmetic_wms.domain.outbound.entity.Outbound;
+import com.kb.cosmetic_wms.domain.outbound.enums.OutboundType;
+import com.kb.cosmetic_wms.domain.outbound.exception.OutboundInsufficientStockException;
+import com.kb.cosmetic_wms.domain.outbound.repository.OutboundRepository;
+import com.kb.cosmetic_wms.global.event.OrderConfirmedEvent;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+@RequiredArgsConstructor
+public class OutboundEventHandler {
+
+    private final InventoryService inventoryService;
+    private final OutboundRepository outboundRepository;
+    private final OrderService orderService;
+    private final AuditorAware<Long> auditorProvider;
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void onOrderConfirmed(OrderConfirmedEvent event) {
+        Long actorId = auditorProvider.getCurrentAuditor().orElseThrow();
+
+        List<OutboundLine> lines = selectWithFefo(event, actorId);
+
+        Outbound outbound = Outbound.create(event.orderId(), event.warehouseId(), OutboundType.ORDER, lines);
+        outboundRepository.save(outbound);
+
+        for (OutboundLine line : lines) {
+            inventoryService.allocate(line.inventoryId(),
+                    new InventoryStatusChangeRequestDto(line.targetQuantity(), outbound.getId(), actorId));
+        }
+
+        outbound.allocate();
+        orderService.startPreparation(event.orderId());
+    }
+
+    private List<OutboundLine> selectWithFefo(OrderConfirmedEvent event, Long actorId) {
+        List<OutboundLine> lines = new ArrayList<>();
+
+        for (OrderConfirmedEvent.ItemSnapshot item : event.items()) {
+            List<FefoInventorySlice> slots =
+                    inventoryService.findAvailableForFefo(item.productId(), event.warehouseId());
+
+            int remaining = item.quantity();
+            for (FefoInventorySlice slot : slots) {
+                if (remaining <= 0) break;
+                int take = Math.min(remaining, slot.availableQuantity());
+                lines.add(new OutboundLine(item.orderItemId(), slot.inventoryId(), take));
+                remaining -= take;
+            }
+
+            if (remaining > 0) {
+                throw new OutboundInsufficientStockException();
+            }
+        }
+
+        return lines;
+    }
+}
