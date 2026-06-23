@@ -48,6 +48,11 @@ public enum OutboundErrorCode implements ErrorCode {
             HttpStatus.CONFLICT,
             "OUTBOUND_CANCEL_NOT_ALLOWED",
             "출고 대기(PENDING) 또는 재고 할당(ALLOCATED) 상태의 전표만 취소할 수 있습니다."
+    ),
+    OUTBOUND_INSUFFICIENT_STOCK(
+            HttpStatus.CONFLICT,
+            "OUTBOUND_INSUFFICIENT_STOCK",
+            "발주 수량을 충족할 가용 재고가 부족합니다."
     );
 
     private final HttpStatus status;
