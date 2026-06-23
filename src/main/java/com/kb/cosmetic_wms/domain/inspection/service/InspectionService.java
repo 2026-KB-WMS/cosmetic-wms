@@ -3,7 +3,7 @@ package com.kb.cosmetic_wms.domain.inspection.service;
 import com.kb.cosmetic_wms.domain.inspection.dto.QualityInspectionDetailResponseDto;
 import com.kb.cosmetic_wms.domain.inspection.entity.QualityInspection;
 import com.kb.cosmetic_wms.domain.inspection.enums.InspectionSourceType;
-import com.kb.cosmetic_wms.domain.inspection.event.InspectionCompletedEvent;
+import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.domain.inspection.exception.InspectionNotFoundException;
 import com.kb.cosmetic_wms.domain.inspection.repository.InspectionRepository;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
@@ -20,9 +20,11 @@ public class InspectionService {
     private final EventPublisher eventPublisher;
 
     @Transactional
-    public QualityInspection createInboundInspection(Long inboundItemId, int inspectionQuantity) {
+    public QualityInspection createInboundInspection(Long inboundItemId, Long productId, Long lotId,
+                                                     Long sectionId, Long warehouseId, int inspectionQuantity) {
         QualityInspection inspection = QualityInspection.createPending(
-                InspectionSourceType.INBOUND, inboundItemId, null, inspectionQuantity);
+                InspectionSourceType.INBOUND, inboundItemId, null, inspectionQuantity,
+                productId, lotId, sectionId, warehouseId);
         return inspectionRepository.save(inspection);
     }
 
@@ -45,7 +47,19 @@ public class InspectionService {
         QualityInspection inspection = inspectionRepository.findByIdForUpdate(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
         inspection.completeInspection(passedQty, failedQty, defectReason);
-        eventPublisher.publish(InspectionCompletedEvent.from(inspection));
+        eventPublisher.publish(new InspectionCompletedEvent(
+                inspection.getId(),
+                inspection.getSourceType().name(),
+                inspection.getSourceId(),
+                inspection.getProductId(),
+                inspection.getLotId(),
+                inspection.getSectionId(),
+                inspection.getWarehouseId(),
+                inspection.getInspectionQuantity(),
+                inspection.getPassedQuantity(),
+                inspection.getFailedQuantity(),
+                inspection.getDefectReason()
+        ));
         return QualityInspectionDetailResponseDto.from(inspection);
     }
 }

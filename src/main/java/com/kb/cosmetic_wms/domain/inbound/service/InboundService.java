@@ -1,24 +1,19 @@
 package com.kb.cosmetic_wms.domain.inbound.service;
 
 import com.kb.cosmetic_wms.domain.inbound.InboundLine;
-import com.kb.cosmetic_wms.domain.inbound.dto.InboundCreateRequestDto;
-import com.kb.cosmetic_wms.domain.inbound.dto.InboundDetailResponseDto;
-import com.kb.cosmetic_wms.domain.inbound.dto.InboundItemAddRequestDto;
-import com.kb.cosmetic_wms.domain.inbound.dto.InboundItemResponseDto;
-import com.kb.cosmetic_wms.domain.inbound.dto.InboundPutawayRequestDto;
+import com.kb.cosmetic_wms.domain.inbound.dto.*;
 import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
-import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
-import com.kb.cosmetic_wms.domain.inbound.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
-import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.domain.partner.exception.PartnerNotFoundException;
 import com.kb.cosmetic_wms.domain.partner.repository.PartnerRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
 import com.kb.cosmetic_wms.domain.storage.exception.WarehouseNotFoundException;
 import com.kb.cosmetic_wms.domain.storage.repository.WarehouseRepository;
+import com.kb.cosmetic_wms.global.event.EventPublisher;
+import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,8 +87,21 @@ public class InboundService {
         Inbound inbound = inboundRepository.findByIdWithItemsForUpdate(inboundId)
                 .orElseThrow(InboundNotFoundException::new);
         inbound.completeExecution();
-        eventPublisher.publish(InboundCompletedEvent.from(inbound));
+        eventPublisher.publish(toInboundCompletedEvent(inbound));
         return InboundDetailResponseDto.from(inbound);
+    }
+
+    private InboundCompletedEvent toInboundCompletedEvent(Inbound inbound) {
+        var snapshots = inbound.getInboundItems().stream()
+                .map(item -> new InboundCompletedEvent.ItemSnapshot(
+                        item.getId(),
+                        item.getProductId(),
+                        item.getLotId(),
+                        item.getSectionId(),
+                        item.getQuantity()
+                ))
+                .toList();
+        return new InboundCompletedEvent(inbound.getId(), inbound.getWarehouseId(), snapshots);
     }
 
     @Transactional
