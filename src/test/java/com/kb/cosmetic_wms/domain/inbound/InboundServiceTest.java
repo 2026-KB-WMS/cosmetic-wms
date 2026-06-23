@@ -6,7 +6,7 @@ import com.kb.cosmetic_wms.domain.inbound.entity.Inbound;
 import com.kb.cosmetic_wms.domain.inbound.entity.InboundItem;
 import com.kb.cosmetic_wms.domain.inbound.enums.InboundStatus;
 import com.kb.cosmetic_wms.domain.inbound.enums.InspectionStatus;
-import com.kb.cosmetic_wms.domain.inbound.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundErrorCode;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundItemNotFoundException;
@@ -496,7 +496,6 @@ class InboundServiceTest {
             assertThat(event.inboundId()).isEqualTo(10L);
             assertThat(event.warehouseId()).isEqualTo(1L);
             assertThat(event.items()).hasSize(1);
-            assertThat(event.items().get(0).inspectionStatus()).isEqualTo(InspectionStatus.NORMAL);
             assertThat(event.items().get(0).quantity()).isEqualTo(100);
         }
 

@@ -1,7 +1,8 @@
 package com.kb.cosmetic_wms.domain.inventory.event;
 
-import com.kb.cosmetic_wms.domain.inspection.event.InspectionCompletedEvent;
+import com.kb.cosmetic_wms.domain.inventory.dto.InspectionResultCommand;
 import com.kb.cosmetic_wms.domain.inventory.service.InventoryService;
+import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,16 @@ public class InventoryEventHandler {
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onInspectionCompleted(InspectionCompletedEvent event) {
-        // 아이템 조회 및 재고 생성 로직은 출처 도메인(inbound/return) 핸들러에서 담당
+        Long actorId = auditorProvider.getCurrentAuditor().orElseThrow();
+        inventoryService.applyInspectionResult(new InspectionResultCommand(
+                event.productId(),
+                event.lotId(),
+                event.sectionId(),
+                event.warehouseId(),
+                event.passedQuantity(),
+                event.failedQuantity(),
+                event.inspectionId(),
+                actorId
+        ));
     }
 }
