@@ -7,7 +7,11 @@ public class QualityInspectionTestBuilder {
 
     private InspectionSourceType sourceType = InspectionSourceType.INBOUND;
     private Long sourceId = 10L;
-    private Long inventoryId = 100L;
+    private Long inventoryId = null;
+    private Long productId = 1L;
+    private Long lotId = 100L;
+    private Long sectionId = 200L;
+    private Long warehouseId = 300L;
     private int inspectionQuantity = 10;
     private Long inspectorId = 1L;
     private int passedQuantity = 10;
@@ -26,6 +30,26 @@ public class QualityInspectionTestBuilder {
 
     public QualityInspectionTestBuilder inventoryId(Long inventoryId) {
         this.inventoryId = inventoryId;
+        return this;
+    }
+
+    public QualityInspectionTestBuilder productId(Long productId) {
+        this.productId = productId;
+        return this;
+    }
+
+    public QualityInspectionTestBuilder lotId(Long lotId) {
+        this.lotId = lotId;
+        return this;
+    }
+
+    public QualityInspectionTestBuilder sectionId(Long sectionId) {
+        this.sectionId = sectionId;
+        return this;
+    }
+
+    public QualityInspectionTestBuilder warehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
         return this;
     }
 
@@ -56,7 +80,8 @@ public class QualityInspectionTestBuilder {
 
     /** WAITING 상태 전표 생성 */
     public QualityInspection buildPending() {
-        return QualityInspection.createPending(sourceType, sourceId, inventoryId, inspectionQuantity);
+        return QualityInspection.createPending(sourceType, sourceId, inventoryId, inspectionQuantity,
+                productId, lotId, sectionId, warehouseId);
     }
 
     /** IN_PROGRESS 상태 전표 생성 */

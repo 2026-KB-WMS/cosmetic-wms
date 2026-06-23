@@ -21,6 +21,8 @@ public enum TransactionType {
     LOCATION_MOVE("창고 내 위치 이동", false),
 
     // ==== 품질(Quality) 검수 관련 트랜잭션 ====
+    INSPECTION_PASS("품질 검사 합격 재고 등록", true),
+    INSPECTION_FAIL("품질 검사 불합격 재고 등록", true),
     QUALITY_INSPECTING("품질 검사 착수", false),
     QUALITY_HOLD("품질 결함 보류(HOLD)", false),
     QUALITY_RELEASE("품질 정상 복구(NORMAL)", false),

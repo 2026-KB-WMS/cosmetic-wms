@@ -39,6 +39,18 @@ public class QualityInspection extends BaseEntity {
     @Column(name = "inventory_id")
     private Long inventoryId;
 
+    @Column(name = "product_id", nullable = false)
+    private Long productId;
+
+    @Column(name = "lot_id", nullable = false)
+    private Long lotId;
+
+    @Column(name = "section_id", nullable = false)
+    private Long sectionId;
+
+    @Column(name = "warehouse_id", nullable = false)
+    private Long warehouseId;
+
     @Column(name = "inspector_id")
     private Long inspectorId;
 
@@ -60,11 +72,16 @@ public class QualityInspection extends BaseEntity {
 
     @Builder(access = AccessLevel.PRIVATE)
     private QualityInspection(InspectionSourceType sourceType, Long sourceId, Long inventoryId,
+                              Long productId, Long lotId, Long sectionId, Long warehouseId,
                               Long inspectorId, InspectionStatus status, int inspectionQuantity,
                               int passedQuantity, int failedQuantity, String defectReason) {
         this.sourceType = sourceType;
         this.sourceId = sourceId;
         this.inventoryId = inventoryId;
+        this.productId = productId;
+        this.lotId = lotId;
+        this.sectionId = sectionId;
+        this.warehouseId = warehouseId;
         this.inspectorId = inspectorId;
         this.status = status;
         this.inspectionQuantity = inspectionQuantity;
@@ -74,13 +91,18 @@ public class QualityInspection extends BaseEntity {
     }
 
     public static QualityInspection createPending(InspectionSourceType sourceType, Long sourceId,
-                                                  Long inventoryId, int inspectionQuantity) {
+                                                  Long inventoryId, int inspectionQuantity,
+                                                  Long productId, Long lotId, Long sectionId, Long warehouseId) {
         validateInitial(sourceType, sourceId, inspectionQuantity);
 
         return QualityInspection.builder()
                 .sourceType(sourceType)
                 .sourceId(sourceId)
                 .inventoryId(inventoryId)
+                .productId(productId)
+                .lotId(lotId)
+                .sectionId(sectionId)
+                .warehouseId(warehouseId)
                 .status(InspectionStatus.WAITING)
                 .inspectionQuantity(inspectionQuantity)
                 .passedQuantity(0)
