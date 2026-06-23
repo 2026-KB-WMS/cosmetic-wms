@@ -18,6 +18,10 @@ public class QualityInspectionEventHandler {
         for (var item : event.items()) {
             inspectionService.createInboundInspection(
                     item.inboundItemId(),
+                    item.productId(),
+                    item.lotId(),
+                    item.sectionId(),
+                    event.warehouseId(),
                     item.quantity()
             );
         }

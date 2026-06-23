@@ -1,9 +1,8 @@
 package com.kb.cosmetic_wms.domain.inspection;
 
 import com.kb.cosmetic_wms.domain.inspection.entity.QualityInspection;
-import com.kb.cosmetic_wms.domain.inspection.enums.InspectionSourceType;
 import com.kb.cosmetic_wms.domain.inspection.enums.InspectionStatus;
-import com.kb.cosmetic_wms.domain.inspection.event.InspectionCompletedEvent;
+import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.domain.inspection.exception.InspectionCompleteNotAllowedException;
 import com.kb.cosmetic_wms.domain.inspection.exception.InspectionNotFoundException;
 import com.kb.cosmetic_wms.domain.inspection.exception.InspectionSourceIdRequiredException;
@@ -67,7 +66,7 @@ public class InspectionServiceTest {
 
             // when
             QualityInspection result = inspectionService.createInboundInspection(
-                    10L, 10);
+                    10L, 1L, 100L, 200L, 300L, 10);
 
             // then
             assertThat(result.getId()).isEqualTo(1L);
@@ -79,7 +78,7 @@ public class InspectionServiceTest {
         @Test
         void 유효하지_않은_입고_전표인_경우_품질_검사_전표_생성에_실패한다() {
             assertThatThrownBy(() ->
-                    inspectionService.createInboundInspection(null, 10))
+                    inspectionService.createInboundInspection(null, 1L, 100L, 200L, 300L, 10))
                     .isInstanceOf(InspectionSourceIdRequiredException.class);
         }
     }
@@ -173,7 +172,11 @@ public class InspectionServiceTest {
             InspectionCompletedEvent event = captor.getValue();
             assertThat(event.inspectionId()).isEqualTo(2L);
             assertThat(event.sourceId()).isEqualTo(10L);
-            assertThat(event.sourceType()).isEqualTo(InspectionSourceType.INBOUND);
+            assertThat(event.sourceType()).isEqualTo("INBOUND");
+            assertThat(event.productId()).isEqualTo(1L);
+            assertThat(event.lotId()).isEqualTo(100L);
+            assertThat(event.sectionId()).isEqualTo(200L);
+            assertThat(event.warehouseId()).isEqualTo(300L);
             assertThat(event.passedQuantity()).isEqualTo(7);
             assertThat(event.failedQuantity()).isEqualTo(3);
             assertThat(event.inspectionQuantity()).isEqualTo(10);

@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.domain.inventory.service;
 
 import com.kb.cosmetic_wms.domain.inventory.dto.InboundPutawayCommand;
+import com.kb.cosmetic_wms.domain.inventory.dto.InspectionResultCommand;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryDetailResponseDto;
 import com.kb.cosmetic_wms.domain.inventory.dto.InventoryStatusChangeRequestDto;
 import com.kb.cosmetic_wms.domain.inventory.entity.Inventory;
@@ -109,32 +110,55 @@ public class InventoryService {
         InventoryStatusSet statusSet = InventoryStatusSet.of(
                 AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
         );
+        createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                command.quantity(), statusSet, TransactionType.INBOUND_PUTAWAY, command.inboundId(), command.memberId());
+    }
+
+    @Transactional
+    public void applyInspectionResult(InspectionResultCommand command) {
+        if (command.passedQuantity() > 0) {
+            InventoryStatusSet normalStatus = InventoryStatusSet.of(
+                    AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED);
+            createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                    command.passedQuantity(), normalStatus, TransactionType.INSPECTION_PASS,
+                    command.inspectionId(), command.memberId());
+        }
+        if (command.failedQuantity() > 0) {
+            InventoryStatusSet holdStatus = InventoryStatusSet.of(
+                    AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.STORED);
+            createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                    command.failedQuantity(), holdStatus, TransactionType.INSPECTION_FAIL,
+                    command.inspectionId(), command.memberId());
+        }
+    }
+
+    private void createOrMerge(Long productId, Long lotId, Long sectionId, Long warehouseId,
+                                int quantity, InventoryStatusSet statusSet,
+                                TransactionType type, Long referenceId, Long memberId) {
+        int availableQty = statusSet.qualityStatus().isNormal() ? quantity : 0;
 
         long NO_EXCLUDE_ID = -1L;
         Optional<Inventory> mergeTarget = inventoryRepository.findMergeTargetForUpdate(
-                command.productId(), command.lotId(), command.sectionId(), statusSet, NO_EXCLUDE_ID
+                productId, lotId, sectionId, statusSet, NO_EXCLUDE_ID
         );
 
         if (mergeTarget.isPresent()) {
             Inventory existing = mergeTarget.get();
-            existing.mergeFrom(Inventory.create(
-                    command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
-                    command.quantity(), command.quantity(), statusSet
-            ));
+            existing.mergeFrom(Inventory.create(productId, lotId, sectionId, warehouseId,
+                    quantity, availableQty, statusSet));
             inventoryTransactionRepository.save(InventoryTransaction.create(
-                    existing.getId(), TransactionType.INBOUND_PUTAWAY, command.quantity(), existing.getQuantity(),
-                    command.inboundId(), statusSet, statusSet, command.memberId(), null
+                    existing.getId(), type, quantity, existing.getQuantity(),
+                    referenceId, statusSet, statusSet, memberId, null
             ));
             return;
         }
 
         Inventory saved = inventoryRepository.save(
-                Inventory.create(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
-                        command.quantity(), command.quantity(), statusSet)
+                Inventory.create(productId, lotId, sectionId, warehouseId, quantity, availableQty, statusSet)
         );
         inventoryTransactionRepository.save(InventoryTransaction.create(
-                saved.getId(), TransactionType.INBOUND_PUTAWAY, command.quantity(), command.quantity(),
-                command.inboundId(), null, statusSet, command.memberId(), null
+                saved.getId(), type, quantity, quantity,
+                referenceId, null, statusSet, memberId, null
         ));
     }
 
