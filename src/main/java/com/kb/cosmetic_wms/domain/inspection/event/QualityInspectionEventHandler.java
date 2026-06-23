@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.domain.inspection.event;
 
-import com.kb.cosmetic_wms.domain.inbound.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.domain.inspection.service.InspectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
