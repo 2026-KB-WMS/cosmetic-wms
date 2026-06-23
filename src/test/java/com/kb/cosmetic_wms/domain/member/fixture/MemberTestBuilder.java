@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.member.fixture;
 
-import com.kb.cosmetic_wms.domain.member.entity.Member;
-import com.kb.cosmetic_wms.domain.member.enums.Role;
+import com.kb.cosmetic_wms.member.domain.model.Member;
+import com.kb.cosmetic_wms.member.domain.model.Role;
 
 public class MemberTestBuilder {
     private String loginId = "admin01";
@@ -42,13 +42,10 @@ public class MemberTestBuilder {
     }
 
     public Member build() {
-        return Member.create(
-                loginId,
-                password,
-                role,
-                memberName,
-                email,
-                phoneNumber
-        );
+        return Member.create(loginId, password, role, memberName, email, phoneNumber);
+    }
+
+    public Member buildWithId(Long id) {
+        return Member.reconstitute(id, loginId, password, role, memberName, email, phoneNumber);
     }
 }
