@@ -7,7 +7,7 @@ import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
-import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
+import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;

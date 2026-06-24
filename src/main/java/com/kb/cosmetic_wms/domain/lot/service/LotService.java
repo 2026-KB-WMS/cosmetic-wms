@@ -8,7 +8,7 @@ import com.kb.cosmetic_wms.domain.lot.exception.DuplicateLotNumberException;
 import com.kb.cosmetic_wms.domain.lot.exception.LotNotFoundException;
 import com.kb.cosmetic_wms.domain.lot.exception.LotProductNotFoundException;
 import com.kb.cosmetic_wms.domain.lot.repository.LotRepository;
-import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
+import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

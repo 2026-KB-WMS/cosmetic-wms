@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.domain.model;
 
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
