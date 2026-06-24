@@ -2,6 +2,8 @@ package com.kb.cosmetic_wms.product.application.service;
 
 import com.kb.cosmetic_wms.product.application.port.in.*;
 import com.kb.cosmetic_wms.product.application.port.out.CategoryPort;
+import com.kb.cosmetic_wms.product.application.port.out.ProductPort;
+import com.kb.cosmetic_wms.product.domain.exception.CategoryInUseException;
 import com.kb.cosmetic_wms.product.domain.exception.CategoryNotFoundException;
 import com.kb.cosmetic_wms.product.domain.exception.DuplicateCategoryException;
 import com.kb.cosmetic_wms.product.domain.model.Category;
@@ -17,6 +19,7 @@ import java.util.List;
 public class CategoryService implements RegisterCategoryUseCase, FindCategoryUseCase, DeleteCategoryUseCase {
 
     private final CategoryPort categoryPort;
+    private final ProductPort productPort;
 
     @Override
     @Transactional
@@ -47,6 +50,9 @@ public class CategoryService implements RegisterCategoryUseCase, FindCategoryUse
     public void delete(Long categoryId) {
         categoryPort.findById(categoryId)
                 .orElseThrow(CategoryNotFoundException::new);
+        if (productPort.existsByCategoryId(categoryId)) {
+            throw new CategoryInUseException();
+        }
         categoryPort.deleteById(categoryId);
     }
 }

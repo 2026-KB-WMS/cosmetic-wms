@@ -9,6 +9,8 @@ public interface ProductPort {
     boolean existsDuplicateProduct(String brandName, String productName,
                                    Long categoryId, Long productTypeId,
                                    int volumeValue, String volumeUnit);
+    boolean existsByCategoryId(Long categoryId);
+    boolean existsByProductTypeId(Long productTypeId);
     Optional<Product> findById(Long productId);
     List<Product> findAll();
     Product save(Product product);

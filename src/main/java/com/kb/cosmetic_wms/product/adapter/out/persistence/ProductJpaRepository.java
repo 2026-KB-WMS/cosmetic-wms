@@ -15,6 +15,10 @@ interface ProductJpaRepository extends JpaRepository<ProductEntity, Long> {
     @Query("SELECT p FROM ProductEntity p JOIN FETCH p.category JOIN FETCH p.productType WHERE p.id = :id")
     Optional<ProductEntity> findByIdWithDetails(@Param("id") Long id);
 
+    boolean existsByCategory_Id(Long categoryId);
+
+    boolean existsByProductType_Id(Long productTypeId);
+
     @Query("SELECT COUNT(p) > 0 FROM ProductEntity p " +
             "WHERE p.brandName = :brandName " +
             "AND p.productName = :productName " +

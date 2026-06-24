@@ -25,6 +25,16 @@ public class ProductPersistenceAdapter implements ProductPort {
     }
 
     @Override
+    public boolean existsByCategoryId(Long categoryId) {
+        return productJpaRepository.existsByCategory_Id(categoryId);
+    }
+
+    @Override
+    public boolean existsByProductTypeId(Long productTypeId) {
+        return productJpaRepository.existsByProductType_Id(productTypeId);
+    }
+
+    @Override
     public Optional<Product> findById(Long productId) {
         return productJpaRepository.findByIdWithDetails(productId)
                 .map(ProductEntity::toDomain);

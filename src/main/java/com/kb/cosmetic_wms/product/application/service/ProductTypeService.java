@@ -1,8 +1,10 @@
 package com.kb.cosmetic_wms.product.application.service;
 
 import com.kb.cosmetic_wms.product.application.port.in.*;
+import com.kb.cosmetic_wms.product.application.port.out.ProductPort;
 import com.kb.cosmetic_wms.product.application.port.out.ProductTypePort;
 import com.kb.cosmetic_wms.product.domain.exception.DuplicateProductTypeException;
+import com.kb.cosmetic_wms.product.domain.exception.ProductTypeInUseException;
 import com.kb.cosmetic_wms.product.domain.exception.ProductTypeNotFoundException;
 import com.kb.cosmetic_wms.product.domain.model.ProductType;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.util.List;
 public class ProductTypeService implements RegisterProductTypeUseCase, FindProductTypeUseCase, DeleteProductTypeUseCase {
 
     private final ProductTypePort productTypePort;
+    private final ProductPort productPort;
 
     @Override
     @Transactional
@@ -47,6 +50,9 @@ public class ProductTypeService implements RegisterProductTypeUseCase, FindProdu
     public void delete(Long productTypeId) {
         productTypePort.findById(productTypeId)
                 .orElseThrow(ProductTypeNotFoundException::new);
+        if (productPort.existsByProductTypeId(productTypeId)) {
+            throw new ProductTypeInUseException();
+        }
         productTypePort.deleteById(productTypeId);
     }
 }

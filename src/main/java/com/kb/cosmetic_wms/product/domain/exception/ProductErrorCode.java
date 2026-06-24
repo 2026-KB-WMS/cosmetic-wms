@@ -15,7 +15,9 @@ public enum ProductErrorCode implements ErrorCode {
     SKU_SEQUENCE_OVERFLOW(HttpStatus.CONFLICT, "SKU_SEQUENCE_OVERFLOW", "SKU 일련번호가 최대값(9999)을 초과했습니다."),
     DUPLICATE_PRODUCT(HttpStatus.CONFLICT, "DUPLICATE_PRODUCT", "동일한 스펙의 상품이 이미 존재합니다."),
     DUPLICATE_CATEGORY(HttpStatus.CONFLICT, "DUPLICATE_CATEGORY", "동일한 코드의 카테고리가 이미 존재합니다."),
-    DUPLICATE_PRODUCT_TYPE(HttpStatus.CONFLICT, "DUPLICATE_PRODUCT_TYPE", "동일한 코드의 상품 타입이 이미 존재합니다.");
+    DUPLICATE_PRODUCT_TYPE(HttpStatus.CONFLICT, "DUPLICATE_PRODUCT_TYPE", "동일한 코드의 상품 타입이 이미 존재합니다."),
+    CATEGORY_IN_USE(HttpStatus.CONFLICT, "CATEGORY_IN_USE", "해당 카테고리를 참조하는 상품이 존재하여 삭제할 수 없습니다."),
+    PRODUCT_TYPE_IN_USE(HttpStatus.CONFLICT, "PRODUCT_TYPE_IN_USE", "해당 상품 타입을 참조하는 상품이 존재하여 삭제할 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;
