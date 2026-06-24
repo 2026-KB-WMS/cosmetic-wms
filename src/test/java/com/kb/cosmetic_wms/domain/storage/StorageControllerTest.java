@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;

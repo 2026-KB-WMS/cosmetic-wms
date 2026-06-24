@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.product.fixture;
 
-import com.kb.cosmetic_wms.product.domain.model.ProductInfo;
-import com.kb.cosmetic_wms.product.domain.valueobject.Volume;
+import com.kb.cosmetic_wms.product.product.domain.model.ProductInfo;
+import com.kb.cosmetic_wms.product.product.domain.valueobject.Volume;
 
 public class ProductInfoTestBuilder {
     private String skinType = "건성";

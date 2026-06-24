@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.product.domain.constants.ProductInfoConstants;
-import com.kb.cosmetic_wms.product.domain.model.ProductInfo;
+import com.kb.cosmetic_wms.product.product.domain.exception.InvalidProductInfoException;
+import com.kb.cosmetic_wms.product.product.domain.model.ProductInfo;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductInfoTestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,8 +39,8 @@ public class ProductInfoEntityTest {
                         .skinType(invalidSkinType)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_SKIN_TYPE_LENGTH_MESSAGE);
+                .isInstanceOf(InvalidProductInfoException.class)
+                .hasMessage("피부 타입 정보는 " + ProductInfo.SKIN_TYPE_MAX_LENGTH + "자를 초과할 수 없습니다.");
     }
 
     @ParameterizedTest
@@ -61,8 +61,8 @@ public class ProductInfoEntityTest {
                         .functionType(invalidFunctionType)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_FUNCTION_TYPE_LENGTH_MESSAGE);
+                .isInstanceOf(InvalidProductInfoException.class)
+                .hasMessage("기능성 타입 정보는 " + ProductInfo.FUNCTION_TYPE_MAX_LENGTH + "자를 초과할 수 없습니다.");
     }
 
     @ParameterizedTest
@@ -83,8 +83,8 @@ public class ProductInfoEntityTest {
                         .storageCondition(invalidStorageCondition)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_STORAGE_CONDITION_LENGTH_MESSAGE);
+                .isInstanceOf(InvalidProductInfoException.class)
+                .hasMessage("보관 조건 정보는 " + ProductInfo.STORAGE_CONDITION_MAX_LENGTH + "자를 초과할 수 없습니다.");
     }
 
     @ParameterizedTest

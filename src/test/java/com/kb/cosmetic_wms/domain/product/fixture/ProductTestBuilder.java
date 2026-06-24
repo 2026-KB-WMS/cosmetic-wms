@@ -1,10 +1,10 @@
 package com.kb.cosmetic_wms.domain.product.fixture;
 
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
-import com.kb.cosmetic_wms.product.domain.model.Category;
-import com.kb.cosmetic_wms.product.domain.model.Product;
-import com.kb.cosmetic_wms.product.domain.model.ProductInfo;
-import com.kb.cosmetic_wms.product.domain.model.ProductType;
+import com.kb.cosmetic_wms.product.category.domain.model.Category;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.domain.model.Product;
+import com.kb.cosmetic_wms.product.product.domain.model.ProductInfo;
+import com.kb.cosmetic_wms.product.producttype.domain.model.ProductType;
 
 public class ProductTestBuilder {
     private String brandName = "BIO";

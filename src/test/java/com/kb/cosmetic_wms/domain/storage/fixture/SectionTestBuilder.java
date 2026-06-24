@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.domain.storage.fixture;
 
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.storage.domain.model.Section;
 import com.kb.cosmetic_wms.storage.domain.model.SectionCode;
 import com.kb.cosmetic_wms.storage.domain.model.SectionType;

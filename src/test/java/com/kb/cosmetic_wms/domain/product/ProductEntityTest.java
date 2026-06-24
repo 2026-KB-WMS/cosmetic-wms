@@ -1,8 +1,8 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.product.domain.constants.ProductConstants;
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
-import com.kb.cosmetic_wms.product.domain.model.Product;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.domain.exception.*;
+import com.kb.cosmetic_wms.product.product.domain.model.Product;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductTestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -71,9 +71,7 @@ public class ProductEntityTest {
                 new ProductTestBuilder()
                         .brandName(invalidBrandName)
                         .build()
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.BRAND_NAME_REQUIRED_MESSAGE);
+        ).isInstanceOf(InvalidBrandNameException.class);
     }
 
     @ParameterizedTest
@@ -84,9 +82,7 @@ public class ProductEntityTest {
                 new ProductTestBuilder()
                         .productName(invalidProductName)
                         .build()
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.PRODUCT_NAME_REQUIRED_MESSAGE);
+        ).isInstanceOf(InvalidProductNameException.class);
     }
 
     @Test
@@ -95,9 +91,7 @@ public class ProductEntityTest {
                 new ProductTestBuilder()
                         .productPrice(-1)
                         .build()
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.INVALID_PRODUCT_PRICE_MESSAGE);
+        ).isInstanceOf(InvalidPriceException.class);
     }
 
     @Test
@@ -115,9 +109,7 @@ public class ProductEntityTest {
                 new ProductTestBuilder()
                         .temperatureType(null)
                         .build()
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.TEMPERATURE_TYPE_REQUIRED_MESSAGE);
+        ).isInstanceOf(InvalidTemperatureTypeException.class);
     }
 
     @Test
@@ -127,8 +119,8 @@ public class ProductEntityTest {
                         .category(null)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.CATEGORY_REQUIRED_MESSAGE);
+                .isInstanceOf(InvalidProductException.class)
+                .hasMessage("필수 연관 객체인 카테고리가 누락되었습니다.");
     }
 
     @Test
@@ -138,8 +130,8 @@ public class ProductEntityTest {
                         .productType(null)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.PRODUCT_TYPE_REQUIRED_MESSAGE);
+                .isInstanceOf(InvalidProductException.class)
+                .hasMessage("필수 연관 객체인 상품 타입이 누락되었습니다.");
     }
 
     @Test
@@ -149,7 +141,7 @@ public class ProductEntityTest {
                         .productInfo(null)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.PRODUCT_INFO_REQUIRED_MESSAGE);
+                .isInstanceOf(InvalidProductException.class)
+                .hasMessage("필수 연관 객체인 상품 상세 정보가 누락되었습니다.");
     }
 }

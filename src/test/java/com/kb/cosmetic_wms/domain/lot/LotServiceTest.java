@@ -13,7 +13,7 @@ import com.kb.cosmetic_wms.domain.lot.fixture.LotDtoBuilder;
 import com.kb.cosmetic_wms.domain.lot.fixture.LotTestBuilder;
 import com.kb.cosmetic_wms.domain.lot.repository.LotRepository;
 import com.kb.cosmetic_wms.domain.lot.service.LotService;
-import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
+import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -23,6 +23,14 @@ public final class ApiSchemas {
     public static final String MEMBER_LOGIN_REQUEST = "MemberLoginRequest";
     public static final String MEMBER_DETAIL_RESPONSE = "MemberDetailResponse";
 
+    // Category
+    public static final String CATEGORY_CREATE_REQUEST = "CategoryCreateRequest";
+    public static final String CATEGORY_RESPONSE = "CategoryResponse";
+
+    // ProductType
+    public static final String PRODUCT_TYPE_CREATE_REQUEST = "ProductTypeCreateRequest";
+    public static final String PRODUCT_TYPE_RESPONSE = "ProductTypeResponse";
+
     // Product
     public static final String PRODUCT_CREATE_REQUEST = "ProductCreateRequest";
     public static final String PRODUCT_UPDATE_REQUEST = "ProductUpdateRequest";

@@ -1,7 +1,8 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.product.domain.constants.ProductInfoConstants;
-import com.kb.cosmetic_wms.product.domain.valueobject.Volume;
+import com.kb.cosmetic_wms.product.product.domain.exception.InvalidVolumeException;
+import com.kb.cosmetic_wms.product.product.domain.exception.InvalidVolumeUnitException;
+import com.kb.cosmetic_wms.product.product.domain.valueobject.Volume;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -24,16 +25,16 @@ public class VolumeTest {
     @ValueSource(ints = {0, -10, -500})
     void 용량_수치가_0_이하이면_예외를_던진다(int invalidValue) {
         assertThatThrownBy(() -> Volume.of(invalidValue, "ml"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_VOLUME_MIN_MESSAGE);
+                .isInstanceOf(InvalidVolumeException.class)
+                .hasMessage("화장품 용량은 " + Volume.MIN_VALUE + "보다 커야 합니다.");
     }
 
     @ParameterizedTest
     @ValueSource(ints = {10001, 25000})
     void 화장품_용량이_최대_제한을_초과하면_예외를_던진다(int exceedValue) {
         assertThatThrownBy(() -> Volume.of(exceedValue, "ml"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_VOLUME_MAX_MESSAGE);
+                .isInstanceOf(InvalidVolumeException.class)
+                .hasMessage("올바르지 않은 대용량 수치입니다. (최대 " + Volume.MAX_VALUE + "까지 허용)");
     }
 
     @ParameterizedTest
@@ -41,16 +42,16 @@ public class VolumeTest {
     @ValueSource(strings = {" ", "   "})
     void 용량_단위가_비어있거나_공백이면_예외를_던진다(String invalidUnit) {
         assertThatThrownBy(() -> Volume.of(150, invalidUnit))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.UNIT_REQUIRED_MESSAGE);
+                .isInstanceOf(InvalidVolumeUnitException.class)
+                .hasMessage("용량 단위는 필수 입력 항목입니다.");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"l", "L", "kg", "밀리리터"})
     void 허용되지_않은_단위가_입력되면_예외를_던진다(String invalidUnit) {
         assertThatThrownBy(() -> Volume.of(150, invalidUnit))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_UNIT_FORMAT_MESSAGE);
+                .isInstanceOf(InvalidVolumeUnitException.class)
+                .hasMessage("올바르지 않은 용량 단위입니다. (ml, g, ea, oz, fl.oz 허용)");
     }
 
     @ParameterizedTest

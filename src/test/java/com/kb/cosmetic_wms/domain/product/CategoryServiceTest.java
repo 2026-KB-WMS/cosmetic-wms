@@ -1,15 +1,15 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.product.application.port.in.CategoryResult;
-import com.kb.cosmetic_wms.product.application.port.in.RegisterCategoryCommand;
-import com.kb.cosmetic_wms.product.application.port.out.CategoryPort;
-import com.kb.cosmetic_wms.product.application.port.out.ProductPort;
-import com.kb.cosmetic_wms.product.application.service.CategoryService;
-import com.kb.cosmetic_wms.product.domain.exception.CategoryInUseException;
-import com.kb.cosmetic_wms.product.domain.exception.CategoryNotFoundException;
-import com.kb.cosmetic_wms.product.domain.exception.DuplicateCategoryException;
-import com.kb.cosmetic_wms.product.domain.exception.ProductErrorCode;
-import com.kb.cosmetic_wms.product.domain.model.Category;
+import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
+import com.kb.cosmetic_wms.product.category.application.port.in.CategoryResult;
+import com.kb.cosmetic_wms.product.category.application.port.in.RegisterCategoryCommand;
+import com.kb.cosmetic_wms.product.category.application.port.out.CategoryPort;
+import com.kb.cosmetic_wms.product.category.application.service.CategoryService;
+import com.kb.cosmetic_wms.product.category.domain.exception.CategoryErrorCode;
+import com.kb.cosmetic_wms.product.category.domain.exception.CategoryInUseException;
+import com.kb.cosmetic_wms.product.category.domain.exception.CategoryNotFoundException;
+import com.kb.cosmetic_wms.product.category.domain.exception.DuplicateCategoryException;
+import com.kb.cosmetic_wms.product.category.domain.model.Category;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -110,7 +110,7 @@ public class CategoryServiceTest {
             // when & then
             assertThatThrownBy(() -> categoryService.findById(999L))
                     .isInstanceOf(CategoryNotFoundException.class)
-                    .hasMessage(ProductErrorCode.CATEGORY_NOT_FOUND.getMessage());
+                    .hasMessage(CategoryErrorCode.CATEGORY_NOT_FOUND.getMessage());
         }
     }
 
@@ -161,7 +161,7 @@ public class CategoryServiceTest {
             // when & then
             assertThatThrownBy(() -> categoryService.register(command))
                     .isInstanceOf(DuplicateCategoryException.class)
-                    .hasMessage(ProductErrorCode.DUPLICATE_CATEGORY.getMessage());
+                    .hasMessage(CategoryErrorCode.DUPLICATE_CATEGORY.getMessage());
             verify(categoryPort, never()).save(any());
         }
     }
@@ -190,7 +190,7 @@ public class CategoryServiceTest {
             // when & then
             assertThatThrownBy(() -> categoryService.delete(999L))
                     .isInstanceOf(CategoryNotFoundException.class)
-                    .hasMessage(ProductErrorCode.CATEGORY_NOT_FOUND.getMessage());
+                    .hasMessage(CategoryErrorCode.CATEGORY_NOT_FOUND.getMessage());
             verify(categoryPort, never()).deleteById(any());
         }
 
@@ -203,7 +203,7 @@ public class CategoryServiceTest {
             // when & then
             assertThatThrownBy(() -> categoryService.delete(1L))
                     .isInstanceOf(CategoryInUseException.class)
-                    .hasMessage(ProductErrorCode.CATEGORY_IN_USE.getMessage());
+                    .hasMessage(CategoryErrorCode.CATEGORY_IN_USE.getMessage());
             verify(categoryPort, never()).deleteById(any());
         }
     }

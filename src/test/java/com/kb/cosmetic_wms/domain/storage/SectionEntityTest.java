@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.domain.storage;
 
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityUnderflowException;

@@ -1,16 +1,20 @@
 package com.kb.cosmetic_wms.domain.product;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.product.adapter.in.web.ProductController;
-import com.kb.cosmetic_wms.product.adapter.in.web.RegisterProductRequest;
-import com.kb.cosmetic_wms.product.adapter.in.web.UpdateProductRequest;
-import com.kb.cosmetic_wms.product.application.port.in.*;
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
-import com.kb.cosmetic_wms.product.domain.exception.*;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.ProductController;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.RegisterProductRequest;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.UpdateProductRequest;
+import com.kb.cosmetic_wms.product.category.domain.exception.CategoryErrorCode;
+import com.kb.cosmetic_wms.product.category.domain.exception.CategoryNotFoundException;
+import com.kb.cosmetic_wms.product.product.application.port.in.*;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductDtoBuilder;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
+import com.kb.cosmetic_wms.product.product.domain.exception.DuplicateProductException;
+import com.kb.cosmetic_wms.product.product.domain.exception.ProductErrorCode;
+import com.kb.cosmetic_wms.product.product.domain.exception.ProductNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -205,7 +209,7 @@ public class ProductControllerTest extends RestDocsSupport {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("CATEGORY_NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value(ProductErrorCode.CATEGORY_NOT_FOUND.getMessage()))
+                .andExpect(jsonPath("$.message").value(CategoryErrorCode.CATEGORY_NOT_FOUND.getMessage()))
                 .andDo(document("product-create-fail-category-not-found",
                         buildErrorParams(PRODUCT, "상품 등록"),
                         globalErrorResponseFields()

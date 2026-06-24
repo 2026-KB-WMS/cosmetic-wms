@@ -11,7 +11,7 @@ import com.kb.cosmetic_wms.domain.inbound.fixture.InboundDtoBuilder;
 import com.kb.cosmetic_wms.domain.inbound.fixture.InboundTestBuilder;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
 import com.kb.cosmetic_wms.domain.inbound.service.InboundService;
-import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
+import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;

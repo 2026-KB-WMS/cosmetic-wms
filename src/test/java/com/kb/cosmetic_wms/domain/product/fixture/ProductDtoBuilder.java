@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.product.fixture;
 
-import com.kb.cosmetic_wms.product.adapter.in.web.RegisterProductRequest;
-import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.RegisterProductRequest;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 
 public class ProductDtoBuilder {
 

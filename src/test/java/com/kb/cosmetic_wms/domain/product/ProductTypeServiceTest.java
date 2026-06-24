@@ -1,15 +1,15 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.product.application.port.in.ProductTypeResult;
-import com.kb.cosmetic_wms.product.application.port.in.RegisterProductTypeCommand;
-import com.kb.cosmetic_wms.product.application.port.out.ProductPort;
-import com.kb.cosmetic_wms.product.application.port.out.ProductTypePort;
-import com.kb.cosmetic_wms.product.application.service.ProductTypeService;
-import com.kb.cosmetic_wms.product.domain.exception.DuplicateProductTypeException;
-import com.kb.cosmetic_wms.product.domain.exception.ProductErrorCode;
-import com.kb.cosmetic_wms.product.domain.exception.ProductTypeInUseException;
-import com.kb.cosmetic_wms.product.domain.exception.ProductTypeNotFoundException;
-import com.kb.cosmetic_wms.product.domain.model.ProductType;
+import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
+import com.kb.cosmetic_wms.product.producttype.application.port.in.ProductTypeResult;
+import com.kb.cosmetic_wms.product.producttype.application.port.in.RegisterProductTypeCommand;
+import com.kb.cosmetic_wms.product.producttype.application.port.out.ProductTypePort;
+import com.kb.cosmetic_wms.product.producttype.application.service.ProductTypeService;
+import com.kb.cosmetic_wms.product.producttype.domain.exception.DuplicateProductTypeException;
+import com.kb.cosmetic_wms.product.producttype.domain.exception.ProductTypeErrorCode;
+import com.kb.cosmetic_wms.product.producttype.domain.exception.ProductTypeInUseException;
+import com.kb.cosmetic_wms.product.producttype.domain.exception.ProductTypeNotFoundException;
+import com.kb.cosmetic_wms.product.producttype.domain.model.ProductType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -110,7 +110,7 @@ public class ProductTypeServiceTest {
             // when & then
             assertThatThrownBy(() -> productTypeService.findById(999L))
                     .isInstanceOf(ProductTypeNotFoundException.class)
-                    .hasMessage(ProductErrorCode.PRODUCT_TYPE_NOT_FOUND.getMessage());
+                    .hasMessage(ProductTypeErrorCode.PRODUCT_TYPE_NOT_FOUND.getMessage());
         }
     }
 
@@ -161,7 +161,7 @@ public class ProductTypeServiceTest {
             // when & then
             assertThatThrownBy(() -> productTypeService.register(command))
                     .isInstanceOf(DuplicateProductTypeException.class)
-                    .hasMessage(ProductErrorCode.DUPLICATE_PRODUCT_TYPE.getMessage());
+                    .hasMessage(ProductTypeErrorCode.DUPLICATE_PRODUCT_TYPE.getMessage());
             verify(productTypePort, never()).save(any());
         }
     }
@@ -190,7 +190,7 @@ public class ProductTypeServiceTest {
             // when & then
             assertThatThrownBy(() -> productTypeService.delete(999L))
                     .isInstanceOf(ProductTypeNotFoundException.class)
-                    .hasMessage(ProductErrorCode.PRODUCT_TYPE_NOT_FOUND.getMessage());
+                    .hasMessage(ProductTypeErrorCode.PRODUCT_TYPE_NOT_FOUND.getMessage());
             verify(productTypePort, never()).deleteById(any());
         }
 
@@ -203,7 +203,7 @@ public class ProductTypeServiceTest {
             // when & then
             assertThatThrownBy(() -> productTypeService.delete(1L))
                     .isInstanceOf(ProductTypeInUseException.class)
-                    .hasMessage(ProductErrorCode.PRODUCT_TYPE_IN_USE.getMessage());
+                    .hasMessage(ProductTypeErrorCode.PRODUCT_TYPE_IN_USE.getMessage());
             verify(productTypePort, never()).deleteById(any());
         }
     }
