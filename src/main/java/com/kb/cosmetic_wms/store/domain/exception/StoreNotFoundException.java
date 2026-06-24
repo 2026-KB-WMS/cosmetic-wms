@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.domain.store.exception;
+package com.kb.cosmetic_wms.store.domain.exception;
 
 import com.kb.cosmetic_wms.global.error.BusinessException;
 

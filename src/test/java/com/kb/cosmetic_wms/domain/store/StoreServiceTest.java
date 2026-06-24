@@ -1,19 +1,18 @@
 package com.kb.cosmetic_wms.domain.store;
 
-import com.kb.cosmetic_wms.domain.store.dto.StoreCreateRequestDto;
-import com.kb.cosmetic_wms.domain.store.dto.StoreResponseDto;
-import com.kb.cosmetic_wms.domain.store.entity.Store;
-import com.kb.cosmetic_wms.domain.store.exception.DuplicateStoreException;
-import com.kb.cosmetic_wms.domain.store.exception.StoreErrorCode;
-import com.kb.cosmetic_wms.domain.store.exception.StoreNotFoundException;
-import com.kb.cosmetic_wms.domain.store.repository.StoreRepository;
-import com.kb.cosmetic_wms.domain.store.service.StoreService;
+import com.kb.cosmetic_wms.store.application.port.in.RegisterStoreCommand;
+import com.kb.cosmetic_wms.store.application.port.in.StoreResult;
+import com.kb.cosmetic_wms.store.application.port.out.StorePort;
+import com.kb.cosmetic_wms.store.application.service.StoreService;
+import com.kb.cosmetic_wms.store.domain.exception.DuplicateStoreException;
+import com.kb.cosmetic_wms.store.domain.exception.StoreErrorCode;
+import com.kb.cosmetic_wms.store.domain.exception.StoreNotFoundException;
+import com.kb.cosmetic_wms.store.domain.model.Store;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -28,7 +27,7 @@ import static org.mockito.Mockito.verify;
 public class StoreServiceTest {
 
     @Mock
-    private StoreRepository storeRepository;
+    private StorePort storePort;
 
     @InjectMocks
     private StoreService storeService;
@@ -37,23 +36,23 @@ public class StoreServiceTest {
     void 존재하는_ID값으로_조회하면_올바른_가맹점_정보를_반환한다() {
         // given
         Long storeId = 1L;
-        Store store = Store.create("서울 성수점", "서울시");
-        ReflectionTestUtils.setField(store, "id", storeId);
+        Store store = Store.reconstitute(storeId, "서울 성수점", "서울시");
 
-        given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
+        given(storePort.findById(storeId)).willReturn(Optional.of(store));
 
         // when
-        StoreResponseDto responseDto = storeService.findById(storeId);
+        StoreResult result = storeService.findById(storeId);
 
         // then
-        assertThat(responseDto).isNotNull();
-        assertThat(responseDto.storeName()).isEqualTo("서울 성수점");
+        assertThat(result).isNotNull();
+        assertThat(result.storeName()).isEqualTo("서울 성수점");
     }
 
     @Test
     void 존재하지_않는_ID로_조회하면_예외를_던진다() {
+        // given
         Long invalidStoreId = 999L;
-        given(storeRepository.findById(invalidStoreId)).willReturn(Optional.empty());
+        given(storePort.findById(invalidStoreId)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> storeService.findById(invalidStoreId))
@@ -63,34 +62,34 @@ public class StoreServiceTest {
 
     @Test
     void 올바른_가맹점_정보를_입력하면_등록에_성공한다() {
-        StoreCreateRequestDto requestDto = new StoreCreateRequestDto("부산 서면점", "부산진구");
-        Store mockStore = Store.create(requestDto.storeName(), requestDto.address());
-        ReflectionTestUtils.setField(mockStore, "id", 1L);
+        // given
+        RegisterStoreCommand command = new RegisterStoreCommand("부산 서면점", "부산진구");
+        Store savedStore = Store.reconstitute(1L, "부산 서면점", "부산진구");
 
-        given(storeRepository.save(any(Store.class))).willReturn(mockStore);
+        given(storePort.save(any(Store.class))).willReturn(savedStore);
 
         // when
-        StoreResponseDto responseDto = storeService.register(requestDto);
+        StoreResult result = storeService.register(command);
 
         // then
-        assertThat(responseDto.id()).isEqualTo(1L);
-        assertThat(responseDto.storeName()).isEqualTo("부산 서면점");
-        verify(storeRepository).save(any(Store.class));
+        assertThat(result.storeId()).isEqualTo(1L);
+        assertThat(result.storeName()).isEqualTo("부산 서면점");
+        verify(storePort).save(any(Store.class));
     }
 
     @Test
     void 이미_존재하는_점포명과_주소로_등록을_시도하면_예외를_던진다() {
         // given
-        StoreCreateRequestDto requestDto = new StoreCreateRequestDto("서울 성수점", "서울시");
+        RegisterStoreCommand command = new RegisterStoreCommand("서울 성수점", "서울시");
 
-        given(storeRepository.existsByStoreNameAndAddress(requestDto.storeName(), requestDto.address()))
+        given(storePort.existsByStoreNameAndAddress(command.storeName(), command.address()))
                 .willReturn(true);
 
         // when & then
-        assertThatThrownBy(() -> storeService.register(requestDto))
+        assertThatThrownBy(() -> storeService.register(command))
                 .isInstanceOf(DuplicateStoreException.class)
                 .hasMessage(StoreErrorCode.DUPLICATE_STORE.getMessage());
 
-        verify(storeRepository, never()).save(any(Store.class));
+        verify(storePort, never()).save(any(Store.class));
     }
 }
