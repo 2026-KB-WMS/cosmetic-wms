@@ -13,8 +13,7 @@ import com.kb.cosmetic_wms.domain.lot.fixture.LotDtoBuilder;
 import com.kb.cosmetic_wms.domain.lot.fixture.LotTestBuilder;
 import com.kb.cosmetic_wms.domain.lot.repository.LotRepository;
 import com.kb.cosmetic_wms.domain.lot.service.LotService;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
+import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,7 +42,7 @@ class LotServiceTest {
     private LotRepository lotRepository;
 
     @Mock
-    private ProductRepository productRepository;
+    private FindProductUseCase findProductUseCase;
 
     private Lot defaultLot;
 
@@ -62,7 +60,7 @@ class LotServiceTest {
             // given
             LotCreateRequestDto request = new LotDtoBuilder().build();
 
-            given(productRepository.findById(request.productId())).willReturn(Optional.of(mock(Product.class)));
+            given(findProductUseCase.existsById(request.productId())).willReturn(true);
             given(lotRepository.existsByLotNumber(request.lotNumber())).willReturn(false);
             given(lotRepository.save(any(Lot.class))).willReturn(defaultLot);
 
@@ -81,7 +79,7 @@ class LotServiceTest {
             // given
             LotCreateRequestDto request = new LotDtoBuilder().build();
 
-            given(productRepository.findById(request.productId())).willReturn(Optional.of(mock(Product.class)));
+            given(findProductUseCase.existsById(request.productId())).willReturn(true);
             given(lotRepository.existsByLotNumber(request.lotNumber())).willReturn(false);
             given(lotRepository.save(any(Lot.class))).willReturn(defaultLot);
 
@@ -98,7 +96,7 @@ class LotServiceTest {
             // given
             LotCreateRequestDto request = new LotDtoBuilder().productId(999L).build();
 
-            given(productRepository.findById(999L)).willReturn(Optional.empty());
+            given(findProductUseCase.existsById(999L)).willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> lotService.register(request))
@@ -111,7 +109,7 @@ class LotServiceTest {
             // given
             LotCreateRequestDto request = new LotDtoBuilder().build();
 
-            given(productRepository.findById(request.productId())).willReturn(Optional.of(mock(Product.class)));
+            given(findProductUseCase.existsById(request.productId())).willReturn(true);
             given(lotRepository.existsByLotNumber(request.lotNumber())).willReturn(true);
 
             // when & then
@@ -160,7 +158,7 @@ class LotServiceTest {
             Lot secondLot = new LotTestBuilder().lotNumber("SKN-240101-01-0002").build();
             ReflectionTestUtils.setField(secondLot, "id", 2L);
 
-            given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
+            given(findProductUseCase.existsById(1L)).willReturn(true);
             given(lotRepository.findByProductId(1L)).willReturn(List.of(defaultLot, secondLot));
 
             // when
@@ -176,7 +174,7 @@ class LotServiceTest {
         @Test
         void 등록된_로트가_없으면_빈_목록을_반환한다() {
             // given
-            given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
+            given(findProductUseCase.existsById(1L)).willReturn(true);
             given(lotRepository.findByProductId(1L)).willReturn(List.of());
 
             // when
@@ -189,7 +187,7 @@ class LotServiceTest {
         @Test
         void 존재하지_않는_상품_ID로_조회하면_LotProductNotFoundException이_발생한다() {
             // given
-            given(productRepository.findById(999L)).willReturn(Optional.empty());
+            given(findProductUseCase.existsById(999L)).willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> lotService.getLotsByProductId(999L))

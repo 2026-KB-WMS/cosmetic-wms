@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.domain.product.constants.CategoryConstants;
-import com.kb.cosmetic_wms.domain.product.entity.Category;
+import com.kb.cosmetic_wms.product.domain.constants.CategoryConstants;
+import com.kb.cosmetic_wms.product.domain.model.Category;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -14,14 +14,8 @@ public class CategoryEntityTest {
 
     @Test
     void 올바른_3자리_분류코드로_카테고리가_정상_생성된다() {
-        // given
-        String validCategoryCode = "SKN";
-        String categoryName = "스킨케어";
+        Category category = Category.create("SKN", "스킨케어");
 
-        // when
-        Category category = Category.create(validCategoryCode, categoryName);
-
-        // then
         assertThat(category.getCategoryCode()).isEqualTo("SKN");
         assertThat(category.getCategoryName()).isEqualTo("스킨케어");
     }

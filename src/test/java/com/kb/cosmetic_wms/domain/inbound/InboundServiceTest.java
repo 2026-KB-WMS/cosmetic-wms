@@ -11,8 +11,7 @@ import com.kb.cosmetic_wms.domain.inbound.fixture.InboundDtoBuilder;
 import com.kb.cosmetic_wms.domain.inbound.fixture.InboundTestBuilder;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
 import com.kb.cosmetic_wms.domain.inbound.service.InboundService;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
+import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;
@@ -55,7 +54,7 @@ class InboundServiceTest {
     @Mock
     private PartnerPort partnerPort;
     @Mock
-    private ProductRepository productRepository;
+    private FindProductUseCase findProductUseCase;
     @Mock
     private EventPublisher eventPublisher;
 
@@ -131,7 +130,7 @@ class InboundServiceTest {
             // given
             InboundItemAddRequestDto request = new InboundDtoBuilder().buildAddItemRequest();
             given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
-            given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
+            given(findProductUseCase.existsById(1L)).willReturn(true);
 
             // when
             InboundDetailResponseDto result = inboundService.addItem(1L, request);
@@ -158,7 +157,7 @@ class InboundServiceTest {
             // given
             InboundItemAddRequestDto request = new InboundDtoBuilder().productId(999L).buildAddItemRequest();
             given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
-            given(productRepository.findById(999L)).willReturn(Optional.empty());
+            given(findProductUseCase.existsById(999L)).willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> inboundService.addItem(1L, request))
@@ -172,7 +171,7 @@ class InboundServiceTest {
             Inbound inProgress = new InboundTestBuilder().buildInProgress();
             ReflectionTestUtils.setField(inProgress, "id", 1L);
             given(inboundRepository.findByIdWithItems(1L)).willReturn(Optional.of(inProgress));
-            given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
+            given(findProductUseCase.existsById(1L)).willReturn(true);
 
             // when & then
             assertThatThrownBy(() -> inboundService.addItem(1L, new InboundDtoBuilder().buildAddItemRequest()))

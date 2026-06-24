@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
-import com.kb.cosmetic_wms.domain.product.entity.Volume;
+import com.kb.cosmetic_wms.product.domain.constants.ProductInfoConstants;
+import com.kb.cosmetic_wms.product.domain.valueobject.Volume;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -14,14 +14,8 @@ public class VolumeTest {
 
     @Test
     void 유효한_값이면_Volume_객체가_정상_생성된다() {
-        // given
-        int value = 150;
-        String unit = "ml";
+        Volume volume = Volume.of(150, "ml");
 
-        // when
-        Volume volume = Volume.of(value, unit);
-
-        // then
         assertThat(volume.value()).isEqualTo(150);
         assertThat(volume.unit()).isEqualTo("ml");
     }
@@ -62,10 +56,8 @@ public class VolumeTest {
     @ParameterizedTest
     @ValueSource(strings = {"ML", "mL", "Ml", "G", "EA", "Ea", "fl. oz", "FL. OZ", "Fl. Oz"})
     void 대소문자와_공백이_혼용되어_입력되어도_소문자로_정상_생성된다(String mixedCaseUnit) {
-        // given & when
         Volume volume = Volume.of(150, mixedCaseUnit);
 
-        // then
         String expected = mixedCaseUnit.toLowerCase().replace(" ", "");
         assertThat(volume.unit()).isEqualTo(expected);
     }

@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.domain.product.entity.ProductType;
+import com.kb.cosmetic_wms.product.domain.model.ProductType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -13,14 +13,8 @@ public class ProductTypeEntityTest {
 
     @Test
     void 올바른_3자리_타입코드로_상품타입_객체가_정상_생성된다() {
-        // given
-        String typeCode = "TON";
-        String typeName = "토너";
+        ProductType productType = ProductType.create("TON", "토너");
 
-        // when
-        ProductType productType = ProductType.create(typeCode, typeName);
-
-        // then
         assertThat(productType.getTypeCode()).isEqualTo("TON");
         assertThat(productType.getTypeName()).isEqualTo("토너");
     }

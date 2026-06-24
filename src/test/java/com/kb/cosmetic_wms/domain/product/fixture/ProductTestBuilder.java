@@ -1,17 +1,17 @@
 package com.kb.cosmetic_wms.domain.product.fixture;
 
-import com.kb.cosmetic_wms.domain.product.entity.Category;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.entity.ProductInfo;
-import com.kb.cosmetic_wms.domain.product.entity.ProductType;
-import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.domain.model.Category;
+import com.kb.cosmetic_wms.product.domain.model.Product;
+import com.kb.cosmetic_wms.product.domain.model.ProductInfo;
+import com.kb.cosmetic_wms.product.domain.model.ProductType;
 
 public class ProductTestBuilder {
     private String brandName = "BIO";
     private String productName = "하이드라비오 토너";
     private int productPrice = 15000;
     private TemperatureType temperatureType = TemperatureType.ROOM;
-    private int sequence = 1;
+    private long skuId = 1L;
 
     private Category category = Category.create("SKN", "스킨케어");
     private ProductType productType = ProductType.create("TON", "토너");
@@ -37,8 +37,8 @@ public class ProductTestBuilder {
         return this;
     }
 
-    public ProductTestBuilder sequence(int sequence) {
-        this.sequence = sequence;
+    public ProductTestBuilder skuId(long skuId) {
+        this.skuId = skuId;
         return this;
     }
 
@@ -58,15 +58,11 @@ public class ProductTestBuilder {
     }
 
     public Product build() {
-        return Product.create(
-                brandName,
-                productName,
-                productPrice,
-                temperatureType,
-                category,
-                productType,
-                productInfo,
-                sequence
+        Product product = Product.create(
+                brandName, productName, productPrice, temperatureType,
+                category, productType, productInfo
         );
+        product.assignSkuCode(skuId);
+        return product;
     }
 }

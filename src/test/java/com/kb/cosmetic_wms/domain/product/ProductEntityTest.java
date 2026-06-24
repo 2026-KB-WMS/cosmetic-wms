@@ -1,8 +1,8 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.domain.product.constants.ProductConstants;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.domain.constants.ProductConstants;
+import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.domain.model.Product;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductTestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,7 +16,6 @@ public class ProductEntityTest {
 
     @Test
     void 올바른_정보를_입력하면_상품_엔티티가_정상_생성된다() {
-        // given & when
         Product product = new ProductTestBuilder().build();
 
         assertThat(product)
@@ -30,12 +29,38 @@ public class ProductEntityTest {
     }
 
     @Test
-    void 상품_생성_시_올바른_SKU_코드가_정상_생성된다() {
-        // given & when
-        Product product = new ProductTestBuilder().build();
+    void 상품_생성_직후에는_SKU_코드가_null이다() {
+        Product product = Product.create("BIO", "하이드라비오 토너", 15000,
+                TemperatureType.ROOM,
+                new ProductTestBuilder().build().getCategory(),
+                new ProductTestBuilder().build().getProductType(),
+                new ProductTestBuilder().build().getProductInfo());
 
-        // then
-        assertThat(product.getSkuCode()).isEqualTo("BIO-SKN-TON-150-0001");
+        assertThat(product.getSkuCode()).isNull();
+    }
+
+    @Test
+    void assignSkuCode를_호출하면_PK_기반_SKU_코드가_설정된다() {
+        Product product = new ProductTestBuilder().build();
+        product.assignSkuCode(1L);
+
+        assertThat(product.getSkuCode()).isEqualTo("P000001");
+    }
+
+    @Test
+    void PK가_6자리를_초과해도_SKU_코드가_올바르게_생성된다() {
+        Product product = new ProductTestBuilder().build();
+        product.assignSkuCode(1234567L);
+
+        assertThat(product.getSkuCode()).isEqualTo("P1234567");
+    }
+
+    @Test
+    void PK_1자리_숫자는_6자리_포맷으로_패딩된다() {
+        Product product = new ProductTestBuilder().build();
+        product.assignSkuCode(3L);
+
+        assertThat(product.getSkuCode()).isEqualTo("P000003");
     }
 
     @ParameterizedTest
@@ -49,17 +74,6 @@ public class ProductEntityTest {
         )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(ProductConstants.BRAND_NAME_REQUIRED_MESSAGE);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"bio", "Bio", "  bIo  "})
-    void 브랜드명에_공백이나_소문자가_있어도_SKU_코드는_공백이_제거된_대문자_포맷으로_조립된다(String mixedBrandName) {
-        // given & when
-        Product product = new ProductTestBuilder()
-                .brandName(mixedBrandName)
-                .build();
-
-        assertThat(product.getSkuCode()).isEqualTo("BIO-SKN-TON-150-0001");
     }
 
     @ParameterizedTest
@@ -77,13 +91,9 @@ public class ProductEntityTest {
 
     @Test
     void 상품_가격이_음수이면_예외를_던진다() {
-        // given
-        int negativePrice = -1;
-
-        // when & then
         assertThatThrownBy(() ->
                 new ProductTestBuilder()
-                        .productPrice(negativePrice)
+                        .productPrice(-1)
                         .build()
         )
                 .isInstanceOf(IllegalArgumentException.class)
@@ -92,12 +102,10 @@ public class ProductEntityTest {
 
     @Test
     void 상온_온도_타입으로_상품이_정상_생성된다() {
-        // given & when
         Product product = new ProductTestBuilder()
                 .temperatureType(TemperatureType.ROOM)
                 .build();
 
-        // then
         assertThat(product.getTemperatureType()).isEqualTo(TemperatureType.ROOM);
     }
 
@@ -110,41 +118,6 @@ public class ProductEntityTest {
         )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(ProductConstants.TEMPERATURE_TYPE_REQUIRED_MESSAGE);
-    }
-
-    @Test
-    void 한_자릿수_일련번호가_입력되면_SKU_코드에서_네자리_포맷으로_변환되어_조립된다() {
-        int sequence = 3;
-
-        Product product = new ProductTestBuilder()
-                .sequence(sequence)
-                .build();
-
-        assertThat(product.getSkuCode()).isEqualTo("BIO-SKN-TON-150-0003");
-    }
-
-    @Test
-    void 세_자릿수_일련번호가_입력되면_SKU_코드에서_네자리_포맷으로_변환되어_조립된다() {
-        int sequence = 777;
-
-        Product product = new ProductTestBuilder()
-                .sequence(sequence)
-                .build();
-
-        assertThat(product.getSkuCode()).isEqualTo("BIO-SKN-TON-150-0777");
-    }
-
-    @Test
-    void SKU_일련번호가_4자리를_초과하면_예외를_던진다() {
-        int invalidSequence = 10000;
-
-        assertThatThrownBy(() ->
-                new ProductTestBuilder()
-                        .sequence(invalidSequence)
-                        .build()
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductConstants.INVALID_SEQUENCE_MAX_MESSAGE);
     }
 
     @Test
