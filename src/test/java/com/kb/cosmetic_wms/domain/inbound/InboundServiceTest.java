@@ -11,16 +11,16 @@ import com.kb.cosmetic_wms.domain.inbound.fixture.InboundDtoBuilder;
 import com.kb.cosmetic_wms.domain.inbound.fixture.InboundTestBuilder;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
 import com.kb.cosmetic_wms.domain.inbound.service.InboundService;
-import com.kb.cosmetic_wms.domain.partner.entity.Partner;
-import com.kb.cosmetic_wms.domain.partner.exception.PartnerErrorCode;
-import com.kb.cosmetic_wms.domain.partner.exception.PartnerNotFoundException;
-import com.kb.cosmetic_wms.domain.partner.repository.PartnerRepository;
 import com.kb.cosmetic_wms.domain.product.entity.Product;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
-import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
+import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;
+import com.kb.cosmetic_wms.partner.domain.exception.PartnerErrorCode;
+import com.kb.cosmetic_wms.partner.domain.exception.PartnerNotFoundException;
+import com.kb.cosmetic_wms.partner.domain.model.Partner;
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
+import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
 import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ class InboundServiceTest {
     @Mock
     private StoragePort storagePort;
     @Mock
-    private PartnerRepository partnerRepository;
+    private PartnerPort partnerPort;
     @Mock
     private ProductRepository productRepository;
     @Mock
@@ -80,7 +80,7 @@ class InboundServiceTest {
             InboundCreateRequestDto request = new InboundDtoBuilder().buildCreateRequest();
 
             given(storagePort.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
-            given(partnerRepository.findById(1L)).willReturn(Optional.of(mock(Partner.class)));
+            given(partnerPort.findById(1L)).willReturn(Optional.of(mock(Partner.class)));
             given(inboundRepository.save(any(Inbound.class))).willReturn(defaultInbound);
 
             // when
@@ -110,7 +110,7 @@ class InboundServiceTest {
             // given
             InboundCreateRequestDto request = new InboundDtoBuilder().partnerId(999L).buildCreateRequest();
             given(storagePort.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
-            given(partnerRepository.findById(999L)).willReturn(Optional.empty());
+            given(partnerPort.findById(999L)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> inboundService.registerInbound(request))

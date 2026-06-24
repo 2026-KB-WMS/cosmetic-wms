@@ -7,11 +7,11 @@ import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
-import com.kb.cosmetic_wms.domain.partner.exception.PartnerNotFoundException;
-import com.kb.cosmetic_wms.domain.partner.repository.PartnerRepository;
 import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;
+import com.kb.cosmetic_wms.partner.domain.exception.PartnerNotFoundException;
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
 import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class InboundService {
 
     private final InboundRepository inboundRepository;
     private final StoragePort storagePort;
-    private final PartnerRepository partnerRepository;
+    private final PartnerPort partnerPort;
     private final ProductRepository productRepository;
     private final EventPublisher eventPublisher;
 
@@ -33,7 +33,7 @@ public class InboundService {
     public InboundDetailResponseDto registerInbound(InboundCreateRequestDto request) {
         storagePort.findById(request.warehouseId())
                 .orElseThrow(WarehouseNotFoundException::new);
-        partnerRepository.findById(request.partnerId())
+        partnerPort.findById(request.partnerId())
                 .orElseThrow(PartnerNotFoundException::new);
 
         Inbound inbound = Inbound.create(request.inboundDate(), request.warehouseId(), request.partnerId());

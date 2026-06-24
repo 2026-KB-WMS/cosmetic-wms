@@ -1,11 +1,12 @@
-package com.kb.cosmetic_wms.domain.partner.dto;
+package com.kb.cosmetic_wms.partner.adapter.in.web;
 
-import com.kb.cosmetic_wms.domain.partner.enums.PartnerType;
+import com.kb.cosmetic_wms.partner.application.port.in.RegisterPartnerCommand;
+import com.kb.cosmetic_wms.partner.domain.model.PartnerType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record PartnerCreateRequestDto(
+public record RegisterPartnerRequest(
         @NotBlank(message = "파트너명은 필수 항목입니다.")
         @Size(max = 100, message = "파트너명은 100자 이하로 입력해주세요.")
         String partnerName,
@@ -17,4 +18,7 @@ public record PartnerCreateRequestDto(
         @Size(max = 20, message = "사업자 번호는 20자 이하로 입력해주세요.")
         String businessNumber
 ) {
+    public RegisterPartnerCommand toCommand() {
+        return new RegisterPartnerCommand(partnerName, partnerType, businessNumber);
+    }
 }

@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.domain.partner.enums;
+package com.kb.cosmetic_wms.partner.domain.model;
 
 import lombok.Getter;
 
