@@ -8,7 +8,8 @@ import com.kb.cosmetic_wms.domain.lot.exception.DuplicateLotNumberException;
 import com.kb.cosmetic_wms.domain.lot.exception.LotNotFoundException;
 import com.kb.cosmetic_wms.domain.lot.exception.LotProductNotFoundException;
 import com.kb.cosmetic_wms.domain.lot.repository.LotRepository;
-import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
+import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,12 +22,13 @@ import java.util.List;
 public class LotService {
 
     private final LotRepository lotRepository;
-    private final ProductRepository productRepository;
+    private final FindProductUseCase findProductUseCase;
 
     @Transactional
     public LotDetailResponseDto register(LotCreateRequestDto request) {
-        productRepository.findById(request.productId())
-                .orElseThrow(LotProductNotFoundException::new);
+        if (!findProductUseCase.existsById(request.productId())) {
+            throw new LotProductNotFoundException();
+        }
 
         if (lotRepository.existsByLotNumber(request.lotNumber())) {
             throw new DuplicateLotNumberException();
@@ -49,8 +51,9 @@ public class LotService {
     }
 
     public List<LotDetailResponseDto> getLotsByProductId(Long productId) {
-        productRepository.findById(productId)
-                .orElseThrow(LotProductNotFoundException::new);
+        if (!findProductUseCase.existsById(productId)) {
+            throw new LotProductNotFoundException();
+        }
 
         return lotRepository.findByProductId(productId).stream()
                 .map(LotDetailResponseDto::from)

@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.domain.model;
 
-import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
@@ -49,7 +49,7 @@ public class Warehouse {
     }
 
     public Section addSection(SectionType sectionType, String sectionName,
-                             TemperatureType temperatureType, int maxCapacity) {
+                              TemperatureType temperatureType, int maxCapacity) {
         if (warehouseId == null) {
             throw new StorageValidationException(StorageErrorCode.INVALID_STORAGE_STATE);
         }

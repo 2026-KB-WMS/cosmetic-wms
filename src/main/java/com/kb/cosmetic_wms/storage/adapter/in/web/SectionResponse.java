@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.adapter.in.web;
 
-import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.storage.application.port.in.SectionResult;
 import com.kb.cosmetic_wms.storage.domain.model.SectionAllocationStatus;
 import com.kb.cosmetic_wms.storage.domain.model.SectionQualityStatus;

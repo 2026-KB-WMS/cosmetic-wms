@@ -7,7 +7,7 @@ import com.kb.cosmetic_wms.domain.inbound.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.domain.inbound.repository.InboundRepository;
-import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
+import com.kb.cosmetic_wms.product.application.port.in.FindProductUseCase;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;
@@ -26,7 +26,7 @@ public class InboundService {
     private final InboundRepository inboundRepository;
     private final StoragePort storagePort;
     private final PartnerPort partnerPort;
-    private final ProductRepository productRepository;
+    private final FindProductUseCase findProductUseCase;
     private final EventPublisher eventPublisher;
 
     @Transactional
@@ -43,8 +43,9 @@ public class InboundService {
     @Transactional
     public InboundDetailResponseDto addItem(Long inboundId, InboundItemAddRequestDto request) {
         Inbound inbound = findInboundWithItemsOrThrow(inboundId);
-        productRepository.findById(request.productId())
-                .orElseThrow(InboundProductNotFoundException::new);
+        if (!findProductUseCase.existsById(request.productId())) {
+            throw new InboundProductNotFoundException();
+        }
 
         InboundLine line = new InboundLine(
                 request.productId(), request.quantity(),
