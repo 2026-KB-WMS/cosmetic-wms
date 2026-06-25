@@ -77,8 +77,8 @@ class LotServiceTest {
 
             LotResult result = lotService.register(command);
 
-            assertThat(result.manufacturingDate()).isEqualTo(defaultLot.getManufacturingDate());
-            assertThat(result.expirationDate()).isEqualTo(defaultLot.getExpirationDate());
+            assertThat(result.manufacturingDate()).isEqualTo(defaultLot.getPeriod().manufacturingDate());
+            assertThat(result.expirationDate()).isEqualTo(defaultLot.getPeriod().expirationDate());
         }
 
         @Test
