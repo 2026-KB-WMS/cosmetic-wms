@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
+import com.kb.cosmetic_wms.inventory.domain.exception.InvalidInventoryTransactionException;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryStatusSet;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryTransaction;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryTransactionTestBuilder;
@@ -34,7 +35,7 @@ public class InventoryTransactionEntityTest {
                         .inventoryId(null)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryTransactionException.class)
                 .hasMessage("재고 식별자(ID)는 필수입니다.");
     }
 
@@ -45,7 +46,7 @@ public class InventoryTransactionEntityTest {
                         .transactionType(null)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryTransactionException.class)
                 .hasMessage("트랜잭션 타입은 필수입니다.");
     }
 
@@ -56,7 +57,7 @@ public class InventoryTransactionEntityTest {
                         .memberId(null)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryTransactionException.class)
                 .hasMessage("작업자 식별자(ID)는 필수입니다.");
     }
 
@@ -65,7 +66,7 @@ public class InventoryTransactionEntityTest {
             "INBOUND_PUTAWAY", "INBOUND_CANCEL", "ALLOCATE", "UNALLOCATE", "PICKING", "SHIP"
     })
     void 상위_전표가_필수인_타입으로_이력_생성_시_전표_ID가_누락되면_예외를_던진다(TransactionType transactionType) {
-        String expectedMessage = String.format("%s 행위는 원인 전표 ID가 필수입니다.", transactionType.getDescription());
+        String expectedMessage = transactionType.getDescription() + " 행위는 원인 전표 ID가 필수입니다.";
 
         assertThatThrownBy(() ->
                 new InventoryTransactionTestBuilder()
@@ -73,7 +74,7 @@ public class InventoryTransactionEntityTest {
                         .referenceId(null)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryTransactionException.class)
                 .hasMessageContaining(expectedMessage);
     }
 
@@ -130,7 +131,7 @@ public class InventoryTransactionEntityTest {
                         .transactionQuantity(invalidQuantity)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryTransactionException.class)
                 .hasMessage("트랜잭션 변동 수량은 0보다 커야 합니다.");
     }
 }

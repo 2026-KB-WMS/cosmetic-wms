@@ -3,6 +3,11 @@ package com.kb.cosmetic_wms.inventory;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
+import com.kb.cosmetic_wms.inventory.domain.exception.InsufficientInventoryException;
+import com.kb.cosmetic_wms.inventory.domain.exception.InvalidInventoryQuantityException;
+import com.kb.cosmetic_wms.inventory.domain.exception.InvalidInventoryStatusCombinationException;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryMergeException;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryStateTransitionException;
 import com.kb.cosmetic_wms.inventory.domain.model.Inventory;
 import com.kb.cosmetic_wms.inventory.domain.model.SplitResult;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryTestBuilder;
@@ -28,7 +33,7 @@ public class InventoryEntityTest {
                         .quantity(-5)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryQuantityException.class)
                 .hasMessage("재고 수량은 음수일 수 없습니다.");
     }
 
@@ -40,7 +45,7 @@ public class InventoryEntityTest {
                         .availableQuantity(101)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryQuantityException.class)
                 .hasMessage("출고 가능 수량은 총 재고 수량을 초과할 수 없습니다.");
     }
 
@@ -53,7 +58,7 @@ public class InventoryEntityTest {
                         .availableQuantity(50)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryQuantityException.class)
                 .hasMessageContaining("출고 가능 수량은 0이어야 합니다.");
     }
 
@@ -105,7 +110,7 @@ public class InventoryEntityTest {
         assertThatThrownBy(() ->
                 inventory.allocate(60)
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InsufficientInventoryException.class)
                 .hasMessage("가용 재고가 부족하여 할당할 수 없습니다.");
     }
 
@@ -151,7 +156,7 @@ public class InventoryEntityTest {
         assertThatThrownBy(() ->
                 inventory.allocate(invalidQuantity)
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryQuantityException.class)
                 .hasMessage("할당할 수량은 0보다 커야 합니다.");
     }
 
@@ -168,7 +173,7 @@ public class InventoryEntityTest {
                         .availableQuantity(0)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryStatusCombinationException.class)
                 .hasMessageContaining(expectedMsg);
     }
 
@@ -181,7 +186,7 @@ public class InventoryEntityTest {
         assertThatThrownBy(() ->
                 inventory.scheduleForDiscard(10)
         )
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessage("할당된 재고는 폐기 처리할 수 없습니다. 할당 취소부터 진행해주세요.");
     }
 
@@ -194,7 +199,7 @@ public class InventoryEntityTest {
         Assertions.assertThatThrownBy(() ->
                         inventory.startMoving(20)
                 )
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessageContaining("이미 할당된 재고는 이동(MOVING) 시킬 수 없습니다.");
     }
 
@@ -221,7 +226,7 @@ public class InventoryEntityTest {
         assertThatThrownBy(() ->
                 inventory.unallocate(10)
         )
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessage("할당된 재고만 할당 취소할 수 있습니다.");
     }
 
@@ -248,7 +253,7 @@ public class InventoryEntityTest {
                 .build();
 
         assertThatThrownBy(() -> inventory.startMoving(10))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessage("이미 이동 중인 재고입니다.");
     }
 
@@ -273,7 +278,7 @@ public class InventoryEntityTest {
                 .build();
 
         assertThatThrownBy(() -> inventory.finishMoving(10))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessage("이동 중(MOVING) 상태의 재고만 이동 완료 처리가 가능합니다.");
     }
 
@@ -356,7 +361,7 @@ public class InventoryEntityTest {
                 .build();
 
         assertThatThrownBy(() -> inventory.startInspecting(10))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessage("이미 할당된 재고는 검수(INSPECTING) 상태로 변경할 수 없습니다. 할당 취소부터 진행해주세요.");
     }
 
@@ -367,7 +372,7 @@ public class InventoryEntityTest {
                 .build();
 
         assertThatThrownBy(() -> inventory.restoreToNormalQuality(10))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessage("할당된 재고는 품질 상태를 변경할 수 없습니다.");
     }
 
@@ -378,7 +383,7 @@ public class InventoryEntityTest {
                 .build();
 
         assertThatThrownBy(() -> inventory.holdForQualityIssue(10))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InventoryStateTransitionException.class)
                 .hasMessage("이미 할당된 재고는 출고 금지(HOLD) 처리할 수 없습니다. 할당 취소부터 진행해주세요.");
     }
 
@@ -388,7 +393,7 @@ public class InventoryEntityTest {
         Inventory inventory = new InventoryTestBuilder().build();
 
         assertThatThrownBy(() -> inventory.holdForQualityIssue(invalidQuantity))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryQuantityException.class)
                 .hasMessage("재고 수량은 음수일 수 없습니다.");
     }
 
@@ -400,7 +405,7 @@ public class InventoryEntityTest {
                 .build();
 
         assertThatThrownBy(() -> inventory.holdForQualityIssue(51))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryQuantityException.class)
                 .hasMessage("변경 요청 수량이 현재 보유한 재고 수량을 초과할 수 없습니다.");
     }
 
@@ -410,7 +415,7 @@ public class InventoryEntityTest {
         Inventory inventory = new InventoryTestBuilder().build();
 
         assertThatThrownBy(() -> inventory.startMoving(invalidQuantity))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidInventoryQuantityException.class)
                 .hasMessage("재고 수량은 음수일 수 없습니다.");
     }
 

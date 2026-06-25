@@ -8,8 +8,10 @@ import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
+import com.kb.cosmetic_wms.inventory.domain.exception.InsufficientInventoryException;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryErrorCode;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNotFoundException;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryStateTransitionException;
 import com.kb.cosmetic_wms.inventory.domain.model.Inventory;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryStatusSet;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryTransaction;
@@ -269,12 +271,12 @@ class InventoryServiceTest {
         }
 
         @Test
-        void 가용_수량을_초과하는_할당_요청은_IllegalArgumentException이_전파된다() {
+        void 가용_수량을_초과하는_할당_요청은_InsufficientInventoryException이_전파된다() {
             given(inventoryPort.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
 
             assertThatThrownBy(() -> inventoryService.allocate(1L,
                     new InventoryDtoBuilder().quantity(200).referenceId(10L).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(InsufficientInventoryException.class)
                     .hasMessage("가용 재고가 부족하여 할당할 수 없습니다.");
         }
     }
@@ -310,12 +312,12 @@ class InventoryServiceTest {
         }
 
         @Test
-        void UNALLOCATED_재고에_할당_취소를_요청하면_IllegalStateException이_전파된다() {
+        void UNALLOCATED_재고에_할당_취소를_요청하면_InventoryStateTransitionException이_전파된다() {
             given(inventoryPort.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
 
             assertThatThrownBy(() -> inventoryService.unallocate(1L,
                     new InventoryDtoBuilder().quantity(50).build()))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InventoryStateTransitionException.class)
                     .hasMessage("할당된 재고만 할당 취소할 수 있습니다.");
         }
 
@@ -375,7 +377,7 @@ class InventoryServiceTest {
         }
 
         @Test
-        void ALLOCATED_재고를_이동_시작하면_IllegalStateException이_전파된다() {
+        void ALLOCATED_재고를_이동_시작하면_InventoryStateTransitionException이_전파된다() {
             Inventory allocated = new InventoryTestBuilder()
                     .allocStatus(AllocStatus.ALLOCATED).availableQuantity(0).build();
             ReflectionTestUtils.setField(allocated, "id", 1L);
@@ -384,7 +386,7 @@ class InventoryServiceTest {
 
             assertThatThrownBy(() -> inventoryService.startMoving(1L,
                     new InventoryDtoBuilder().quantity(100).buildWithoutRef()))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InventoryStateTransitionException.class)
                     .hasMessage("이미 할당된 재고는 이동(MOVING) 시킬 수 없습니다. 할당 취소부터 진행해주세요.");
         }
 
@@ -476,7 +478,7 @@ class InventoryServiceTest {
         }
 
         @Test
-        void 할당된_재고에_품질_HOLD를_요청하면_IllegalStateException이_전파된다() {
+        void 할당된_재고에_품질_HOLD를_요청하면_InventoryStateTransitionException이_전파된다() {
             Inventory allocated = new InventoryTestBuilder()
                     .allocStatus(AllocStatus.ALLOCATED).availableQuantity(0).build();
             ReflectionTestUtils.setField(allocated, "id", 1L);
@@ -485,7 +487,7 @@ class InventoryServiceTest {
 
             assertThatThrownBy(() -> inventoryService.holdForQualityIssue(1L,
                     new InventoryDtoBuilder().quantity(100).buildWithoutRef()))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InventoryStateTransitionException.class)
                     .hasMessage("이미 할당된 재고는 출고 금지(HOLD) 처리할 수 없습니다. 할당 취소부터 진행해주세요.");
         }
 
