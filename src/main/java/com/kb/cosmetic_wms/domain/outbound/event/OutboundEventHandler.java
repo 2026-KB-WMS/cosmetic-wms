@@ -1,8 +1,9 @@
 package com.kb.cosmetic_wms.domain.outbound.event;
 
-import com.kb.cosmetic_wms.domain.inventory.dto.FefoInventorySlice;
-import com.kb.cosmetic_wms.domain.inventory.dto.InventoryStatusChangeRequestDto;
-import com.kb.cosmetic_wms.domain.inventory.service.InventoryService;
+import com.kb.cosmetic_wms.inventory.application.port.in.FefoInventorySlice;
+import com.kb.cosmetic_wms.inventory.application.port.in.FindFefoInventoryUseCase;
+import com.kb.cosmetic_wms.inventory.application.port.in.InventoryStatusChangeCommand;
+import com.kb.cosmetic_wms.inventory.application.port.in.ManageInventoryStatusUseCase;
 import com.kb.cosmetic_wms.domain.order.service.OrderService;
 import com.kb.cosmetic_wms.domain.outbound.OutboundLine;
 import com.kb.cosmetic_wms.domain.outbound.entity.Outbound;
@@ -23,7 +24,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OutboundEventHandler {
 
-    private final InventoryService inventoryService;
+    private final FindFefoInventoryUseCase findFefoInventoryUseCase;
+    private final ManageInventoryStatusUseCase manageInventoryStatusUseCase;
     private final OutboundRepository outboundRepository;
     private final OrderService orderService;
     private final AuditorAware<Long> auditorProvider;
@@ -38,8 +40,8 @@ public class OutboundEventHandler {
         outboundRepository.save(outbound);
 
         for (OutboundLine line : lines) {
-            inventoryService.allocate(line.inventoryId(),
-                    new InventoryStatusChangeRequestDto(line.targetQuantity(), outbound.getId(), actorId));
+            manageInventoryStatusUseCase.allocate(line.inventoryId(),
+                    new InventoryStatusChangeCommand(line.targetQuantity(), outbound.getId(), actorId));
         }
 
         outbound.allocate();
@@ -51,7 +53,7 @@ public class OutboundEventHandler {
 
         for (OrderConfirmedEvent.ItemSnapshot item : event.items()) {
             List<FefoInventorySlice> slots =
-                    inventoryService.findAvailableForFefo(item.productId(), event.warehouseId());
+                    findFefoInventoryUseCase.findAvailableForFefo(item.productId(), event.warehouseId());
 
             int remaining = item.quantity();
             for (FefoInventorySlice slot : slots) {

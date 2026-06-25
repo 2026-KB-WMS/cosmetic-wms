@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,7 +67,7 @@ public class InspectionServiceTest {
 
             // when
             QualityInspection result = inspectionService.createInboundInspection(
-                    10L, 1L, 100L, 200L, 300L, 10);
+                    10L, 1L, 100L, 200L, 300L, 10, LocalDate.of(2026, 12, 31));
 
             // then
             assertThat(result.getId()).isEqualTo(1L);
@@ -78,7 +79,7 @@ public class InspectionServiceTest {
         @Test
         void 유효하지_않은_입고_전표인_경우_품질_검사_전표_생성에_실패한다() {
             assertThatThrownBy(() ->
-                    inspectionService.createInboundInspection(null, 1L, 100L, 200L, 300L, 10))
+                    inspectionService.createInboundInspection(null, 1L, 100L, 200L, 300L, 10, LocalDate.of(2026, 12, 31)))
                     .isInstanceOf(InspectionSourceIdRequiredException.class);
         }
     }
@@ -180,6 +181,7 @@ public class InspectionServiceTest {
             assertThat(event.passedQuantity()).isEqualTo(7);
             assertThat(event.failedQuantity()).isEqualTo(3);
             assertThat(event.inspectionQuantity()).isEqualTo(10);
+            assertThat(event.expiryDate()).isEqualTo(LocalDate.of(2026, 12, 31));
         }
 
         @Test

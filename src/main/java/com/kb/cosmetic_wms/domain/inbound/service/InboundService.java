@@ -99,7 +99,8 @@ public class InboundService {
                         item.getProductId(),
                         item.getLotId(),
                         item.getSectionId(),
-                        item.getQuantity()
+                        item.getQuantity(),
+                        item.getExpirationDate()
                 ))
                 .toList();
         return new InboundCompletedEvent(inbound.getId(), inbound.getWarehouseId(), snapshots);

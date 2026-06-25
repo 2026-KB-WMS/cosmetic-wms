@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.domain.inspection.service;
 import com.kb.cosmetic_wms.domain.inspection.dto.QualityInspectionDetailResponseDto;
 import com.kb.cosmetic_wms.domain.inspection.entity.QualityInspection;
 import com.kb.cosmetic_wms.domain.inspection.enums.InspectionSourceType;
+import java.time.LocalDate;
 import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.domain.inspection.exception.InspectionNotFoundException;
 import com.kb.cosmetic_wms.domain.inspection.repository.InspectionRepository;
@@ -21,10 +22,11 @@ public class InspectionService {
 
     @Transactional
     public QualityInspection createInboundInspection(Long inboundItemId, Long productId, Long lotId,
-                                                     Long sectionId, Long warehouseId, int inspectionQuantity) {
+                                                     Long sectionId, Long warehouseId, int inspectionQuantity,
+                                                     LocalDate expiryDate) {
         QualityInspection inspection = QualityInspection.createPending(
                 InspectionSourceType.INBOUND, inboundItemId, null, inspectionQuantity,
-                productId, lotId, sectionId, warehouseId);
+                productId, lotId, sectionId, warehouseId, expiryDate);
         return inspectionRepository.save(inspection);
     }
 
@@ -58,7 +60,8 @@ public class InspectionService {
                 inspection.getInspectionQuantity(),
                 inspection.getPassedQuantity(),
                 inspection.getFailedQuantity(),
-                inspection.getDefectReason()
+                inspection.getDefectReason(),
+                inspection.getExpiryDate()
         ));
         return QualityInspectionDetailResponseDto.from(inspection);
     }

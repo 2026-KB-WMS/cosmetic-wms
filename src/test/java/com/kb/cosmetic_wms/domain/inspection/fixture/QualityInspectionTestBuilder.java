@@ -3,6 +3,8 @@ package com.kb.cosmetic_wms.domain.inspection.fixture;
 import com.kb.cosmetic_wms.domain.inspection.entity.QualityInspection;
 import com.kb.cosmetic_wms.domain.inspection.enums.InspectionSourceType;
 
+import java.time.LocalDate;
+
 public class QualityInspectionTestBuilder {
 
     private InspectionSourceType sourceType = InspectionSourceType.INBOUND;
@@ -81,7 +83,7 @@ public class QualityInspectionTestBuilder {
     /** WAITING 상태 전표 생성 */
     public QualityInspection buildPending() {
         return QualityInspection.createPending(sourceType, sourceId, inventoryId, inspectionQuantity,
-                productId, lotId, sectionId, warehouseId);
+                productId, lotId, sectionId, warehouseId, LocalDate.of(2026, 12, 31));
     }
 
     /** IN_PROGRESS 상태 전표 생성 */

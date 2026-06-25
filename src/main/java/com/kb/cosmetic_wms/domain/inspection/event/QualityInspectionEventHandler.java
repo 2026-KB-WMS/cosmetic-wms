@@ -22,7 +22,8 @@ public class QualityInspectionEventHandler {
                     item.lotId(),
                     item.sectionId(),
                     event.warehouseId(),
-                    item.quantity()
+                    item.quantity(),
+                    item.expiryDate()
             );
         }
     }

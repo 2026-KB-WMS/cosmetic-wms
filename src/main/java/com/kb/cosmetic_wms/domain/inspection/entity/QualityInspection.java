@@ -18,6 +18,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "quality_inspection")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -70,11 +72,14 @@ public class QualityInspection extends BaseEntity {
     @Column(name = "defect_reason", length = 100)
     private String defectReason;
 
+    @Column(name = "expiry_date")
+    private LocalDate expiryDate;
+
     @Builder(access = AccessLevel.PRIVATE)
     private QualityInspection(InspectionSourceType sourceType, Long sourceId, Long inventoryId,
                               Long productId, Long lotId, Long sectionId, Long warehouseId,
                               Long inspectorId, InspectionStatus status, int inspectionQuantity,
-                              int passedQuantity, int failedQuantity, String defectReason) {
+                              int passedQuantity, int failedQuantity, String defectReason, LocalDate expiryDate) {
         this.sourceType = sourceType;
         this.sourceId = sourceId;
         this.inventoryId = inventoryId;
@@ -88,11 +93,13 @@ public class QualityInspection extends BaseEntity {
         this.passedQuantity = passedQuantity;
         this.failedQuantity = failedQuantity;
         this.defectReason = defectReason;
+        this.expiryDate = expiryDate;
     }
 
     public static QualityInspection createPending(InspectionSourceType sourceType, Long sourceId,
                                                   Long inventoryId, int inspectionQuantity,
-                                                  Long productId, Long lotId, Long sectionId, Long warehouseId) {
+                                                  Long productId, Long lotId, Long sectionId, Long warehouseId,
+                                                  LocalDate expiryDate) {
         validateInitial(sourceType, sourceId, inspectionQuantity);
 
         return QualityInspection.builder()
@@ -107,6 +114,7 @@ public class QualityInspection extends BaseEntity {
                 .inspectionQuantity(inspectionQuantity)
                 .passedQuantity(0)
                 .failedQuantity(0)
+                .expiryDate(expiryDate)
                 .build();
     }
 
