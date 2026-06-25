@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.lot;
+package com.kb.cosmetic_wms.domain.lot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
@@ -7,7 +7,9 @@ import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.lot.adapter.in.web.LotController;
 import com.kb.cosmetic_wms.lot.adapter.in.web.RegisterLotRequest;
 import com.kb.cosmetic_wms.lot.adapter.in.web.UpdateLotStatusRequest;
-import com.kb.cosmetic_wms.lot.application.port.in.*;
+import com.kb.cosmetic_wms.lot.application.port.in.LotResult;
+import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
+import com.kb.cosmetic_wms.lot.application.port.in.UpdateLotStatusCommand;
 import com.kb.cosmetic_wms.lot.application.service.LotService;
 import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
 import com.kb.cosmetic_wms.lot.domain.exception.DuplicateLotNumberException;

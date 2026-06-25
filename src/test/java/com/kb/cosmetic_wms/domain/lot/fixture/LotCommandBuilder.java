@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.lot.fixture;
+package com.kb.cosmetic_wms.domain.lot.fixture;
 
 import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
 
