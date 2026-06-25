@@ -53,9 +53,9 @@ class LotEntity extends BaseEntity {
     static LotEntity fromDomain(Lot lot) {
         return new LotEntity(
                 lot.getId(),
-                lot.getLotNumber(),
-                lot.getManufacturingDate(),
-                lot.getExpirationDate(),
+                lot.getLotNumber().value(),
+                lot.getPeriod().manufacturingDate(),
+                lot.getPeriod().expirationDate(),
                 lot.getStatus(),
                 lot.getProductId()
         );

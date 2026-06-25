@@ -13,4 +13,12 @@ public enum LotStatus {
     LotStatus(String description) {
         this.description = description;
     }
+
+    public boolean canTransitionTo(LotStatus next) {
+        return switch (this) {
+            case AVAILABLE, HOLD -> next != this;
+            case EXPIRED, RECALLED, DAMAGED -> next == DISPOSED;
+            case DISPOSED -> false;
+        };
+    }
 }

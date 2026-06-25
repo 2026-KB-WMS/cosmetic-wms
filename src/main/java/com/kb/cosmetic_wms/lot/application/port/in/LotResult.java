@@ -16,9 +16,9 @@ public record LotResult(
     public static LotResult from(Lot lot) {
         return new LotResult(
                 lot.getId(),
-                lot.getLotNumber(),
-                lot.getManufacturingDate(),
-                lot.getExpirationDate(),
+                lot.getLotNumber().value(),
+                lot.getPeriod().manufacturingDate(),
+                lot.getPeriod().expirationDate(),
                 lot.getStatus(),
                 lot.getProductId()
         );

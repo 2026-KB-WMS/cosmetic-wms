@@ -1,12 +1,12 @@
-package com.kb.cosmetic_wms.lot;
+package com.kb.cosmetic_wms.domain.lot;
 
+import com.kb.cosmetic_wms.domain.lot.fixture.LotTestBuilder;
 import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
 import com.kb.cosmetic_wms.lot.domain.exception.InvalidLotNumberFormatException;
 import com.kb.cosmetic_wms.lot.domain.exception.InvalidLotStatusTransitionException;
 import com.kb.cosmetic_wms.lot.domain.exception.InvalidManufactureDateException;
 import com.kb.cosmetic_wms.lot.domain.exception.LotProductIdRequiredException;
 import com.kb.cosmetic_wms.lot.domain.model.Lot;
-import com.kb.cosmetic_wms.lot.fixture.LotTestBuilder;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

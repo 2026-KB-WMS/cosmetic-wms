@@ -1,6 +1,10 @@
-package com.kb.cosmetic_wms.lot;
+package com.kb.cosmetic_wms.domain.lot;
 
-import com.kb.cosmetic_wms.lot.application.port.in.*;
+import com.kb.cosmetic_wms.domain.lot.fixture.LotCommandBuilder;
+import com.kb.cosmetic_wms.domain.lot.fixture.LotTestBuilder;
+import com.kb.cosmetic_wms.lot.application.port.in.LotResult;
+import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
+import com.kb.cosmetic_wms.lot.application.port.in.UpdateLotStatusCommand;
 import com.kb.cosmetic_wms.lot.application.port.out.LotPort;
 import com.kb.cosmetic_wms.lot.application.service.LotService;
 import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
@@ -9,8 +13,6 @@ import com.kb.cosmetic_wms.lot.domain.exception.LotErrorCode;
 import com.kb.cosmetic_wms.lot.domain.exception.LotNotFoundException;
 import com.kb.cosmetic_wms.lot.domain.exception.LotProductNotFoundException;
 import com.kb.cosmetic_wms.lot.domain.model.Lot;
-import com.kb.cosmetic_wms.lot.fixture.LotCommandBuilder;
-import com.kb.cosmetic_wms.lot.fixture.LotTestBuilder;
 import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
