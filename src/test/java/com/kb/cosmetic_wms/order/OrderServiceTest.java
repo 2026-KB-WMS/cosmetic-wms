@@ -9,7 +9,6 @@ import com.kb.cosmetic_wms.order.application.service.OrderService;
 import com.kb.cosmetic_wms.order.domain.enums.OrderStatus;
 import com.kb.cosmetic_wms.order.domain.exception.*;
 import com.kb.cosmetic_wms.order.domain.model.Order;
-import com.kb.cosmetic_wms.order.domain.model.OrderLine;
 import com.kb.cosmetic_wms.order.fixture.OrderTestBuilder;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,7 @@ public class OrderServiceTest {
         void 올바른_발주_정보가_주어지면_발주_신청_상태로_전표가_성공적으로_생성된다() {
             // given
             CreateOrderCommand command = new CreateOrderCommand(
-                    1L, 10L, List.of(new OrderLine(1L, 10))
+                    1L, 10L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
             );
             Order savedOrder = new OrderTestBuilder().build();
             ReflectionTestUtils.setField(savedOrder, "id", 1L);
@@ -66,7 +65,7 @@ public class OrderServiceTest {
         @Test
         void 발주_신청_시_가맹점_정보가_누락되면_예외가_발생한다() {
             CreateOrderCommand command = new CreateOrderCommand(
-                    null, 10L, List.of(new OrderLine(1L, 10))
+                    null, 10L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
             );
 
             assertThatThrownBy(() -> orderService.createOrder(command))
@@ -76,7 +75,7 @@ public class OrderServiceTest {
         @Test
         void 발주_신청_시_물류창고_정보가_누락되면_예외가_발생한다() {
             CreateOrderCommand command = new CreateOrderCommand(
-                    1L, null, List.of(new OrderLine(1L, 10))
+                    1L, null, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
             );
 
             assertThatThrownBy(() -> orderService.createOrder(command))

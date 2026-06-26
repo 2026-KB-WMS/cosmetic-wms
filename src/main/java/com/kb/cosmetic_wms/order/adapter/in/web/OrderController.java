@@ -1,15 +1,11 @@
 package com.kb.cosmetic_wms.order.adapter.in.web;
 
-import com.kb.cosmetic_wms.order.application.port.in.CreateOrderCommand;
 import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
-import com.kb.cosmetic_wms.order.domain.model.OrderLine;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -20,12 +16,8 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        List<OrderLine> lines = request.items().stream()
-                .map(item -> new OrderLine(item.productId(), item.quantity()))
-                .toList();
-        CreateOrderCommand command = new CreateOrderCommand(request.storeId(), request.warehouseId(), lines);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(OrderResponse.from(orderLifecycleUseCase.createOrder(command)));
+                .body(OrderResponse.from(orderLifecycleUseCase.createOrder(request.toCommand())));
     }
 
     @PatchMapping("/{orderId}/confirm")

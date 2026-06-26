@@ -8,6 +8,9 @@ import com.kb.cosmetic_wms.order.application.port.in.OrderResult;
 import com.kb.cosmetic_wms.order.application.port.out.OrderPort;
 import com.kb.cosmetic_wms.order.domain.exception.OrderNotFoundException;
 import com.kb.cosmetic_wms.order.domain.model.Order;
+import com.kb.cosmetic_wms.order.domain.model.OrderLine;
+
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +26,10 @@ public class OrderService implements OrderLifecycleUseCase {
     @Override
     @Transactional
     public OrderResult createOrder(CreateOrderCommand command) {
-        Order order = Order.create(command.storeId(), command.warehouseId(), command.lines());
+        List<OrderLine> lines = command.lines().stream()
+                .map(l -> new OrderLine(l.productId(), l.quantity()))
+                .toList();
+        Order order = Order.create(command.storeId(), command.warehouseId(), lines);
         return OrderResult.from(orderPort.save(order));
     }
 
