@@ -6,7 +6,7 @@ import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.inspection.adapter.in.web.InspectionCompleteRequest;
 import com.kb.cosmetic_wms.inspection.adapter.in.web.InspectionStartRequest;
-import com.kb.cosmetic_wms.inspection.adapter.in.web.QualityInspectionController;
+import com.kb.cosmetic_wms.inspection.adapter.in.web.InspectionController;
 import com.kb.cosmetic_wms.inspection.application.port.in.FindInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionResult;
@@ -39,7 +39,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {QualityInspectionController.class})
+@WebMvcTest(controllers = {InspectionController.class})
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
 public class InspectionControllerTest extends RestDocsSupport {
 

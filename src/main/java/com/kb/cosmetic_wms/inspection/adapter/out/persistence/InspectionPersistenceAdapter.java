@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inspection.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.inspection.application.port.out.InspectionPort;
-import com.kb.cosmetic_wms.inspection.domain.model.QualityInspection;
+import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,17 +14,17 @@ public class InspectionPersistenceAdapter implements InspectionPort {
     private final InspectionJpaRepository inspectionJpaRepository;
 
     @Override
-    public Optional<QualityInspection> findById(Long id) {
-        return inspectionJpaRepository.findById(id).map(QualityInspectionEntity::toDomain);
+    public Optional<Inspection> findById(Long id) {
+        return inspectionJpaRepository.findById(id).map(InspectionEntity::toDomain);
     }
 
     @Override
-    public Optional<QualityInspection> findByIdForUpdate(Long id) {
-        return inspectionJpaRepository.findByIdForUpdate(id).map(QualityInspectionEntity::toDomain);
+    public Optional<Inspection> findByIdForUpdate(Long id) {
+        return inspectionJpaRepository.findByIdForUpdate(id).map(InspectionEntity::toDomain);
     }
 
     @Override
-    public QualityInspection save(QualityInspection inspection) {
-        return inspectionJpaRepository.save(QualityInspectionEntity.fromDomain(inspection)).toDomain();
+    public Inspection save(Inspection inspection) {
+        return inspectionJpaRepository.save(InspectionEntity.fromDomain(inspection)).toDomain();
     }
 }

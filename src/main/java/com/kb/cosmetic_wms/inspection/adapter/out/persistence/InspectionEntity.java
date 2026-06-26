@@ -3,7 +3,7 @@ package com.kb.cosmetic_wms.inspection.adapter.out.persistence;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionStatus;
-import com.kb.cosmetic_wms.inspection.domain.model.QualityInspection;
+import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "quality_inspection")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-class QualityInspectionEntity extends BaseEntity {
+class InspectionEntity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -64,12 +64,12 @@ class QualityInspectionEntity extends BaseEntity {
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
 
-    private QualityInspectionEntity(Long id, InspectionSourceType sourceType, Long sourceId,
-                                     Long inventoryId, Long productId, Long lotId,
-                                     Long sectionId, Long warehouseId, Long inspectorId,
-                                     InspectionStatus status, int inspectionQuantity,
-                                     int passedQuantity, int failedQuantity, String defectReason,
-                                     LocalDate expiryDate) {
+    private InspectionEntity(Long id, InspectionSourceType sourceType, Long sourceId,
+                             Long inventoryId, Long productId, Long lotId,
+                             Long sectionId, Long warehouseId, Long inspectorId,
+                             InspectionStatus status, int inspectionQuantity,
+                             int passedQuantity, int failedQuantity, String defectReason,
+                             LocalDate expiryDate) {
         this.id = id;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
@@ -87,8 +87,8 @@ class QualityInspectionEntity extends BaseEntity {
         this.expiryDate = expiryDate;
     }
 
-    static QualityInspectionEntity fromDomain(QualityInspection inspection) {
-        return new QualityInspectionEntity(
+    static InspectionEntity fromDomain(Inspection inspection) {
+        return new InspectionEntity(
                 inspection.getId(),
                 inspection.getSourceType(),
                 inspection.getSourceId(),
@@ -107,8 +107,8 @@ class QualityInspectionEntity extends BaseEntity {
         );
     }
 
-    QualityInspection toDomain() {
-        return QualityInspection.reconstitute(
+    Inspection toDomain() {
+        return Inspection.reconstitute(
                 id, sourceType, sourceId, inventoryId, productId, lotId,
                 sectionId, warehouseId, inspectorId, status, inspectionQuantity,
                 passedQuantity, failedQuantity, defectReason, expiryDate

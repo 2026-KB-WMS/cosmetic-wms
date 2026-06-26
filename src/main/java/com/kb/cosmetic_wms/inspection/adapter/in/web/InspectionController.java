@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/quality-inspections")
 @RequiredArgsConstructor
-public class QualityInspectionController {
+public class InspectionController {
 
     private final FindInspectionUseCase findInspectionUseCase;
     private final InspectionLifecycleUseCase inspectionLifecycleUseCase;

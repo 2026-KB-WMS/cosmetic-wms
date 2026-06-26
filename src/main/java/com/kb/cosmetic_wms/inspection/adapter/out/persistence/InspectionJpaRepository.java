@@ -8,9 +8,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-interface InspectionJpaRepository extends JpaRepository<QualityInspectionEntity, Long> {
+interface InspectionJpaRepository extends JpaRepository<InspectionEntity, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT q FROM QualityInspectionEntity q WHERE q.id = :id")
-    Optional<QualityInspectionEntity> findByIdForUpdate(@Param("id") Long id);
+    @Query("SELECT q FROM InspectionEntity q WHERE q.id = :id")
+    Optional<InspectionEntity> findByIdForUpdate(@Param("id") Long id);
 }

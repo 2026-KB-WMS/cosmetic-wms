@@ -11,8 +11,8 @@ import com.kb.cosmetic_wms.inspection.domain.exception.InspectionQuantityMismatc
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionSourceIdRequiredException;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionSourceTypeRequiredException;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionStartNotAllowedException;
-import com.kb.cosmetic_wms.inspection.domain.model.QualityInspection;
-import com.kb.cosmetic_wms.inspection.fixture.QualityInspectionTestBuilder;
+import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
+import com.kb.cosmetic_wms.inspection.fixture.InspectionTestBuilder;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,14 +21,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class QualityInspectionEntityTest {
+public class InspectionEntityTest {
 
     @Nested
     class 최초_전표_생성_단계 {
 
         @Test
         void 올바른_출처_정보와_수량이_주어지면_WAITING_상태의_전표가_정상적으로_생성된다() {
-            QualityInspection inspection = new QualityInspectionTestBuilder().buildPending();
+            Inspection inspection = new InspectionTestBuilder().buildPending();
 
             assertThat(inspection.getStatus()).isEqualTo(InspectionStatus.WAITING);
             assertThat(inspection.getPassedQuantity()).isZero();
@@ -39,7 +39,7 @@ public class QualityInspectionEntityTest {
         @Test
         void 출처_타입이_누락되면_전표_생성_시_예외를_던진다() {
             assertThatThrownBy(() ->
-                    new QualityInspectionTestBuilder()
+                    new InspectionTestBuilder()
                             .sourceType(null)
                             .buildPending()
             )
@@ -50,7 +50,7 @@ public class QualityInspectionEntityTest {
         @Test
         void 출처_대상이_누락되면_전표_생성_시_예외를_던진다() {
             assertThatThrownBy(() ->
-                    new QualityInspectionTestBuilder()
+                    new InspectionTestBuilder()
                             .sourceId(null)
                             .buildPending()
             )
@@ -62,7 +62,7 @@ public class QualityInspectionEntityTest {
         @ValueSource(ints = {0, -1, -100})
         void 검사_대상_수량이_0_이하_또는_음수이면_전표_생성에_실패한다(int invalidQuantity) {
             assertThatThrownBy(() ->
-                    new QualityInspectionTestBuilder()
+                    new InspectionTestBuilder()
                             .inspectionQuantity(invalidQuantity)
                             .buildPending()
             )
@@ -76,7 +76,7 @@ public class QualityInspectionEntityTest {
 
         @Test
         void WAITING_상태인_전표에_검사관_ID를_지정하면_IN_PROGRESS_상태로_정상_전환된다() {
-            QualityInspection inspection = new QualityInspectionTestBuilder().buildInProgress();
+            Inspection inspection = new InspectionTestBuilder().buildInProgress();
 
             assertThat(inspection.getStatus()).isEqualTo(InspectionStatus.IN_PROGRESS);
             assertThat(inspection.getInspectorId()).isEqualTo(1L);
@@ -84,7 +84,7 @@ public class QualityInspectionEntityTest {
 
         @Test
         void 검사관_ID가_누락된_상태로_검사_시작_요청_시_예외를_던진다() {
-            QualityInspection inspection = new QualityInspectionTestBuilder().buildPending();
+            Inspection inspection = new InspectionTestBuilder().buildPending();
 
             assertThatThrownBy(() -> inspection.startInspection(null))
                     .isInstanceOf(InspectionInspectorIdRequiredException.class)
@@ -93,8 +93,8 @@ public class QualityInspectionEntityTest {
 
         @Test
         void 이미_검사_진행_상태이거나_완료된_전표에_다시_검사_요청_시_예외를_던진다() {
-            QualityInspection inProgress = new QualityInspectionTestBuilder().buildInProgress();
-            QualityInspection completed = new QualityInspectionTestBuilder().buildCompleted();
+            Inspection inProgress = new InspectionTestBuilder().buildInProgress();
+            Inspection completed = new InspectionTestBuilder().buildCompleted();
 
             assertThatThrownBy(() -> inProgress.startInspection(1L))
                     .isInstanceOf(InspectionStartNotAllowedException.class)
@@ -111,7 +111,7 @@ public class QualityInspectionEntityTest {
 
         @Test
         void 합격_수량과_반려_수량의_합이_총_검사_수량과_일치하면_COMPLETED_상태로_완료된다() {
-            QualityInspection inspection = new QualityInspectionTestBuilder()
+            Inspection inspection = new InspectionTestBuilder()
                     .inspectionQuantity(10)
                     .passedQuantity(7)
                     .failedQuantity(3)
@@ -125,7 +125,7 @@ public class QualityInspectionEntityTest {
 
         @Test
         void 전량_합격인_경우_반려_사유는_자동으로_null_처리된다() {
-            QualityInspection inspection = new QualityInspectionTestBuilder()
+            Inspection inspection = new InspectionTestBuilder()
                     .inspectionQuantity(10)
                     .passedQuantity(10)
                     .failedQuantity(0)
@@ -138,7 +138,7 @@ public class QualityInspectionEntityTest {
         @Test
         void 반려_수량이_1개_이상인_경우_입력된_불합격_사유가_정상_저장된다() {
             String defectReason = "성분 기준 초과";
-            QualityInspection inspection = new QualityInspectionTestBuilder()
+            Inspection inspection = new InspectionTestBuilder()
                     .inspectionQuantity(10)
                     .passedQuantity(8)
                     .failedQuantity(2)
@@ -150,7 +150,7 @@ public class QualityInspectionEntityTest {
 
         @Test
         void 합격_수량이나_반려_수량_중_하나라도_음수가_입력되면_예외를_던진다() {
-            QualityInspection inspection = new QualityInspectionTestBuilder().buildInProgress();
+            Inspection inspection = new InspectionTestBuilder().buildInProgress();
 
             assertThatThrownBy(() -> inspection.completeInspection(-1, 11, null))
                     .isInstanceOf(InspectionNegativeQuantityException.class)
@@ -159,7 +159,7 @@ public class QualityInspectionEntityTest {
 
         @Test
         void 합격_수량과_반려_수량의_합이_총_검사_수량과_일치하지_않으면_예외를_던진다() {
-            QualityInspection inspection = new QualityInspectionTestBuilder()
+            Inspection inspection = new InspectionTestBuilder()
                     .inspectionQuantity(10)
                     .buildInProgress();
 
@@ -170,10 +170,10 @@ public class QualityInspectionEntityTest {
 
         @Test
         void 반려_수량이_존재함에도_불합격_사유가_null이거나_공백이면_예외를_던진다() {
-            QualityInspection inspectionForNull = new QualityInspectionTestBuilder()
+            Inspection inspectionForNull = new InspectionTestBuilder()
                     .inspectionQuantity(10)
                     .buildInProgress();
-            QualityInspection inspectionForBlank = new QualityInspectionTestBuilder()
+            Inspection inspectionForBlank = new InspectionTestBuilder()
                     .inspectionQuantity(10)
                     .buildInProgress();
 
@@ -188,7 +188,7 @@ public class QualityInspectionEntityTest {
 
         @Test
         void IN_PROGRESS_상태가_아닌_전표에_완료_처리_요청_시_예외를_던진다() {
-            QualityInspection waiting = new QualityInspectionTestBuilder().buildPending();
+            Inspection waiting = new InspectionTestBuilder().buildPending();
 
             assertThatThrownBy(() -> waiting.completeInspection(10, 0, null))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class)

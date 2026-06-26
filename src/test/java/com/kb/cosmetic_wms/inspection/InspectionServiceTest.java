@@ -11,8 +11,8 @@ import com.kb.cosmetic_wms.inspection.domain.exception.InspectionCompleteNotAllo
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionNotFoundException;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionSourceIdRequiredException;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionStartNotAllowedException;
-import com.kb.cosmetic_wms.inspection.domain.model.QualityInspection;
-import com.kb.cosmetic_wms.inspection.fixture.QualityInspectionTestBuilder;
+import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
+import com.kb.cosmetic_wms.inspection.fixture.InspectionTestBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,16 +43,16 @@ public class InspectionServiceTest {
     @Mock
     private EventPublisher eventPublisher;
 
-    private QualityInspection waitingInspection;
-    private QualityInspection inProgressInspection;
-    private QualityInspection completedInspection;
+    private Inspection waitingInspection;
+    private Inspection inProgressInspection;
+    private Inspection completedInspection;
 
     @BeforeEach
     void setUp() {
         // sourceId = 10L, productId = 1L, lotId = 100L, sectionId = 200L, warehouseId = 300L, inspectionQuantity = 10
-        waitingInspection = new QualityInspectionTestBuilder().buildPending();
-        inProgressInspection = new QualityInspectionTestBuilder().buildInProgress();
-        completedInspection = new QualityInspectionTestBuilder().buildCompleted();
+        waitingInspection = new InspectionTestBuilder().buildPending();
+        inProgressInspection = new InspectionTestBuilder().buildInProgress();
+        completedInspection = new InspectionTestBuilder().buildCompleted();
         ReflectionTestUtils.setField(waitingInspection, "id", 1L);
         ReflectionTestUtils.setField(inProgressInspection, "id", 2L);
         ReflectionTestUtils.setField(completedInspection, "id", 3L);
@@ -64,7 +64,7 @@ public class InspectionServiceTest {
         @Test
         void 품질_검사_의뢰_커맨드가_들어오면_출처와_수량을_기반으로_품질_검사_전표가_대기_상태로_생성된다() {
             // given
-            when(inspectionPort.save(any(QualityInspection.class))).thenReturn(waitingInspection);
+            when(inspectionPort.save(any(Inspection.class))).thenReturn(waitingInspection);
             CreateInspectionCommand command = new CreateInspectionCommand(
                     InspectionSourceType.INBOUND, 10L, null, 10,
                     1L, 100L, 200L, 300L, LocalDate.of(2026, 12, 31));
@@ -73,7 +73,7 @@ public class InspectionServiceTest {
             inspectionService.create(command);
 
             // then
-            ArgumentCaptor<QualityInspection> captor = ArgumentCaptor.forClass(QualityInspection.class);
+            ArgumentCaptor<Inspection> captor = ArgumentCaptor.forClass(Inspection.class);
             verify(inspectionPort).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(InspectionStatus.WAITING);
             assertThat(captor.getValue().getSourceId()).isEqualTo(10L);
@@ -156,7 +156,7 @@ public class InspectionServiceTest {
         @Test
         void 합격_반려_수량에_관계없이_완료_처리_시_검사_완료_이벤트가_항상_발행된다() {
             // given
-            QualityInspection inProgressForReject = new QualityInspectionTestBuilder()
+            Inspection inProgressForReject = new InspectionTestBuilder()
                     .inspectionQuantity(10).buildInProgress();
             ReflectionTestUtils.setField(inProgressForReject, "id", 4L);
 

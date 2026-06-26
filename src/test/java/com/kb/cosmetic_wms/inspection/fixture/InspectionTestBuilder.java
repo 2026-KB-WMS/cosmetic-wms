@@ -1,11 +1,11 @@
 package com.kb.cosmetic_wms.inspection.fixture;
 
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
-import com.kb.cosmetic_wms.inspection.domain.model.QualityInspection;
+import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 
 import java.time.LocalDate;
 
-public class QualityInspectionTestBuilder {
+public class InspectionTestBuilder {
 
     private InspectionSourceType sourceType = InspectionSourceType.INBOUND;
     private Long sourceId = 10L;
@@ -20,82 +20,82 @@ public class QualityInspectionTestBuilder {
     private int failedQuantity = 0;
     private String defectReason = null;
 
-    public QualityInspectionTestBuilder sourceType(InspectionSourceType sourceType) {
+    public InspectionTestBuilder sourceType(InspectionSourceType sourceType) {
         this.sourceType = sourceType;
         return this;
     }
 
-    public QualityInspectionTestBuilder sourceId(Long sourceId) {
+    public InspectionTestBuilder sourceId(Long sourceId) {
         this.sourceId = sourceId;
         return this;
     }
 
-    public QualityInspectionTestBuilder inventoryId(Long inventoryId) {
+    public InspectionTestBuilder inventoryId(Long inventoryId) {
         this.inventoryId = inventoryId;
         return this;
     }
 
-    public QualityInspectionTestBuilder productId(Long productId) {
+    public InspectionTestBuilder productId(Long productId) {
         this.productId = productId;
         return this;
     }
 
-    public QualityInspectionTestBuilder lotId(Long lotId) {
+    public InspectionTestBuilder lotId(Long lotId) {
         this.lotId = lotId;
         return this;
     }
 
-    public QualityInspectionTestBuilder sectionId(Long sectionId) {
+    public InspectionTestBuilder sectionId(Long sectionId) {
         this.sectionId = sectionId;
         return this;
     }
 
-    public QualityInspectionTestBuilder warehouseId(Long warehouseId) {
+    public InspectionTestBuilder warehouseId(Long warehouseId) {
         this.warehouseId = warehouseId;
         return this;
     }
 
-    public QualityInspectionTestBuilder inspectionQuantity(int inspectionQuantity) {
+    public InspectionTestBuilder inspectionQuantity(int inspectionQuantity) {
         this.inspectionQuantity = inspectionQuantity;
         return this;
     }
 
-    public QualityInspectionTestBuilder inspectorId(Long inspectorId) {
+    public InspectionTestBuilder inspectorId(Long inspectorId) {
         this.inspectorId = inspectorId;
         return this;
     }
 
-    public QualityInspectionTestBuilder passedQuantity(int passedQuantity) {
+    public InspectionTestBuilder passedQuantity(int passedQuantity) {
         this.passedQuantity = passedQuantity;
         return this;
     }
 
-    public QualityInspectionTestBuilder failedQuantity(int failedQuantity) {
+    public InspectionTestBuilder failedQuantity(int failedQuantity) {
         this.failedQuantity = failedQuantity;
         return this;
     }
 
-    public QualityInspectionTestBuilder defectReason(String defectReason) {
+    public InspectionTestBuilder defectReason(String defectReason) {
         this.defectReason = defectReason;
         return this;
     }
 
     /** WAITING 상태 전표 생성 */
-    public QualityInspection buildPending() {
-        return QualityInspection.createPending(sourceType, sourceId, inventoryId, inspectionQuantity,
+    public Inspection buildPending() {
+        return Inspection.createPending(sourceType, sourceId, inventoryId, inspectionQuantity,
                 productId, lotId, sectionId, warehouseId, LocalDate.of(2026, 12, 31));
     }
 
     /** IN_PROGRESS 상태 전표 생성 */
-    public QualityInspection buildInProgress() {
-        QualityInspection inspection = buildPending();
+    public Inspection buildInProgress() {
+        Inspection inspection = buildPending();
         inspection.startInspection(inspectorId);
         return inspection;
     }
 
     /** COMPLETED 상태 전표 생성 */
-    public QualityInspection buildCompleted() {
-        QualityInspection inspection = buildInProgress();
+    public Inspection buildCompleted() {
+        Inspection inspection = buildInProgress();
         inspection.completeInspection(passedQuantity, failedQuantity, defectReason);
         return inspection;
     }

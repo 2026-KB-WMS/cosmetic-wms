@@ -2,7 +2,7 @@ package com.kb.cosmetic_wms.inspection.application.port.in;
 
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionStatus;
-import com.kb.cosmetic_wms.inspection.domain.model.QualityInspection;
+import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 
 public record InspectionResult(
         Long id,
@@ -16,7 +16,7 @@ public record InspectionResult(
         int failedQuantity,
         String defectReason
 ) {
-    public static InspectionResult from(QualityInspection inspection) {
+    public static InspectionResult from(Inspection inspection) {
         return new InspectionResult(
                 inspection.getId(),
                 inspection.getSourceType(),

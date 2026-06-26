@@ -8,7 +8,7 @@ import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUse
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionResult;
 import com.kb.cosmetic_wms.inspection.application.port.out.InspectionPort;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionNotFoundException;
-import com.kb.cosmetic_wms.inspection.domain.model.QualityInspection;
+import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,7 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
     @Override
     @Transactional
     public void create(CreateInspectionCommand command) {
-        QualityInspection inspection = QualityInspection.createPending(
+        Inspection inspection = Inspection.createPending(
                 command.sourceType(), command.sourceId(), command.inventoryId(),
                 command.inspectionQuantity(), command.productId(), command.lotId(),
                 command.sectionId(), command.warehouseId(), command.expiryDate());
@@ -39,7 +39,7 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
     @Override
     @Transactional
     public InspectionResult start(Long inspectionId, Long inspectorId) {
-        QualityInspection inspection = inspectionPort.findByIdForUpdate(inspectionId)
+        Inspection inspection = inspectionPort.findByIdForUpdate(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
         inspection.startInspection(inspectorId);
         return InspectionResult.from(inspectionPort.save(inspection));
@@ -48,20 +48,20 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
     @Override
     @Transactional
     public InspectionResult complete(Long inspectionId, int passedQty, int failedQty, String defectReason) {
-        QualityInspection inspection = inspectionPort.findByIdForUpdate(inspectionId)
+        Inspection inspection = inspectionPort.findByIdForUpdate(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
         inspection.completeInspection(passedQty, failedQty, defectReason);
-        QualityInspection saved = inspectionPort.save(inspection);
+        Inspection saved = inspectionPort.save(inspection);
         eventPublisher.publish(toInspectionCompletedEvent(saved));
         return InspectionResult.from(saved);
     }
 
-    private QualityInspection findOrThrow(Long inspectionId) {
+    private Inspection findOrThrow(Long inspectionId) {
         return inspectionPort.findById(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
     }
 
-    private InspectionCompletedEvent toInspectionCompletedEvent(QualityInspection inspection) {
+    private InspectionCompletedEvent toInspectionCompletedEvent(Inspection inspection) {
         return new InspectionCompletedEvent(
                 inspection.getId(),
                 inspection.getSourceType().name(),

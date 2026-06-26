@@ -16,7 +16,7 @@ import lombok.Getter;
 import java.time.LocalDate;
 
 @Getter
-public class QualityInspection {
+public class Inspection {
 
     private Long id;
     private InspectionSourceType sourceType;
@@ -34,10 +34,10 @@ public class QualityInspection {
     private String defectReason;
     private LocalDate expiryDate;
 
-    private QualityInspection(Long id, InspectionSourceType sourceType, Long sourceId, Long inventoryId,
-                               Long productId, Long lotId, Long sectionId, Long warehouseId,
-                               Long inspectorId, InspectionStatus status, int inspectionQuantity,
-                               int passedQuantity, int failedQuantity, String defectReason, LocalDate expiryDate) {
+    private Inspection(Long id, InspectionSourceType sourceType, Long sourceId, Long inventoryId,
+                       Long productId, Long lotId, Long sectionId, Long warehouseId,
+                       Long inspectorId, InspectionStatus status, int inspectionQuantity,
+                       int passedQuantity, int failedQuantity, String defectReason, LocalDate expiryDate) {
         this.id = id;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
@@ -55,23 +55,23 @@ public class QualityInspection {
         this.expiryDate = expiryDate;
     }
 
-    public static QualityInspection createPending(InspectionSourceType sourceType, Long sourceId,
-                                                   Long inventoryId, int inspectionQuantity,
-                                                   Long productId, Long lotId, Long sectionId, Long warehouseId,
-                                                   LocalDate expiryDate) {
+    public static Inspection createPending(InspectionSourceType sourceType, Long sourceId,
+                                           Long inventoryId, int inspectionQuantity,
+                                           Long productId, Long lotId, Long sectionId, Long warehouseId,
+                                           LocalDate expiryDate) {
         validateInitial(sourceType, sourceId, inspectionQuantity);
-        return new QualityInspection(null, sourceType, sourceId, inventoryId,
+        return new Inspection(null, sourceType, sourceId, inventoryId,
                 productId, lotId, sectionId, warehouseId,
                 null, InspectionStatus.WAITING, inspectionQuantity, 0, 0, null, expiryDate);
     }
 
-    public static QualityInspection reconstitute(Long id, InspectionSourceType sourceType, Long sourceId,
-                                                  Long inventoryId, Long productId, Long lotId,
-                                                  Long sectionId, Long warehouseId, Long inspectorId,
-                                                  InspectionStatus status, int inspectionQuantity,
-                                                  int passedQuantity, int failedQuantity, String defectReason,
-                                                  LocalDate expiryDate) {
-        return new QualityInspection(id, sourceType, sourceId, inventoryId,
+    public static Inspection reconstitute(Long id, InspectionSourceType sourceType, Long sourceId,
+                                          Long inventoryId, Long productId, Long lotId,
+                                          Long sectionId, Long warehouseId, Long inspectorId,
+                                          InspectionStatus status, int inspectionQuantity,
+                                          int passedQuantity, int failedQuantity, String defectReason,
+                                          LocalDate expiryDate) {
+        return new Inspection(id, sourceType, sourceId, inventoryId,
                 productId, lotId, sectionId, warehouseId, inspectorId,
                 status, inspectionQuantity, passedQuantity, failedQuantity, defectReason, expiryDate);
     }
