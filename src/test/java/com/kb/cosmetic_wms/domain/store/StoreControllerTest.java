@@ -1,15 +1,17 @@
 package com.kb.cosmetic_wms.domain.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.domain.store.controller.StoreController;
-import com.kb.cosmetic_wms.domain.store.dto.StoreCreateRequestDto;
-import com.kb.cosmetic_wms.domain.store.dto.StoreResponseDto;
-import com.kb.cosmetic_wms.domain.store.exception.StoreErrorCode;
-import com.kb.cosmetic_wms.domain.store.exception.StoreNotFoundException;
-import com.kb.cosmetic_wms.domain.store.service.StoreService;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
+import com.kb.cosmetic_wms.store.adapter.in.web.RegisterStoreRequest;
+import com.kb.cosmetic_wms.store.adapter.in.web.StoreController;
+import com.kb.cosmetic_wms.store.application.port.in.FindStoreUseCase;
+import com.kb.cosmetic_wms.store.application.port.in.RegisterStoreCommand;
+import com.kb.cosmetic_wms.store.application.port.in.RegisterStoreUseCase;
+import com.kb.cosmetic_wms.store.application.port.in.StoreResult;
+import com.kb.cosmetic_wms.store.domain.exception.StoreErrorCode;
+import com.kb.cosmetic_wms.store.domain.exception.StoreNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -42,21 +44,24 @@ public class StoreControllerTest extends RestDocsSupport {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private StoreService storeService;
+    private RegisterStoreUseCase registerStoreUseCase;
+
+    @MockitoBean
+    private FindStoreUseCase findStoreUseCase;
 
     @Test
     @WithMockUser
     void 올바른_가맹점_정보를_입력하면_가맹점_등록에_성공하고_API_문서가_생성된다() throws Exception {
         // given
-        StoreCreateRequestDto requestDto = new StoreCreateRequestDto("서울 성수점", "서울시 성동구 성수동");
-        StoreResponseDto responseDto = new StoreResponseDto(1L, "서울 성수점", "서울시 성동구 성수동");
+        RegisterStoreRequest request = new RegisterStoreRequest("서울 성수점", "서울시 성동구 성수동");
+        StoreResult result = new StoreResult(1L, "서울 성수점", "서울시 성동구 성수동");
 
-        given(storeService.register(any(StoreCreateRequestDto.class))).willReturn(responseDto);
+        given(registerStoreUseCase.register(any(RegisterStoreCommand.class))).willReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/v1/stores")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.storeName").value("서울 성수점"))
@@ -73,9 +78,9 @@ public class StoreControllerTest extends RestDocsSupport {
     void 존재하는_가맹점_ID로_조회하면_200_OK와_함께_정보를_반환하고_API_문서가_생성된다() throws Exception {
         // given
         Long storeId = 1L;
-        StoreResponseDto responseDto = new StoreResponseDto(storeId, "서울 성수점", "서울시 성동구 성수동");
+        StoreResult result = new StoreResult(storeId, "서울 성수점", "서울시 성동구 성수동");
 
-        given(storeService.findById(storeId)).willReturn(responseDto);
+        given(findStoreUseCase.findById(storeId)).willReturn(result);
 
         // when & then
         mockMvc.perform(get("/api/v1/stores/{storeId}", storeId)
@@ -95,7 +100,7 @@ public class StoreControllerTest extends RestDocsSupport {
         // given
         Long invalidStoreId = 999L;
 
-        given(storeService.findById(invalidStoreId)).willThrow(new StoreNotFoundException());
+        given(findStoreUseCase.findById(invalidStoreId)).willThrow(new StoreNotFoundException());
 
         // when & then
         mockMvc.perform(get("/api/v1/stores/{storeId}", invalidStoreId)
@@ -124,5 +129,4 @@ public class StoreControllerTest extends RestDocsSupport {
                 fieldWithPath("address").description("가맹점 주소")
         };
     }
-
 }

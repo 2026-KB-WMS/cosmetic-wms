@@ -1,8 +1,8 @@
 package com.kb.cosmetic_wms.domain.member.fixture;
 
-import com.kb.cosmetic_wms.domain.member.dto.MemberLoginRequestDto;
-import com.kb.cosmetic_wms.domain.member.dto.MemberSignUpRequestDto;
-import com.kb.cosmetic_wms.domain.member.enums.Role;
+import com.kb.cosmetic_wms.member.adapter.in.web.MemberLoginRequest;
+import com.kb.cosmetic_wms.member.adapter.in.web.MemberSignUpRequest;
+import com.kb.cosmetic_wms.member.domain.model.Role;
 import lombok.Builder;
 
 public final class MemberDtoBuilder {
@@ -10,15 +10,12 @@ public final class MemberDtoBuilder {
     private MemberDtoBuilder() {
     }
 
-    /**
-     * 회원가입 요청 DTO
-     */
     @Builder(builderMethodName = "signUpRequest", buildMethodName = "build")
-    private static MemberSignUpRequestDto signUpRequestFactory(
+    private static MemberSignUpRequest signUpRequestFactory(
             String loginId, String password, Role role,
             String memberName, String email, String phoneNumber
     ) {
-        return new MemberSignUpRequestDto(
+        return new MemberSignUpRequest(
                 loginId != null ? loginId : "admin01",
                 password != null ? password : "password123!",
                 role != null ? role : Role.ROLE_HEADQUARTERS,
@@ -28,14 +25,11 @@ public final class MemberDtoBuilder {
         );
     }
 
-    /**
-     * 로그인 요청 DTO
-     */
     @Builder(builderMethodName = "loginRequest", buildMethodName = "build")
-    public static MemberLoginRequestDto LoginRequestFactory(
+    public static MemberLoginRequest loginRequestFactory(
             String loginId, String password
     ) {
-        return new MemberLoginRequestDto(
+        return new MemberLoginRequest(
                 loginId != null ? loginId : "admin01",
                 password != null ? password : "password123!"
         );

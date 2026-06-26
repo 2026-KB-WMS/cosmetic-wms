@@ -1,12 +1,13 @@
 package com.kb.cosmetic_wms.domain.member;
 
-import com.kb.cosmetic_wms.domain.member.entity.Member;
-import com.kb.cosmetic_wms.domain.member.enums.Role;
-import com.kb.cosmetic_wms.domain.member.exception.InvalidEmailException;
-import com.kb.cosmetic_wms.domain.member.exception.InvalidPhoneNumberException;
-import com.kb.cosmetic_wms.domain.member.exception.MemberErrorCode;
-import com.kb.cosmetic_wms.domain.member.exception.MemberValidationException;
 import com.kb.cosmetic_wms.domain.member.fixture.MemberTestBuilder;
+import com.kb.cosmetic_wms.member.domain.exception.InvalidEmailException;
+import com.kb.cosmetic_wms.member.domain.exception.InvalidPhoneNumberException;
+import com.kb.cosmetic_wms.member.domain.exception.MemberErrorCode;
+import com.kb.cosmetic_wms.member.domain.exception.MemberValidationException;
+import com.kb.cosmetic_wms.member.domain.model.Member;
+import com.kb.cosmetic_wms.member.domain.model.Role;
+import com.kb.cosmetic_wms.member.domain.valueobject.LoginId;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,12 +16,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class MemberEntityTest {
 
     @Test
-    void 올바른_입력값으로_가입_시_정상적으로_엔티티가_생성된다() {
+    void 올바른_입력값으로_가입_시_정상적으로_도메인_객체가_생성된다() {
         // given & when
         Member member = new MemberTestBuilder().build();
 
         // then
-        Assertions.assertThat(member.getLoginId()).isEqualTo("admin01");
+        Assertions.assertThat(member.getLoginId()).isEqualTo(new LoginId("admin01"));
         Assertions.assertThat(member.getRole()).isEqualTo(Role.ROLE_HEADQUARTERS);
         Assertions.assertThat(member.getMemberName()).isEqualTo("홍길동");
     }
@@ -68,7 +69,6 @@ public class MemberEntityTest {
                         new MemberTestBuilder()
                                 .loginId(invalidLengthLoginId)
                                 .build()
-
                 )
                 .isInstanceOf(MemberValidationException.class)
                 .hasMessage(MemberErrorCode.INVALID_MEMBER_VALIDATION.getMessage());

@@ -1,20 +1,21 @@
 package com.kb.cosmetic_wms.domain.lot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.domain.lot.controller.LotController;
-import com.kb.cosmetic_wms.domain.lot.dto.LotCreateRequestDto;
-import com.kb.cosmetic_wms.domain.lot.dto.LotDetailResponseDto;
-import com.kb.cosmetic_wms.domain.lot.dto.LotStatusUpdateRequestDto;
-import com.kb.cosmetic_wms.domain.lot.enums.LotStatus;
-import com.kb.cosmetic_wms.domain.lot.exception.DuplicateLotNumberException;
-import com.kb.cosmetic_wms.domain.lot.exception.LotErrorCode;
-import com.kb.cosmetic_wms.domain.lot.exception.LotNotFoundException;
-import com.kb.cosmetic_wms.domain.lot.exception.LotProductNotFoundException;
-import com.kb.cosmetic_wms.domain.lot.fixture.LotDtoBuilder;
-import com.kb.cosmetic_wms.domain.lot.service.LotService;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
+import com.kb.cosmetic_wms.lot.adapter.in.web.LotController;
+import com.kb.cosmetic_wms.lot.adapter.in.web.RegisterLotRequest;
+import com.kb.cosmetic_wms.lot.adapter.in.web.UpdateLotStatusRequest;
+import com.kb.cosmetic_wms.lot.application.port.in.LotResult;
+import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
+import com.kb.cosmetic_wms.lot.application.port.in.UpdateLotStatusCommand;
+import com.kb.cosmetic_wms.lot.application.service.LotService;
+import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
+import com.kb.cosmetic_wms.lot.domain.exception.DuplicateLotNumberException;
+import com.kb.cosmetic_wms.lot.domain.exception.LotErrorCode;
+import com.kb.cosmetic_wms.lot.domain.exception.LotNotFoundException;
+import com.kb.cosmetic_wms.lot.domain.exception.LotProductNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -59,12 +60,10 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 올바른_로트_정보를_입력하면_등록에_성공하고_201_Created와_API_문서가_생성된다() throws Exception {
-        // given
-        LotCreateRequestDto request = new LotDtoBuilder().build();
-        LotDetailResponseDto response = buildDetailResponse();
-        given(lotService.register(any(LotCreateRequestDto.class))).willReturn(response);
+        RegisterLotRequest request = buildRegisterRequest();
+        LotResult result = buildResult();
+        given(lotService.register(any(RegisterLotCommand.class))).willReturn(result);
 
-        // when & then
         mockMvc.perform(post("/api/v1/lots")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,10 +83,9 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 로트_번호가_빈_값이면_400_Bad_Request를_반환하고_에러응답이_문서화된다() throws Exception {
-        // given
-        LotCreateRequestDto invalidRequest = new LotDtoBuilder().lotNumber("").build();
+        RegisterLotRequest invalidRequest = new RegisterLotRequest(
+                "", LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), 1L);
 
-        // when & then
         mockMvc.perform(post("/api/v1/lots")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -104,10 +102,9 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 로트_번호_형식이_잘못되면_400_Bad_Request를_반환한다() throws Exception {
-        // given - 패턴 불일치: 소문자 포함
-        LotCreateRequestDto invalidRequest = new LotDtoBuilder().lotNumber("skn-240101-01-0001").build();
+        RegisterLotRequest invalidRequest = new RegisterLotRequest(
+                "skn-240101-01-0001", LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), 1L);
 
-        // when & then
         mockMvc.perform(post("/api/v1/lots")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,11 +116,9 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하지_않는_상품_ID로_로트를_등록하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-        // given
-        LotCreateRequestDto request = new LotDtoBuilder().build();
-        given(lotService.register(any(LotCreateRequestDto.class))).willThrow(new LotProductNotFoundException());
+        RegisterLotRequest request = buildRegisterRequest();
+        given(lotService.register(any(RegisterLotCommand.class))).willThrow(new LotProductNotFoundException());
 
-        // when & then
         mockMvc.perform(post("/api/v1/lots")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -140,11 +135,9 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 이미_등록된_로트_번호로_등록하면_409_Conflict를_반환하고_에러응답이_문서화된다() throws Exception {
-        // given
-        LotCreateRequestDto request = new LotDtoBuilder().build();
-        given(lotService.register(any(LotCreateRequestDto.class))).willThrow(new DuplicateLotNumberException());
+        RegisterLotRequest request = buildRegisterRequest();
+        given(lotService.register(any(RegisterLotCommand.class))).willThrow(new DuplicateLotNumberException());
 
-        // when & then
         mockMvc.perform(post("/api/v1/lots")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,11 +156,8 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하는_로트_ID로_조회하면_200_OK와_상세정보를_반환하고_API_문서가_생성된다() throws Exception {
-        // given
-        LotDetailResponseDto response = buildDetailResponse();
-        given(lotService.getLot(1L)).willReturn(response);
+        given(lotService.findById(1L)).willReturn(buildResult());
 
-        // when & then
         mockMvc.perform(get("/api/v1/lots/{lotId}", 1L)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -186,10 +176,8 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하지_않는_로트_ID로_조회하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-        // given
-        given(lotService.getLot(999L)).willThrow(new LotNotFoundException());
+        given(lotService.findById(999L)).willThrow(new LotNotFoundException());
 
-        // when & then
         mockMvc.perform(get("/api/v1/lots/{lotId}", 999L)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
@@ -207,17 +195,15 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 상품_ID로_로트_목록을_조회하면_200_OK와_전체_목록을_반환하고_API_문서가_생성된다() throws Exception {
-        // given
-        List<LotDetailResponseDto> responseList = List.of(
-                buildDetailResponse(),
-                new LotDetailResponseDto(2L, "SKN-240101-01-0002",
+        List<LotResult> resultList = List.of(
+                buildResult(),
+                new LotResult(2L, "SKN-240101-01-0002",
                         LocalDateTime.of(2026, 2, 1, 0, 0),
                         LocalDateTime.of(2027, 2, 1, 0, 0),
                         LotStatus.AVAILABLE, 1L)
         );
-        given(lotService.getLotsByProductId(1L)).willReturn(responseList);
+        given(lotService.findByProductId(1L)).willReturn(resultList);
 
-        // when & then
         mockMvc.perform(get("/api/v1/lots")
                         .param("productId", "1")
                         .accept(MediaType.APPLICATION_JSON))
@@ -238,10 +224,8 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하지_않는_상품_ID로_로트_목록을_조회하면_404_Not_Found를_반환한다() throws Exception {
-        // given
-        given(lotService.getLotsByProductId(999L)).willThrow(new LotProductNotFoundException());
+        given(lotService.findByProductId(999L)).willThrow(new LotProductNotFoundException());
 
-        // when & then
         mockMvc.perform(get("/api/v1/lots")
                         .param("productId", "999")
                         .accept(MediaType.APPLICATION_JSON))
@@ -255,17 +239,15 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 올바른_ID와_상태로_변경하면_200_OK와_갱신된_로트_정보를_반환하고_API_문서가_생성된다() throws Exception {
-        // given
-        LotStatusUpdateRequestDto request = new LotStatusUpdateRequestDto(LotStatus.HOLD);
-        LotDetailResponseDto response = new LotDetailResponseDto(
+        UpdateLotStatusRequest request = new UpdateLotStatusRequest(LotStatus.HOLD);
+        LotResult result = new LotResult(
                 1L, "SKN-240101-01-0001",
                 LocalDateTime.of(2026, 1, 1, 0, 0),
                 LocalDateTime.of(2027, 1, 1, 0, 0),
                 LotStatus.HOLD, 1L
         );
-        given(lotService.updateLotStatus(eq(1L), any(LotStatusUpdateRequestDto.class))).willReturn(response);
+        given(lotService.updateStatus(eq(1L), any(UpdateLotStatusCommand.class))).willReturn(result);
 
-        // when & then
         mockMvc.perform(patch("/api/v1/lots/{lotId}/status", 1L)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -283,7 +265,6 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 상태값이_null이면_400_Bad_Request를_반환한다() throws Exception {
-        // given - status 필드 없이 빈 객체 전송
         mockMvc.perform(patch("/api/v1/lots/{lotId}/status", 1L)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -295,12 +276,10 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하지_않는_로트_ID로_상태_변경을_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-        // given
-        LotStatusUpdateRequestDto request = new LotStatusUpdateRequestDto(LotStatus.HOLD);
-        given(lotService.updateLotStatus(eq(999L), any(LotStatusUpdateRequestDto.class)))
+        UpdateLotStatusRequest request = new UpdateLotStatusRequest(LotStatus.HOLD);
+        given(lotService.updateStatus(eq(999L), any(UpdateLotStatusCommand.class)))
                 .willThrow(new LotNotFoundException());
 
-        // when & then
         mockMvc.perform(patch("/api/v1/lots/{lotId}/status", 999L)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -319,10 +298,8 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하는_로트를_삭제하면_204_No_Content를_반환하고_API_문서가_생성된다() throws Exception {
-        // given
-        doNothing().when(lotService).deleteLot(1L);
+        doNothing().when(lotService).delete(1L);
 
-        // when & then
         mockMvc.perform(delete("/api/v1/lots/{lotId}", 1L)
                         .with(csrf()))
                 .andExpect(status().isNoContent())
@@ -334,10 +311,8 @@ public class LotControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하지_않는_로트_ID로_삭제를_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-        // given
-        doThrow(new LotNotFoundException()).when(lotService).deleteLot(999L);
+        doThrow(new LotNotFoundException()).when(lotService).delete(999L);
 
-        // when & then
         mockMvc.perform(delete("/api/v1/lots/{lotId}", 999L)
                         .with(csrf()))
                 .andExpect(status().isNotFound())
@@ -349,8 +324,17 @@ public class LotControllerTest extends RestDocsSupport {
                 ));
     }
 
-    private static LotDetailResponseDto buildDetailResponse() {
-        return new LotDetailResponseDto(
+    private static RegisterLotRequest buildRegisterRequest() {
+        return new RegisterLotRequest(
+                "SKN-240101-01-0001",
+                LocalDateTime.of(2026, 1, 1, 0, 0),
+                LocalDateTime.of(2027, 1, 1, 0, 0),
+                1L
+        );
+    }
+
+    private static LotResult buildResult() {
+        return new LotResult(
                 1L,
                 "SKN-240101-01-0001",
                 LocalDateTime.of(2026, 1, 1, 0, 0),

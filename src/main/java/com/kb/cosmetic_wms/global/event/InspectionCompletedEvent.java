@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.global.event;
 
+import java.time.LocalDate;
+
 public record InspectionCompletedEvent(
         Long inspectionId,
         String sourceType,
@@ -11,5 +13,6 @@ public record InspectionCompletedEvent(
         int inspectionQuantity,
         int passedQuantity,
         int failedQuantity,
-        String defectReason
+        String defectReason,
+        LocalDate expiryDate
 ) {}

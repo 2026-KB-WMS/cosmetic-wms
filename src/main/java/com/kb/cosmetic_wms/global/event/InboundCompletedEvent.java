@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.global.event;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public record InboundCompletedEvent(
@@ -12,6 +13,7 @@ public record InboundCompletedEvent(
             Long productId,
             Long lotId,
             Long sectionId,
-            int quantity
+            int quantity,
+            LocalDate expiryDate
     ) {}
 }

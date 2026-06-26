@@ -1,22 +1,20 @@
 package com.kb.cosmetic_wms.domain.product;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.domain.product.controller.ProductController;
-import com.kb.cosmetic_wms.domain.product.dto.ProductCreateRequestDto;
-import com.kb.cosmetic_wms.domain.product.dto.ProductDetailResponseDto;
-import com.kb.cosmetic_wms.domain.product.dto.ProductDetailResponseDto.ProductInfoResponse;
-import com.kb.cosmetic_wms.domain.product.dto.ProductSummaryResponseDto;
-import com.kb.cosmetic_wms.domain.product.dto.ProductUpdateRequestDto;
-import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
-import com.kb.cosmetic_wms.domain.product.exception.CategoryNotFoundException;
-import com.kb.cosmetic_wms.domain.product.exception.DuplicateProductException;
-import com.kb.cosmetic_wms.domain.product.exception.ProductErrorCode;
-import com.kb.cosmetic_wms.domain.product.exception.ProductNotFoundException;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.ProductController;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.RegisterProductRequest;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.UpdateProductRequest;
+import com.kb.cosmetic_wms.product.category.domain.exception.CategoryErrorCode;
+import com.kb.cosmetic_wms.product.category.domain.exception.CategoryNotFoundException;
+import com.kb.cosmetic_wms.product.product.application.port.in.*;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductDtoBuilder;
-import com.kb.cosmetic_wms.domain.product.service.ProductService;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
+import com.kb.cosmetic_wms.product.product.domain.exception.DuplicateProductException;
+import com.kb.cosmetic_wms.product.product.domain.exception.ProductErrorCode;
+import com.kb.cosmetic_wms.product.product.domain.exception.ProductNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -54,7 +52,16 @@ public class ProductControllerTest extends RestDocsSupport {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private ProductService productService;
+    private RegisterProductUseCase registerProductUseCase;
+
+    @MockitoBean
+    private FindProductUseCase findProductUseCase;
+
+    @MockitoBean
+    private UpdateProductUseCase updateProductUseCase;
+
+    @MockitoBean
+    private DeleteProductUseCase deleteProductUseCase;
 
     // --- 목록 조회 ---
 
@@ -62,18 +69,18 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 상품_목록_조회_성공_시_200_OK와_전체_목록을_반환하고_API_문서가_생성된다() throws Exception {
         // given
-        List<ProductSummaryResponseDto> responseList = List.of(
-                new ProductSummaryResponseDto(1L, "BIO-SKN-TON-150-0001", "BIO", "하이드라비오 토너", 15000, TemperatureType.ROOM),
-                new ProductSummaryResponseDto(2L, "LABO-SKN-TON-200-0001", "LABO", "라보 수분 토너", 25000, TemperatureType.COOL)
+        List<ProductSummaryResult> summaryResults = List.of(
+                new ProductSummaryResult(1L, "P000001", "BIO", "하이드라비오 토너", 15000, TemperatureType.ROOM),
+                new ProductSummaryResult(2L, "P000002", "LABO", "라보 수분 토너", 25000, TemperatureType.COOL)
         );
-        given(productService.getProducts()).willReturn(responseList);
+        given(findProductUseCase.findAll()).willReturn(summaryResults);
 
         // when & then
         mockMvc.perform(get("/api/v1/products")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].skuCode").value("BIO-SKN-TON-150-0001"))
+                .andExpect(jsonPath("$[0].skuCode").value("P000001"))
                 .andExpect(jsonPath("$[1].id").value(2L))
                 .andDo(document("product-get-all-success",
                         buildParams(PRODUCT, "상품 목록 조회", null, PRODUCT_SUMMARY_RESPONSE),
@@ -87,15 +94,14 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 존재하는_상품_ID로_조회하면_200_OK와_함께_상세정보를_반환하고_API_문서가_생성된다() throws Exception {
         // given
-        ProductDetailResponseDto response = buildDetailResponse();
-        given(productService.getProduct(1L)).willReturn(response);
+        given(findProductUseCase.findById(1L)).willReturn(buildProductResult());
 
         // when & then
         mockMvc.perform(get("/api/v1/products/{productId}", 1L)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.skuCode").value("BIO-SKN-TON-150-0001"))
+                .andExpect(jsonPath("$.skuCode").value("P000001"))
                 .andExpect(jsonPath("$.productInfo.skinType").value("건성"))
                 .andExpect(jsonPath("$.productInfo.volumeValue").value(150))
                 .andExpect(jsonPath("$.productInfo.volumeUnit").value("ml"))
@@ -109,7 +115,7 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 존재하지_않는_상품_ID로_조회하면_404_NOT_FOUND를_반환하고_에러응답이_문서화된다() throws Exception {
         // given
-        given(productService.getProduct(999L)).willThrow(new ProductNotFoundException());
+        given(findProductUseCase.findById(999L)).willThrow(new ProductNotFoundException());
 
         // when & then
         mockMvc.perform(get("/api/v1/products/{productId}", 999L)
@@ -130,9 +136,8 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 올바른_상품_정보를_입력하면_등록에_성공하고_201_Created와_API_문서가_생성된다() throws Exception {
         // given
-        ProductCreateRequestDto request = new ProductDtoBuilder().build();
-        ProductDetailResponseDto response = buildDetailResponse();
-        given(productService.register(any(ProductCreateRequestDto.class))).willReturn(response);
+        RegisterProductRequest request = new ProductDtoBuilder().build();
+        given(registerProductUseCase.register(any(RegisterProductCommand.class))).willReturn(buildProductResult());
 
         // when & then
         mockMvc.perform(post("/api/v1/products")
@@ -141,7 +146,7 @@ public class ProductControllerTest extends RestDocsSupport {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.skuCode").value("BIO-SKN-TON-150-0001"))
+                .andExpect(jsonPath("$.skuCode").value("P000001"))
                 .andDo(document("product-create-success",
                         buildParams(PRODUCT, "상품 등록", PRODUCT_CREATE_REQUEST, PRODUCT_DETAIL_RESPONSE),
                         createRequestFields(getProductCreateRequestFields()),
@@ -153,7 +158,7 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 브랜드명이_공백이면_400_Bad_Request를_반환하고_에러응답이_문서화된다() throws Exception {
         // given
-        ProductCreateRequestDto invalidRequest = new ProductDtoBuilder().brandName("").build();
+        RegisterProductRequest invalidRequest = new ProductDtoBuilder().brandName("").build();
 
         // when & then
         mockMvc.perform(post("/api/v1/products")
@@ -173,8 +178,8 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 동일한_스펙의_상품이_이미_존재하면_409_Conflict를_반환하고_에러응답이_문서화된다() throws Exception {
         // given
-        ProductCreateRequestDto request = new ProductDtoBuilder().build();
-        given(productService.register(any(ProductCreateRequestDto.class))).willThrow(new DuplicateProductException());
+        RegisterProductRequest request = new ProductDtoBuilder().build();
+        given(registerProductUseCase.register(any(RegisterProductCommand.class))).willThrow(new DuplicateProductException());
 
         // when & then
         mockMvc.perform(post("/api/v1/products")
@@ -194,8 +199,8 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 존재하지_않는_카테고리_ID로_등록하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
         // given
-        ProductCreateRequestDto request = new ProductDtoBuilder().build();
-        given(productService.register(any(ProductCreateRequestDto.class))).willThrow(new CategoryNotFoundException());
+        RegisterProductRequest request = new ProductDtoBuilder().build();
+        given(registerProductUseCase.register(any(RegisterProductCommand.class))).willThrow(new CategoryNotFoundException());
 
         // when & then
         mockMvc.perform(post("/api/v1/products")
@@ -204,7 +209,7 @@ public class ProductControllerTest extends RestDocsSupport {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("CATEGORY_NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value(ProductErrorCode.CATEGORY_NOT_FOUND.getMessage()))
+                .andExpect(jsonPath("$.message").value(CategoryErrorCode.CATEGORY_NOT_FOUND.getMessage()))
                 .andDo(document("product-create-fail-category-not-found",
                         buildErrorParams(PRODUCT, "상품 등록"),
                         globalErrorResponseFields()
@@ -217,14 +222,14 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 올바른_수정_정보를_입력하면_200_OK와_수정된_상품_정보를_반환하고_API_문서가_생성된다() throws Exception {
         // given
-        ProductUpdateRequestDto request = buildUpdateRequest();
-        ProductDetailResponseDto response = new ProductDetailResponseDto(
-                1L, "BIO-SKN-TON-150-0001", "BIO", "리뉴얼 하이드라비오 토너",
+        UpdateProductRequest request = buildUpdateRequest();
+        ProductResult updatedResult = new ProductResult(
+                1L, "P000001", "BIO", "리뉴얼 하이드라비오 토너",
                 20000, TemperatureType.COOL,
-                new ProductInfoResponse("지성", "모공 케어", 150, "ml",
-                        "정제수, 나이아신아마이드", "직사광선 주의", "서늘한 곳 보관")
+                "지성", "모공 케어", 150, "ml",
+                "정제수, 나이아신아마이드", "직사광선 주의", "서늘한 곳 보관"
         );
-        given(productService.updateProduct(eq(1L), any(ProductUpdateRequestDto.class))).willReturn(response);
+        given(updateProductUseCase.update(eq(1L), any(UpdateProductCommand.class))).willReturn(updatedResult);
 
         // when & then
         mockMvc.perform(put("/api/v1/products/{productId}", 1L)
@@ -234,7 +239,7 @@ public class ProductControllerTest extends RestDocsSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productName").value("리뉴얼 하이드라비오 토너"))
                 .andExpect(jsonPath("$.productPrice").value(20000))
-                .andExpect(jsonPath("$.skuCode").value("BIO-SKN-TON-150-0001"))
+                .andExpect(jsonPath("$.skuCode").value("P000001"))
                 .andExpect(jsonPath("$.productInfo.volumeValue").value(150))
                 .andDo(document("product-update-success",
                         buildParams(PRODUCT, "상품 수정", PRODUCT_UPDATE_REQUEST, PRODUCT_DETAIL_RESPONSE),
@@ -247,8 +252,8 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 존재하지_않는_상품_ID로_수정을_시도하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
         // given
-        ProductUpdateRequestDto request = buildUpdateRequest();
-        given(productService.updateProduct(eq(999L), any(ProductUpdateRequestDto.class)))
+        UpdateProductRequest request = buildUpdateRequest();
+        given(updateProductUseCase.update(eq(999L), any(UpdateProductCommand.class)))
                 .willThrow(new ProductNotFoundException());
 
         // when & then
@@ -269,9 +274,9 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 수정_요청에서_상품명이_공백이면_400_Bad_Request를_반환하고_에러응답이_문서화된다() throws Exception {
         // given
-        ProductUpdateRequestDto invalidRequest = new ProductUpdateRequestDto(
+        UpdateProductRequest invalidRequest = new UpdateProductRequest(
                 "", 20000, TemperatureType.ROOM,
-                new ProductUpdateRequestDto.ProductInfoUpdateRequest(null, null, null, null, null)
+                new UpdateProductRequest.ProductInfoUpdateRequest(null, null, null, null, null)
         );
 
         // when & then
@@ -293,7 +298,7 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 존재하는_상품을_삭제하면_204_No_Content를_반환하고_API_문서가_생성된다() throws Exception {
         // given
-        doNothing().when(productService).deleteProduct(1L);
+        doNothing().when(deleteProductUseCase).delete(1L);
 
         // when & then
         mockMvc.perform(delete("/api/v1/products/{productId}", 1L)
@@ -308,7 +313,7 @@ public class ProductControllerTest extends RestDocsSupport {
     @WithMockUser
     void 존재하지_않는_상품_ID로_삭제를_시도하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
         // given
-        doThrow(new ProductNotFoundException()).when(productService).deleteProduct(999L);
+        doThrow(new ProductNotFoundException()).when(deleteProductUseCase).delete(999L);
 
         // when & then
         mockMvc.perform(delete("/api/v1/products/{productId}", 999L)
@@ -324,33 +329,34 @@ public class ProductControllerTest extends RestDocsSupport {
 
     // --- 테스트 픽스처 ---
 
-    private static ProductUpdateRequestDto buildUpdateRequest() {
-        return new ProductUpdateRequestDto(
-                "리뉴얼 하이드라비오 토너",
-                20000,
-                TemperatureType.COOL,
-                new ProductUpdateRequestDto.ProductInfoUpdateRequest(
-                        "지성", "모공 케어",
-                        "정제수, 나이아신아마이드",
-                        "직사광선 주의",
-                        "서늘한 곳 보관"
-                )
-        );
-    }
-
-    private static ProductDetailResponseDto buildDetailResponse() {
-        return new ProductDetailResponseDto(
+    private static ProductResult buildProductResult() {
+        return new ProductResult(
                 1L,
-                "BIO-SKN-TON-150-0001",
+                "P000001",
                 "BIO",
                 "하이드라비오 토너",
                 15000,
                 TemperatureType.ROOM,
-                new ProductInfoResponse(
-                        "건성", "보습", 150, "ml",
-                        "정제수, 글리세린, 폴리솔베이트20",
+                "건성",
+                "보습",
+                150,
+                "ml",
+                "정제수, 글리세린, 폴리솔베이트20",
+                "직사광선 주의",
+                "상온보관"
+        );
+    }
+
+    private static UpdateProductRequest buildUpdateRequest() {
+        return new UpdateProductRequest(
+                "리뉴얼 하이드라비오 토너",
+                20000,
+                TemperatureType.COOL,
+                new UpdateProductRequest.ProductInfoUpdateRequest(
+                        "지성", "모공 케어",
+                        "정제수, 나이아신아마이드",
                         "직사광선 주의",
-                        "상온보관"
+                        "서늘한 곳 보관"
                 )
         );
     }
