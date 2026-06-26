@@ -1,20 +1,19 @@
 package com.kb.cosmetic_wms.domain.lot;
 
-import com.kb.cosmetic_wms.domain.lot.dto.LotCreateRequestDto;
-import com.kb.cosmetic_wms.domain.lot.dto.LotDetailResponseDto;
-import com.kb.cosmetic_wms.domain.lot.dto.LotStatusUpdateRequestDto;
-import com.kb.cosmetic_wms.domain.lot.entity.Lot;
-import com.kb.cosmetic_wms.domain.lot.enums.LotStatus;
-import com.kb.cosmetic_wms.domain.lot.exception.DuplicateLotNumberException;
-import com.kb.cosmetic_wms.domain.lot.exception.LotErrorCode;
-import com.kb.cosmetic_wms.domain.lot.exception.LotNotFoundException;
-import com.kb.cosmetic_wms.domain.lot.exception.LotProductNotFoundException;
-import com.kb.cosmetic_wms.domain.lot.fixture.LotDtoBuilder;
+import com.kb.cosmetic_wms.domain.lot.fixture.LotCommandBuilder;
 import com.kb.cosmetic_wms.domain.lot.fixture.LotTestBuilder;
-import com.kb.cosmetic_wms.domain.lot.repository.LotRepository;
-import com.kb.cosmetic_wms.domain.lot.service.LotService;
-import com.kb.cosmetic_wms.domain.product.entity.Product;
-import com.kb.cosmetic_wms.domain.product.repository.ProductRepository;
+import com.kb.cosmetic_wms.lot.application.port.in.LotResult;
+import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
+import com.kb.cosmetic_wms.lot.application.port.in.UpdateLotStatusCommand;
+import com.kb.cosmetic_wms.lot.application.port.out.LotPort;
+import com.kb.cosmetic_wms.lot.application.service.LotService;
+import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
+import com.kb.cosmetic_wms.lot.domain.exception.DuplicateLotNumberException;
+import com.kb.cosmetic_wms.lot.domain.exception.LotErrorCode;
+import com.kb.cosmetic_wms.lot.domain.exception.LotNotFoundException;
+import com.kb.cosmetic_wms.lot.domain.exception.LotProductNotFoundException;
+import com.kb.cosmetic_wms.lot.domain.model.Lot;
+import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,17 +38,16 @@ class LotServiceTest {
     private LotService lotService;
 
     @Mock
-    private LotRepository lotRepository;
+    private LotPort lotPort;
 
     @Mock
-    private ProductRepository productRepository;
+    private FindProductUseCase findProductUseCase;
 
     private Lot defaultLot;
 
     @BeforeEach
     void setUp() {
-        defaultLot = new LotTestBuilder().build();
-        ReflectionTestUtils.setField(defaultLot, "id", 1L);
+        defaultLot = new LotTestBuilder().buildWithId(1L);
     }
 
     @Nested
@@ -59,17 +55,14 @@ class LotServiceTest {
 
         @Test
         void 올바른_정보로_등록하면_로트가_저장되고_초기_상태는_AVAILABLE이다() {
-            // given
-            LotCreateRequestDto request = new LotDtoBuilder().build();
+            RegisterLotCommand command = new LotCommandBuilder().build();
 
-            given(productRepository.findById(request.productId())).willReturn(Optional.of(mock(Product.class)));
-            given(lotRepository.existsByLotNumber(request.lotNumber())).willReturn(false);
-            given(lotRepository.save(any(Lot.class))).willReturn(defaultLot);
+            given(findProductUseCase.existsById(command.productId())).willReturn(true);
+            given(lotPort.existsByLotNumber(command.lotNumber())).willReturn(false);
+            given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
-            // when
-            LotDetailResponseDto result = lotService.register(request);
+            LotResult result = lotService.register(command);
 
-            // then
             assertThat(result.id()).isEqualTo(1L);
             assertThat(result.lotNumber()).isEqualTo("SKN-240101-01-0001");
             assertThat(result.status()).isEqualTo(LotStatus.AVAILABLE);
@@ -78,44 +71,37 @@ class LotServiceTest {
 
         @Test
         void 등록된_로트의_제조일자와_유통기한이_응답에_포함된다() {
-            // given
-            LotCreateRequestDto request = new LotDtoBuilder().build();
+            RegisterLotCommand command = new LotCommandBuilder().build();
 
-            given(productRepository.findById(request.productId())).willReturn(Optional.of(mock(Product.class)));
-            given(lotRepository.existsByLotNumber(request.lotNumber())).willReturn(false);
-            given(lotRepository.save(any(Lot.class))).willReturn(defaultLot);
+            given(findProductUseCase.existsById(command.productId())).willReturn(true);
+            given(lotPort.existsByLotNumber(command.lotNumber())).willReturn(false);
+            given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
-            // when
-            LotDetailResponseDto result = lotService.register(request);
+            LotResult result = lotService.register(command);
 
-            // then
-            assertThat(result.manufacturingDate()).isEqualTo(defaultLot.getManufacturingDate());
-            assertThat(result.expirationDate()).isEqualTo(defaultLot.getExpirationDate());
+            assertThat(result.manufacturingDate()).isEqualTo(defaultLot.getPeriod().manufacturingDate());
+            assertThat(result.expirationDate()).isEqualTo(defaultLot.getPeriod().expirationDate());
         }
 
         @Test
         void 존재하지_않는_상품_ID로_등록하면_LotProductNotFoundException이_발생한다() {
-            // given
-            LotCreateRequestDto request = new LotDtoBuilder().productId(999L).build();
+            RegisterLotCommand command = new LotCommandBuilder().productId(999L).build();
 
-            given(productRepository.findById(999L)).willReturn(Optional.empty());
+            given(findProductUseCase.existsById(999L)).willReturn(false);
 
-            // when & then
-            assertThatThrownBy(() -> lotService.register(request))
+            assertThatThrownBy(() -> lotService.register(command))
                     .isInstanceOf(LotProductNotFoundException.class)
                     .hasMessage(LotErrorCode.PRODUCT_NOT_FOUND.getMessage());
         }
 
         @Test
         void 이미_등록된_로트_번호로_등록하면_DuplicateLotNumberException이_발생한다() {
-            // given
-            LotCreateRequestDto request = new LotDtoBuilder().build();
+            RegisterLotCommand command = new LotCommandBuilder().build();
 
-            given(productRepository.findById(request.productId())).willReturn(Optional.of(mock(Product.class)));
-            given(lotRepository.existsByLotNumber(request.lotNumber())).willReturn(true);
+            given(findProductUseCase.existsById(command.productId())).willReturn(true);
+            given(lotPort.existsByLotNumber(command.lotNumber())).willReturn(true);
 
-            // when & then
-            assertThatThrownBy(() -> lotService.register(request))
+            assertThatThrownBy(() -> lotService.register(command))
                     .isInstanceOf(DuplicateLotNumberException.class)
                     .hasMessage(LotErrorCode.DUPLICATE_LOT_NUMBER.getMessage());
         }
@@ -126,13 +112,10 @@ class LotServiceTest {
 
         @Test
         void 존재하는_ID로_조회하면_로트_상세_정보를_반환한다() {
-            // given
-            given(lotRepository.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
 
-            // when
-            LotDetailResponseDto result = lotService.getLot(1L);
+            LotResult result = lotService.findById(1L);
 
-            // then
             assertThat(result.id()).isEqualTo(1L);
             assertThat(result.lotNumber()).isEqualTo("SKN-240101-01-0001");
             assertThat(result.status()).isEqualTo(LotStatus.AVAILABLE);
@@ -141,11 +124,9 @@ class LotServiceTest {
 
         @Test
         void 존재하지_않는_ID로_조회하면_LotNotFoundException이_발생한다() {
-            // given
-            given(lotRepository.findById(999L)).willReturn(Optional.empty());
+            given(lotPort.findById(999L)).willReturn(Optional.empty());
 
-            // when & then
-            assertThatThrownBy(() -> lotService.getLot(999L))
+            assertThatThrownBy(() -> lotService.findById(999L))
                     .isInstanceOf(LotNotFoundException.class)
                     .hasMessage(LotErrorCode.LOT_NOT_FOUND.getMessage());
         }
@@ -156,17 +137,13 @@ class LotServiceTest {
 
         @Test
         void 상품에_등록된_로트가_여러_개이면_전체_목록을_반환한다() {
-            // given
-            Lot secondLot = new LotTestBuilder().lotNumber("SKN-240101-01-0002").build();
-            ReflectionTestUtils.setField(secondLot, "id", 2L);
+            Lot secondLot = new LotTestBuilder().lotNumber("SKN-240101-01-0002").buildWithId(2L);
 
-            given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
-            given(lotRepository.findByProductId(1L)).willReturn(List.of(defaultLot, secondLot));
+            given(findProductUseCase.existsById(1L)).willReturn(true);
+            given(lotPort.findByProductId(1L)).willReturn(List.of(defaultLot, secondLot));
 
-            // when
-            List<LotDetailResponseDto> result = lotService.getLotsByProductId(1L);
+            List<LotResult> result = lotService.findByProductId(1L);
 
-            // then
             assertThat(result).hasSize(2);
             assertThat(result.get(0).id()).isEqualTo(1L);
             assertThat(result.get(1).id()).isEqualTo(2L);
@@ -175,24 +152,19 @@ class LotServiceTest {
 
         @Test
         void 등록된_로트가_없으면_빈_목록을_반환한다() {
-            // given
-            given(productRepository.findById(1L)).willReturn(Optional.of(mock(Product.class)));
-            given(lotRepository.findByProductId(1L)).willReturn(List.of());
+            given(findProductUseCase.existsById(1L)).willReturn(true);
+            given(lotPort.findByProductId(1L)).willReturn(List.of());
 
-            // when
-            List<LotDetailResponseDto> result = lotService.getLotsByProductId(1L);
+            List<LotResult> result = lotService.findByProductId(1L);
 
-            // then
             assertThat(result).isEmpty();
         }
 
         @Test
         void 존재하지_않는_상품_ID로_조회하면_LotProductNotFoundException이_발생한다() {
-            // given
-            given(productRepository.findById(999L)).willReturn(Optional.empty());
+            given(findProductUseCase.existsById(999L)).willReturn(false);
 
-            // when & then
-            assertThatThrownBy(() -> lotService.getLotsByProductId(999L))
+            assertThatThrownBy(() -> lotService.findByProductId(999L))
                     .isInstanceOf(LotProductNotFoundException.class)
                     .hasMessage(LotErrorCode.PRODUCT_NOT_FOUND.getMessage());
         }
@@ -203,47 +175,39 @@ class LotServiceTest {
 
         @Test
         void AVAILABLE_상태의_로트를_HOLD로_변경하면_상태가_갱신되어_반환된다() {
-            // given
-            given(lotRepository.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.save(any(Lot.class))).willAnswer(inv -> inv.getArgument(0));
 
-            // when
-            LotDetailResponseDto result = lotService.updateLotStatus(1L, new LotStatusUpdateRequestDto(LotStatus.HOLD));
+            LotResult result = lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.HOLD));
 
-            // then
             assertThat(result.status()).isEqualTo(LotStatus.HOLD);
         }
 
         @Test
         void 로트_상태를_RECALLED로_변경하면_상태가_갱신되어_반환된다() {
-            // given
-            given(lotRepository.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.save(any(Lot.class))).willAnswer(inv -> inv.getArgument(0));
 
-            // when
-            LotDetailResponseDto result = lotService.updateLotStatus(1L, new LotStatusUpdateRequestDto(LotStatus.RECALLED));
+            LotResult result = lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.RECALLED));
 
-            // then
             assertThat(result.status()).isEqualTo(LotStatus.RECALLED);
         }
 
         @Test
         void 로트_상태를_DISPOSED로_변경하면_폐기_상태가_반환된다() {
-            // given
-            given(lotRepository.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.save(any(Lot.class))).willAnswer(inv -> inv.getArgument(0));
 
-            // when
-            LotDetailResponseDto result = lotService.updateLotStatus(1L, new LotStatusUpdateRequestDto(LotStatus.DISPOSED));
+            LotResult result = lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.DISPOSED));
 
-            // then
             assertThat(result.status()).isEqualTo(LotStatus.DISPOSED);
         }
 
         @Test
         void 존재하지_않는_ID로_상태_변경을_요청하면_LotNotFoundException이_발생한다() {
-            // given
-            given(lotRepository.findById(999L)).willReturn(Optional.empty());
+            given(lotPort.findById(999L)).willReturn(Optional.empty());
 
-            // when & then
-            assertThatThrownBy(() -> lotService.updateLotStatus(999L, new LotStatusUpdateRequestDto(LotStatus.HOLD)))
+            assertThatThrownBy(() -> lotService.updateStatus(999L, new UpdateLotStatusCommand(LotStatus.HOLD)))
                     .isInstanceOf(LotNotFoundException.class)
                     .hasMessage(LotErrorCode.LOT_NOT_FOUND.getMessage());
         }
@@ -253,24 +217,19 @@ class LotServiceTest {
     class 로트_삭제 {
 
         @Test
-        void 존재하는_로트를_삭제하면_레포지토리_delete가_호출된다() {
-            // given
-            given(lotRepository.findById(1L)).willReturn(Optional.of(defaultLot));
+        void 존재하는_로트를_삭제하면_포트_delete가_호출된다() {
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
 
-            // when
-            lotService.deleteLot(1L);
+            lotService.delete(1L);
 
-            // then
-            verify(lotRepository).delete(defaultLot);
+            verify(lotPort).delete(defaultLot);
         }
 
         @Test
         void 존재하지_않는_ID로_삭제를_요청하면_LotNotFoundException이_발생한다() {
-            // given
-            given(lotRepository.findById(999L)).willReturn(Optional.empty());
+            given(lotPort.findById(999L)).willReturn(Optional.empty());
 
-            // when & then
-            assertThatThrownBy(() -> lotService.deleteLot(999L))
+            assertThatThrownBy(() -> lotService.delete(999L))
                     .isInstanceOf(LotNotFoundException.class)
                     .hasMessage(LotErrorCode.LOT_NOT_FOUND.getMessage());
         }

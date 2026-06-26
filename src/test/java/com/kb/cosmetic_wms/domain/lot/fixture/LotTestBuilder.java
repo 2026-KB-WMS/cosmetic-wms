@@ -1,7 +1,6 @@
 package com.kb.cosmetic_wms.domain.lot.fixture;
 
-import com.kb.cosmetic_wms.domain.lot.entity.Lot;
-import com.kb.cosmetic_wms.domain.lot.enums.LotStatus;
+import com.kb.cosmetic_wms.lot.domain.model.Lot;
 
 import java.time.LocalDateTime;
 
@@ -9,7 +8,6 @@ public class LotTestBuilder {
     private String lotNumber = "SKN-240101-01-0001";
     private LocalDateTime manufacturingDate = LocalDateTime.of(2026, 1, 1, 0, 0);
     private LocalDateTime expirationDate = LocalDateTime.of(2027, 1, 1, 0, 0);
-    private LotStatus status = LotStatus.AVAILABLE;
     private Long productId = 1L;
 
     public LotTestBuilder lotNumber(String lotNumber) {
@@ -33,11 +31,11 @@ public class LotTestBuilder {
     }
 
     public Lot build() {
-        return Lot.create(
-                lotNumber,
-                manufacturingDate,
-                expirationDate,
-                productId
-        );
+        return Lot.create(lotNumber, manufacturingDate, expirationDate, productId);
+    }
+
+    public Lot buildWithId(Long id) {
+        return Lot.reconstitute(id, lotNumber, manufacturingDate, expirationDate,
+                com.kb.cosmetic_wms.lot.domain.enums.LotStatus.AVAILABLE, productId);
     }
 }

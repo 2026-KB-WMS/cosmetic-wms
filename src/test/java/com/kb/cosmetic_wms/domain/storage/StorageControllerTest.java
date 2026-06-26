@@ -1,22 +1,20 @@
 package com.kb.cosmetic_wms.domain.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
-import com.kb.cosmetic_wms.domain.storage.controller.StorageController;
-import com.kb.cosmetic_wms.domain.storage.dto.SectionCreateRequestDto;
-import com.kb.cosmetic_wms.domain.storage.dto.SectionResponseDto;
-import com.kb.cosmetic_wms.domain.storage.dto.WarehouseCreateRequestDto;
-import com.kb.cosmetic_wms.domain.storage.dto.WarehouseResponseDto;
-import com.kb.cosmetic_wms.domain.storage.enums.SectionAllocationStatus;
-import com.kb.cosmetic_wms.domain.storage.enums.SectionQualityStatus;
-import com.kb.cosmetic_wms.domain.storage.enums.SectionType;
-import com.kb.cosmetic_wms.domain.storage.exception.DuplicateWarehouseException;
-import com.kb.cosmetic_wms.domain.storage.exception.StorageExceedCapacityException;
-import com.kb.cosmetic_wms.domain.storage.exception.WarehouseNotFoundException;
-import com.kb.cosmetic_wms.domain.storage.service.StorageService;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
+import com.kb.cosmetic_wms.storage.adapter.in.web.SectionCreateRequest;
+import com.kb.cosmetic_wms.storage.adapter.in.web.StorageController;
+import com.kb.cosmetic_wms.storage.adapter.in.web.WarehouseCreateRequest;
+import com.kb.cosmetic_wms.storage.application.port.in.*;
+import com.kb.cosmetic_wms.storage.domain.exception.DuplicateWarehouseException;
+import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
+import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
+import com.kb.cosmetic_wms.storage.domain.model.SectionAllocationStatus;
+import com.kb.cosmetic_wms.storage.domain.model.SectionQualityStatus;
+import com.kb.cosmetic_wms.storage.domain.model.SectionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -51,22 +49,26 @@ public class StorageControllerTest extends RestDocsSupport {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private StorageService storageService;
+    private RegisterWarehouseUseCase registerWarehouseUseCase;
+
+    @MockitoBean
+    private AddSectionUseCase addSectionUseCase;
+
+    @MockitoBean
+    private FindWarehouseUseCase findWarehouseUseCase;
 
     @Test
     @WithMockUser
     void 올바른_창고_정보를_입력하면_등록에_성공하고_API_문서가_생성된다() throws Exception {
-        // given
-        WarehouseCreateRequestDto requestDto = new WarehouseCreateRequestDto("용인 신선 센터", "경기도 용인시", "0~5도", 30000);
-        WarehouseResponseDto responseDto = new WarehouseResponseDto(1L, "용인 신선 센터", "경기도 용인시", "0~5도", 30000, List.of());
+        WarehouseCreateRequest request = new WarehouseCreateRequest("용인 신선 센터", "경기도 용인시", "0~5도", 30000);
+        WarehouseResult result = new WarehouseResult(1L, "용인 신선 센터", "경기도 용인시", "0~5도", 30000, List.of());
 
-        given(storageService.registerWarehouse(any(WarehouseCreateRequestDto.class))).willReturn(responseDto);
+        given(registerWarehouseUseCase.register(any(RegisterWarehouseCommand.class))).willReturn(result);
 
-        // when & then
         mockMvc.perform(post("/api/v1/storages/warehouses")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andDo(document("warehouse-create-success",
@@ -79,15 +81,14 @@ public class StorageControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 창고명과_주소가_중복되면_400_에러를_반환하고_에러응답이_문서화된다() throws Exception {
-        // given
-        WarehouseCreateRequestDto requestDto = new WarehouseCreateRequestDto("중복 창고", "서울시 강남구", "10~20도", 10000);
-        given(storageService.registerWarehouse(any(WarehouseCreateRequestDto.class))).willThrow(new DuplicateWarehouseException());
+        WarehouseCreateRequest request = new WarehouseCreateRequest("중복 창고", "서울시 강남구", "10~20도", 10000);
+        given(registerWarehouseUseCase.register(any(RegisterWarehouseCommand.class)))
+                .willThrow(new DuplicateWarehouseException());
 
-        // when & then
         mockMvc.perform(post("/api/v1/storages/warehouses")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("DUPLICATE_WAREHOUSE"))
                 .andDo(document("warehouse-create-fail-duplicate",
@@ -99,28 +100,23 @@ public class StorageControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 특정_창고에_보관구역_섹션을_정상_추가하면_200_OK와_함께_업데이트된_창고정보가_반환된다() throws Exception {
-        // given
         Long warehouseId = 1L;
-        SectionCreateRequestDto requestDto = new SectionCreateRequestDto(
-                SectionType.HIGH_ROT, "WH01-HIGH-R-01",
-                "A동 상단랙", TemperatureType.ROOM, 5000);
+        SectionCreateRequest request = new SectionCreateRequest(
+                SectionType.HIGH_ROT, "A동 상단랙", TemperatureType.ROOM, 5000);
 
-        SectionResponseDto sectionResponse = new SectionResponseDto(
+        SectionResult sectionResult = new SectionResult(
                 1L, "WH01-HIGH-R-01", "A동 상단랙",
                 SectionType.HIGH_ROT, SectionQualityStatus.NORMAL, SectionAllocationStatus.AVAILABLE,
                 TemperatureType.ROOM, 5000, 0);
-        WarehouseResponseDto responseDto = new WarehouseResponseDto(
-                warehouseId, "용인 신선 센터", "경기도 용인시",
-                "0~5도", 30000, List.of(sectionResponse));
+        WarehouseResult warehouseResult = new WarehouseResult(
+                warehouseId, "용인 신선 센터", "경기도 용인시", "0~5도", 30000, List.of(sectionResult));
 
-        given(storageService.addSectionToWarehouse(
-                eq(warehouseId), any(SectionCreateRequestDto.class))).willReturn(responseDto);
+        given(addSectionUseCase.addSection(eq(warehouseId), any(AddSectionCommand.class))).willReturn(warehouseResult);
 
-        // when & then
         mockMvc.perform(post("/api/v1/storages/warehouses/{warehouseId}/sections", warehouseId)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sections[0].sectionCode").value("WH01-HIGH-R-01"))
                 .andDo(document("section-add-success",
@@ -133,19 +129,16 @@ public class StorageControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 구역_편입_시_허용_용량을_초과하면_400_에러를_반환하고_문서화된다() throws Exception {
-        // given
         Long warehouseId = 1L;
-        SectionCreateRequestDto requestDto = new SectionCreateRequestDto(
-                SectionType.MID_ROT, "WH01-MID-R-02", "초과 구역",
-                TemperatureType.ROOM, 40000);
-        given(storageService.addSectionToWarehouse(
-                eq(warehouseId), any(SectionCreateRequestDto.class))).willThrow(new StorageExceedCapacityException());
+        SectionCreateRequest request = new SectionCreateRequest(
+                SectionType.MID_ROT, "초과 구역", TemperatureType.ROOM, 40000);
+        given(addSectionUseCase.addSection(eq(warehouseId), any(AddSectionCommand.class)))
+                .willThrow(new StorageExceedCapacityException());
 
-        // when & then
         mockMvc.perform(post("/api/v1/storages/warehouses/{warehouseId}/sections", warehouseId)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("EXCEED_WAREHOUSE_CAPACITY"))
                 .andDo(document("section-add-fail-exceed-capacity",
@@ -157,12 +150,10 @@ public class StorageControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 창고_전체_목록_조회_성공_시_200_OK와_함께_스니펫_문서가_추출된다() throws Exception {
-        // given
-        WarehouseResponseDto wh1 = new WarehouseResponseDto(1L, "평택 센터", "경기도 평택시", "10~20도", 50000, List.of());
-        WarehouseResponseDto wh2 = new WarehouseResponseDto(2L, "인천 센터", "인천광역시 중구", "0~5도", 30000, List.of());
-        given(storageService.getAllWarehouses()).willReturn(List.of(wh1, wh2));
+        WarehouseResult wh1 = new WarehouseResult(1L, "평택 센터", "경기도 평택시", "10~20도", 50000, List.of());
+        WarehouseResult wh2 = new WarehouseResult(2L, "인천 센터", "인천광역시 중구", "0~5도", 30000, List.of());
+        given(findWarehouseUseCase.findAll()).willReturn(List.of(wh1, wh2));
 
-        // when & then
         mockMvc.perform(get("/api/v1/storages/warehouses")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -176,11 +167,9 @@ public class StorageControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 존재하지_않는_창고ID를_단건_조회하면_404_에러를_리턴하고_문서화된다() throws Exception {
-        // given
         Long invalidId = 99L;
-        given(storageService.getWarehouseById(invalidId)).willThrow(new WarehouseNotFoundException());
+        given(findWarehouseUseCase.findById(invalidId)).willThrow(new WarehouseNotFoundException());
 
-        // when & then
         mockMvc.perform(get("/api/v1/storages/warehouses/{warehouseId}", invalidId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
@@ -211,7 +200,6 @@ public class StorageControllerTest extends RestDocsSupport {
     private static FieldDescriptor[] getSectionCreateRequestFields() {
         return new FieldDescriptor[]{
                 fieldWithPath("sectionType").description("섹션 종류 (HIGH_ROT, MID_ROT, LOW_ROT, DOCKING, QUARANTINE)"),
-                fieldWithPath("sectionCode").description("섹션 고유 코드 식별 규격 (예: WH01-HIGH-R-01)"),
                 fieldWithPath("sectionName").description("보관 섹션 세부 명칭"),
                 fieldWithPath("temperatureType").description("섹션 관리 온도 타입 (ROOM, COOL)"),
                 fieldWithPath("maxCapacity").description("해당 구역의 최대 수용 가능 용량")
@@ -229,7 +217,7 @@ public class StorageControllerTest extends RestDocsSupport {
                 fieldWithPath("sections").type(JsonFieldType.ARRAY).description("창고에 소속된 하위 구역 리스트 배열"),
 
                 fieldWithPath("sections[].id").type(JsonFieldType.NUMBER).description("섹션 고유 식별 번호 (PK)").optional(),
-                fieldWithPath("sections[].sectionCode").type(JsonFieldType.STRING).description("섹션 통제 코드 정보").optional(),
+                fieldWithPath("sections[].sectionCode").type(JsonFieldType.STRING).description("시스템 자동 발급 섹션 코드 (예: WH01-HIGH-R-01)").optional(),
                 fieldWithPath("sections[].sectionName").type(JsonFieldType.STRING).description("섹션 지정 명칭").optional(),
                 fieldWithPath("sections[].sectionType").type(JsonFieldType.STRING).description("섹션 도메인 타입").optional(),
                 fieldWithPath("sections[].qualityStatus").type(JsonFieldType.STRING).description("품질 상태 정보 (NORMAL, INSPECTING, HOLD)").optional(),

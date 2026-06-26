@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.product.fixture;
 
-import com.kb.cosmetic_wms.domain.product.dto.ProductCreateRequestDto;
-import com.kb.cosmetic_wms.domain.product.enums.TemperatureType;
+import com.kb.cosmetic_wms.product.product.adapter.in.web.RegisterProductRequest;
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 
 public class ProductDtoBuilder {
 
@@ -20,32 +20,83 @@ public class ProductDtoBuilder {
             "1) 화장품 사용 시 또는 사용 후 직사광선에 의하여 사용부위가 붉은 반점, 부어오름 또는 가려움증 등의 이상 증상이나 부작용이 있는 경우에는 전문의 등과 상담할 것";
     private String storageCondition = "상온보관";
 
-    public ProductDtoBuilder brandName(String brandName) { this.brandName = brandName; return this; }
-    public ProductDtoBuilder productName(String productName) { this.productName = productName; return this; }
-    public ProductDtoBuilder productPrice(int productPrice) { this.productPrice = productPrice; return this; }
-    public ProductDtoBuilder temperatureType(TemperatureType temperatureType) { this.temperatureType = temperatureType; return this; }
-    public ProductDtoBuilder categoryId(Long categoryId) { this.categoryId = categoryId; return this; }
-    public ProductDtoBuilder productTypeId(Long productTypeId) { this.productTypeId = productTypeId; return this; }
-    public ProductDtoBuilder volume(int volume) { this.volume = volume; return this; }
-    public ProductDtoBuilder unit(String unit) { this.unit = unit; return this; }
-    public ProductDtoBuilder skinType(String skinType) { this.skinType = skinType; return this; }
-    public ProductDtoBuilder functionType(String functionType) { this.functionType = functionType; return this; }
-    public ProductDtoBuilder ingredients(String ingredients) { this.ingredients = ingredients; return this; }
-    public ProductDtoBuilder cautions(String cautions) { this.cautions = cautions; return this; }
-    public ProductDtoBuilder storageCondition(String storageCondition) { this.storageCondition = storageCondition; return this; }
+    public ProductDtoBuilder brandName(String brandName) {
+        this.brandName = brandName;
+        return this;
+    }
 
-    public ProductCreateRequestDto build() {
-        return new ProductCreateRequestDto(
+    public ProductDtoBuilder productName(String productName) {
+        this.productName = productName;
+        return this;
+    }
+
+    public ProductDtoBuilder productPrice(int productPrice) {
+        this.productPrice = productPrice;
+        return this;
+    }
+
+    public ProductDtoBuilder temperatureType(TemperatureType temperatureType) {
+        this.temperatureType = temperatureType;
+        return this;
+    }
+
+    public ProductDtoBuilder categoryId(Long categoryId) {
+        this.categoryId = categoryId;
+        return this;
+    }
+
+    public ProductDtoBuilder productTypeId(Long productTypeId) {
+        this.productTypeId = productTypeId;
+        return this;
+    }
+
+    public ProductDtoBuilder volume(int volume) {
+        this.volume = volume;
+        return this;
+    }
+
+    public ProductDtoBuilder unit(String unit) {
+        this.unit = unit;
+        return this;
+    }
+
+    public ProductDtoBuilder skinType(String skinType) {
+        this.skinType = skinType;
+        return this;
+    }
+
+    public ProductDtoBuilder functionType(String functionType) {
+        this.functionType = functionType;
+        return this;
+    }
+
+    public ProductDtoBuilder ingredients(String ingredients) {
+        this.ingredients = ingredients;
+        return this;
+    }
+
+    public ProductDtoBuilder cautions(String cautions) {
+        this.cautions = cautions;
+        return this;
+    }
+
+    public ProductDtoBuilder storageCondition(String storageCondition) {
+        this.storageCondition = storageCondition;
+        return this;
+    }
+
+    public RegisterProductRequest build() {
+        return new RegisterProductRequest(
                 brandName,
                 productName,
                 productPrice,
                 temperatureType,
                 categoryId,
                 productTypeId,
-                new ProductCreateRequestDto.ProductInfoRequest(
+                new RegisterProductRequest.ProductInfoRequest(
                         skinType,
                         functionType,
-                        new ProductCreateRequestDto.VolumeRequest(volume, unit),
+                        new RegisterProductRequest.VolumeRequest(volume, unit),
                         ingredients,
                         cautions,
                         storageCondition
