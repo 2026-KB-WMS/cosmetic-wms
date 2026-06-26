@@ -1,0 +1,16 @@
+package com.kb.cosmetic_wms.order.application.port.in;
+
+public interface OrderLifecycleUseCase {
+
+    OrderResult createOrder(CreateOrderCommand command);
+
+    OrderResult confirmOrder(Long orderId);
+
+    OrderResult startPreparation(Long orderId);
+
+    OrderResult ship(Long orderId);
+
+    OrderResult completeDelivery(Long orderId);
+
+    OrderResult cancelOrder(Long orderId);
+}
