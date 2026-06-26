@@ -1,25 +1,33 @@
 package com.kb.cosmetic_wms.domain.lot;
 
-import com.kb.cosmetic_wms.domain.lot.constants.LotConstants;
-import com.kb.cosmetic_wms.domain.lot.entity.Lot;
-import com.kb.cosmetic_wms.domain.lot.enums.LotStatus;
 import com.kb.cosmetic_wms.domain.lot.fixture.LotTestBuilder;
+import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
+import com.kb.cosmetic_wms.lot.domain.exception.InvalidLotNumberFormatException;
+import com.kb.cosmetic_wms.lot.domain.exception.InvalidLotStatusTransitionException;
+import com.kb.cosmetic_wms.lot.domain.exception.InvalidManufactureDateException;
+import com.kb.cosmetic_wms.lot.domain.exception.LotProductIdRequiredException;
+import com.kb.cosmetic_wms.lot.domain.model.Lot;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
+
+import static com.kb.cosmetic_wms.lot.domain.enums.LotStatus.*;
 
 public class LotEntityTest {
 
     @Test
     void 올바른_로트_번호가_주어졌을_때_Lot_객체가_정상_생성되며_초기_상태는_AVAILABLE이어야_한다() {
-        // given & when
         Lot lot = new LotTestBuilder().build();
 
-        // then
-        Assertions.assertThat(lot.getLotNumber()).isEqualTo("SKN-240101-01-0001");
+        Assertions.assertThat(lot.getLotNumber().value()).isEqualTo("SKN-240101-01-0001");
         Assertions.assertThat(lot.getStatus()).isEqualTo(LotStatus.AVAILABLE);
     }
 
@@ -31,8 +39,7 @@ public class LotEntityTest {
                                 .expirationDate(LocalDateTime.of(2026, 3, 1, 0, 0))
                                 .build()
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(LotConstants.INVALID_MANUFACTURE_DATE_MESSAGE);
+                .isInstanceOf(InvalidManufactureDateException.class);
     }
 
     @ParameterizedTest
@@ -43,8 +50,7 @@ public class LotEntityTest {
                                 .lotNumber(invalidLotNumber)
                                 .build()
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(LotConstants.INVALID_LOT_NO_FORMAT_MESSAGE);
+                .isInstanceOf(InvalidLotNumberFormatException.class);
     }
 
     @Test
@@ -54,7 +60,87 @@ public class LotEntityTest {
                                 .productId(null)
                                 .build()
                 )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(LotConstants.PRODUCT_REQUIRED_MESSAGE);
+                .isInstanceOf(LotProductIdRequiredException.class);
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class 상태_전환 {
+
+        private Lot lotWithStatus(LotStatus status) {
+            return Lot.reconstitute(1L, "SKN-240101-01-0001",
+                    LocalDateTime.of(2026, 1, 1, 0, 0),
+                    LocalDateTime.of(2027, 1, 1, 0, 0),
+                    status, 1L);
+        }
+
+        @ParameterizedTest
+        @MethodSource("유효한_전환_목록")
+        void 허용된_상태로_전환하면_상태가_변경된다(LotStatus from, LotStatus to) {
+            Lot lot = lotWithStatus(from);
+
+            lot.changeStatus(to);
+
+            Assertions.assertThat(lot.getStatus()).isEqualTo(to);
+        }
+
+        Stream<Arguments> 유효한_전환_목록() {
+            return Stream.of(
+                    Arguments.of(AVAILABLE, HOLD),
+                    Arguments.of(AVAILABLE, EXPIRED),
+                    Arguments.of(AVAILABLE, RECALLED),
+                    Arguments.of(AVAILABLE, DAMAGED),
+                    Arguments.of(AVAILABLE, DISPOSED),
+                    Arguments.of(HOLD, AVAILABLE),
+                    Arguments.of(HOLD, EXPIRED),
+                    Arguments.of(HOLD, RECALLED),
+                    Arguments.of(HOLD, DAMAGED),
+                    Arguments.of(HOLD, DISPOSED),
+                    Arguments.of(EXPIRED, DISPOSED),
+                    Arguments.of(RECALLED, DISPOSED),
+                    Arguments.of(DAMAGED, DISPOSED)
+            );
+        }
+
+        @ParameterizedTest
+        @MethodSource("유효하지_않은_전환_목록")
+        void 허용되지_않은_상태로_전환하면_예외를_던진다(LotStatus from, LotStatus to) {
+            Lot lot = lotWithStatus(from);
+
+            Assertions.assertThatThrownBy(() -> lot.changeStatus(to))
+                    .isInstanceOf(InvalidLotStatusTransitionException.class);
+        }
+
+        Stream<Arguments> 유효하지_않은_전환_목록() {
+            return Stream.of(
+                    // 자기 자신으로의 전환
+                    Arguments.of(AVAILABLE, AVAILABLE),
+                    Arguments.of(HOLD, HOLD),
+                    // 만료·리콜은 폐기 외 불가
+                    Arguments.of(EXPIRED, AVAILABLE),
+                    Arguments.of(EXPIRED, HOLD),
+                    Arguments.of(EXPIRED, EXPIRED),
+                    Arguments.of(EXPIRED, RECALLED),
+                    Arguments.of(EXPIRED, DAMAGED),
+                    Arguments.of(RECALLED, AVAILABLE),
+                    Arguments.of(RECALLED, HOLD),
+                    Arguments.of(RECALLED, EXPIRED),
+                    Arguments.of(RECALLED, RECALLED),
+                    Arguments.of(RECALLED, DAMAGED),
+                    // 파손은 폐기 외 불가
+                    Arguments.of(DAMAGED, AVAILABLE),
+                    Arguments.of(DAMAGED, HOLD),
+                    Arguments.of(DAMAGED, EXPIRED),
+                    Arguments.of(DAMAGED, RECALLED),
+                    Arguments.of(DAMAGED, DAMAGED),
+                    // 폐기는 terminal
+                    Arguments.of(DISPOSED, AVAILABLE),
+                    Arguments.of(DISPOSED, HOLD),
+                    Arguments.of(DISPOSED, EXPIRED),
+                    Arguments.of(DISPOSED, RECALLED),
+                    Arguments.of(DISPOSED, DAMAGED),
+                    Arguments.of(DISPOSED, DISPOSED)
+            );
+        }
     }
 }

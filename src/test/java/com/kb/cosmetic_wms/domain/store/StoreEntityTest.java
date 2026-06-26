@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.domain.store;
 
-import com.kb.cosmetic_wms.domain.store.entity.Store;
+import com.kb.cosmetic_wms.store.domain.exception.StoreValidationException;
+import com.kb.cosmetic_wms.store.domain.model.Store;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -33,11 +34,8 @@ public class StoreEntityTest {
         String address = "Anfield Road, Liverpool, L4 0TH, United Kingdom";
 
         // when & then
-        assertThatThrownBy(() ->
-                Store.create(invalidStoreName, address)
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("점포명은 필수 입력 항목입니다.");
+        assertThatThrownBy(() -> Store.create(invalidStoreName, address))
+                .isInstanceOf(StoreValidationException.class);
     }
 
     @ParameterizedTest
@@ -48,10 +46,7 @@ public class StoreEntityTest {
         String storeName = "리버풀점";
 
         // when & then
-        assertThatThrownBy(() ->
-                Store.create(storeName, invalidAddress)
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("점포 주소는 필수 입력 항목입니다.");
+        assertThatThrownBy(() -> Store.create(storeName, invalidAddress))
+                .isInstanceOf(StoreValidationException.class);
     }
 }

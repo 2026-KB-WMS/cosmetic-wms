@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.domain.product;
 
-import com.kb.cosmetic_wms.domain.product.constants.ProductInfoConstants;
-import com.kb.cosmetic_wms.domain.product.entity.ProductInfo;
+import com.kb.cosmetic_wms.product.product.domain.exception.InvalidProductInfoException;
+import com.kb.cosmetic_wms.product.product.domain.model.ProductInfo;
 import com.kb.cosmetic_wms.domain.product.fixture.ProductInfoTestBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,10 +15,8 @@ public class ProductInfoEntityTest {
 
     @Test
     void 유효한_값이면_ProductInfo가_정상_생성되며_내부_Volume_객체도_정상_생성된다() {
-        // given & when
         ProductInfo productInfo = new ProductInfoTestBuilder().build();
 
-        // then
         assertThat(productInfo)
                 .extracting(
                         ProductInfo::getSkinType,
@@ -41,18 +39,16 @@ public class ProductInfoEntityTest {
                         .skinType(invalidSkinType)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_SKIN_TYPE_LENGTH_MESSAGE);
+                .isInstanceOf(InvalidProductInfoException.class)
+                .hasMessage("피부 타입 정보는 " + ProductInfo.SKIN_TYPE_MAX_LENGTH + "자를 초과할 수 없습니다.");
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void skinType에_null이나_공백이_들어오면_빈_문자열로_정상_생성된다(String skinType) {
-        // given & when
         ProductInfo info = new ProductInfoTestBuilder().skinType(skinType).build();
 
-        // then
         assertThat(info.getSkinType()).isEqualTo("");
     }
 
@@ -65,18 +61,16 @@ public class ProductInfoEntityTest {
                         .functionType(invalidFunctionType)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_FUNCTION_TYPE_LENGTH_MESSAGE);
+                .isInstanceOf(InvalidProductInfoException.class)
+                .hasMessage("기능성 타입 정보는 " + ProductInfo.FUNCTION_TYPE_MAX_LENGTH + "자를 초과할 수 없습니다.");
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void functionType에_null이나_공백이_들어오면_빈_문자열로_정상_생성된다(String functionType) {
-        // given & when
         ProductInfo info = new ProductInfoTestBuilder().functionType(functionType).build();
 
-        // then
         assertThat(info.getFunctionType()).isEqualTo("");
     }
 
@@ -89,18 +83,16 @@ public class ProductInfoEntityTest {
                         .storageCondition(invalidStorageCondition)
                         .build()
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(ProductInfoConstants.INVALID_STORAGE_CONDITION_LENGTH_MESSAGE);
+                .isInstanceOf(InvalidProductInfoException.class)
+                .hasMessage("보관 조건 정보는 " + ProductInfo.STORAGE_CONDITION_MAX_LENGTH + "자를 초과할 수 없습니다.");
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void storageCondition에_null이나_공백이_들어오면_빈_문자열로_정상_생성된다(String storageCondition) {
-        // given & when
         ProductInfo info = new ProductInfoTestBuilder().storageCondition(storageCondition).build();
 
-        // then
         assertThat(info.getStorageCondition()).isEqualTo("");
     }
 
@@ -108,10 +100,8 @@ public class ProductInfoEntityTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void ingredients에_null이나_공백이_들어오면_빈_문자열로_정상_생성된다(String ingredients) {
-        // given & when
         ProductInfo info = new ProductInfoTestBuilder().ingredients(ingredients).build();
 
-        // then
         assertThat(info.getIngredients()).isEqualTo("");
     }
 
@@ -119,10 +109,8 @@ public class ProductInfoEntityTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void cautions에_null이나_공백이_들어오면_빈_문자열로_정상_생성된다(String cautions) {
-        // given & when
         ProductInfo info = new ProductInfoTestBuilder().cautions(cautions).build();
 
-        // then
         assertThat(info.getCautions()).isEqualTo("");
     }
 }
