@@ -47,41 +47,66 @@
 
 ## 프로젝트 폴더 구조
 
+헥사고날 아키텍처(Ports & Adapters)를 적용하여 도메인 로직을 외부 기술(JPA, Spring MVC)로부터 분리합니다.
+
 ```
 src
 ├── main
 │   ├── java/com/kb/cosmetic_wms
-│   │   ├── domain
-│   │   │   ├── member                 // 사용자 및 조직 관리
-│   │   │   ├── product                // 상품 마스터 관리
-│   │   │   ├── inventory              // 재고 및 로트 관리
-│   │   │   ├── inbound                // 입고 및 품질 검증
-│   │   │   ├── outbound               // 발주 및 출고 관리
-│   │   │   └── quality                // 품질 및 사후 관리
-│   │   │       ├── controller         // API 엔드포인트
-│   │   │       ├── service            // 비즈니스 로직
-│   │   │       ├── entity             // 엔티티
-│   │   │       ├── repository         // 데이터베이스 접근 인터페이스
-│   │   │       └── dto                // 요청/응답 데이터 객체
+│   │   ├── global                              // 전역 설정 및 공통 모듈
+│   │   │   ├── common                          // BaseEntity (JPA Auditing), AuditorAwareImpl
+│   │   │   ├── config                          // SecurityConfig, JpaConfig
+│   │   │   ├── error                           // ErrorCode, BusinessException, GlobalExceptionHandler
+│   │   │   └── event                           // 도메인 이벤트 정의 및 발행 (EventPublisher)
 │   │   │
-│   │   ├── global                     // 전역 설정 및 공통 모듈
-│   │   │   ├── config
-│   │   │   ├── exception
-│   │   │   ├── util
-│   │   │   └── common
-│   │   │
-│   │   └── CosmeticWmsApplication.java // Spring Boot 실행 메인 클래스
+│   │   ├── member                              // 사용자 및 인증 관리
+│   │   ├── partner                             // 협력사 관리
+│   │   ├── store                               // 가맹점 관리
+│   │   ├── storage                             // 창고(Warehouse) · 구역(Section) 관리
+│   │   ├── product                             // 상품 마스터
+│   │   │   ├── category                        // 상품 카테고리
+│   │   │   ├── product                         // 상품 (Product, ProductInfo)
+│   │   │   └── producttype                     // 상품 유형
+│   │   ├── lot                                 // 제조 로트 생애주기
+│   │   ├── inventory                           // 재고 관리 (FEFO, 3차원 상태 매트릭스)
+│   │   ├── inbound                             // 입고 관리
+│   │   ├── inspection                          // 품질 검사
+│   │   ├── outbound                            // 출고 관리
+│   │   └── order                               // 발주 관리
+│   │
+│   │   # 각 도메인의 내부 구조
+│   │   └── {domain}
+│   │       ├── adapter
+│   │       │   ├── in
+│   │       │   │   ├── web                     // REST Controller, Request/Response DTO
+│   │       │   │   └── event                   // 도메인 이벤트 수신 어댑터
+│   │       │   └── out
+│   │       │       └── persistence             // JPA Entity, JpaRepository, PersistenceAdapter
+│   │       ├── application
+│   │       │   ├── port
+│   │       │   │   ├── in                      // UseCase 인터페이스, Command, Result
+│   │       │   │   └── out                     // Port 인터페이스
+│   │       │   └── service                     // 애플리케이션 서비스 (UseCase 구현체)
+│   │       └── domain
+│   │           ├── model                       // 도메인 모델 (순수 POJO)
+│   │           ├── enums                       // 도메인 열거형
+│   │           ├── exception                   // 도메인 예외 및 에러 코드
+│   │           ├── valueobject                 // 값 객체
+│   │           └── service                     // 도메인 서비스
 │   │
 │   └── resources
-│       ├── application.yml            // 시스템 환경 설정
-│       └── mapper/                    // SQL Mapper
+│       ├── application.yml                     // 환경 설정
+│       └── static/docs                         // 생성된 OpenAPI 스펙 (Swagger UI 서빙)
 │
-└── test                               // 테스트 코드 (정합성 및 로직 검증)
+└── test
     └── java/com/kb/cosmetic_wms
-        ├── domain                     // 각 도메인별 단위 및 통합 테스트
-        │   ├── inventory
-        │   └── outbound               
-        └── global                     // 공통 유틸리티 및 설정 테스트
+        ├── global
+        │   └── restdocs                        // RestDocsSupport (Controller 테스트 베이스 클래스)
+        ├── lot / member / partner
+        ├── product / storage / store
+        ├── inbound / inspection / inventory
+        ├── order / outbound
+        └── */fixture                           // 테스트 픽스처 빌더
 ```
 
 <br>
