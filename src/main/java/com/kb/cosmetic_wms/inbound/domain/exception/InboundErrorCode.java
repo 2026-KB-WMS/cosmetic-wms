@@ -29,6 +29,9 @@ public enum InboundErrorCode implements ErrorCode {
     INBOUND_LINES_REQUIRED(HttpStatus.BAD_REQUEST, "INBOUND_LINES_REQUIRED", "입고 품목 라인이 최소 하나 이상 필요합니다."),
     INBOUND_RECEIVE_LINE_MISMATCH(HttpStatus.BAD_REQUEST, "INBOUND_RECEIVE_LINE_MISMATCH", "수령 확인 요청의 라인 목록이 입고 전표의 품목 라인과 일치하지 않습니다."),
 
+    // 수용 용량 초과
+    INBOUND_WAREHOUSE_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "INBOUND_WAREHOUSE_CAPACITY_EXCEEDED", "창고의 DOCKING 구역 수용 용량이 부족하여 입고를 처리할 수 없습니다."),
+
     // 상태 전이 불가
     INBOUND_INVALID_RECEIVE_STATUS(HttpStatus.CONFLICT, "INBOUND_INVALID_RECEIVE_STATUS", "입고 예정(SCHEDULED) 상태에서만 수령 확인이 가능합니다. (현재 상태: %s)"),
     INBOUND_INVALID_CANCEL_STATUS(HttpStatus.CONFLICT, "INBOUND_INVALID_CANCEL_STATUS", "이미 작업이 진행되었거나 완료된 입고 건은 취소할 수 없습니다. (현재 상태: %s)");

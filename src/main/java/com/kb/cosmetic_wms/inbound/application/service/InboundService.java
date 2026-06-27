@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.inbound.application.service;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.application.exception.InboundCapacityExceededException;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundPartnerNotFoundException;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundWarehouseNotFoundException;
 import com.kb.cosmetic_wms.inbound.application.port.in.*;
@@ -9,6 +10,7 @@ import com.kb.cosmetic_wms.inbound.application.port.out.InboundPort;
 import com.kb.cosmetic_wms.inbound.application.port.out.PartnerQueryPort;
 import com.kb.cosmetic_wms.inbound.application.port.out.ProductQueryPort;
 import com.kb.cosmetic_wms.inbound.application.port.out.StorageQueryPort;
+import com.kb.cosmetic_wms.inbound.application.port.out.StorageQueryPort.IncomingProduct;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
@@ -64,6 +66,8 @@ public class InboundService implements InboundLifecycleUseCase, FindInboundUseCa
         Inbound inbound = inboundPort.findByIdWithLinesForUpdate(inboundId)
                 .orElseThrow(InboundNotFoundException::new);
 
+        validateWarehouseCapacity(inbound, command);
+
         Map<Long, Integer> quantityByLineId = command.lines().stream()
                 .collect(Collectors.toMap(
                         ReceiveInboundCommand.LineItem::lineId,
@@ -74,6 +78,19 @@ public class InboundService implements InboundLifecycleUseCase, FindInboundUseCa
         Inbound saved = inboundPort.save(inbound);
         eventPublisher.publish(toInboundCompletedEvent(saved));
         return InboundResult.from(saved);
+    }
+
+    private void validateWarehouseCapacity(Inbound inbound, ReceiveInboundCommand command) {
+        Map<Long, Long> productIdByLineId = inbound.getInboundLines().stream()
+                .collect(Collectors.toMap(InboundLine::getId, InboundLine::getProductId));
+
+        List<IncomingProduct> items = command.lines().stream()
+                .map(l -> new IncomingProduct(productIdByLineId.get(l.lineId()), l.receivedQuantity()))
+                .toList();
+
+        if (!storageQueryPort.canAccommodate(inbound.getWarehouseId(), items)) {
+            throw new InboundCapacityExceededException();
+        }
     }
 
     @Override
