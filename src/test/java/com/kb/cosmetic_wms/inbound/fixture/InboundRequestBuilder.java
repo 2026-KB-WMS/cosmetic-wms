@@ -1,11 +1,11 @@
 package com.kb.cosmetic_wms.inbound.fixture;
 
 import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundCreateRequest;
-import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundItemAddRequest;
-import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundPutawayRequest;
+import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundReceiveRequest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class InboundRequestBuilder {
 
@@ -13,9 +13,7 @@ public class InboundRequestBuilder {
     private Long partnerId = 1L;
     private LocalDateTime inboundDate = LocalDateTime.now().plusDays(1);
     private Long productId = 1L;
-    private int quantity = 100;
-    private Long lotId = 100L;
-    private Long sectionId = 200L;
+    private int orderedQuantity = 100;
 
     public InboundRequestBuilder warehouseId(Long warehouseId) {
         this.warehouseId = warehouseId;
@@ -37,21 +35,18 @@ public class InboundRequestBuilder {
         return this;
     }
 
-    public InboundRequestBuilder quantity(int quantity) {
-        this.quantity = quantity;
+    public InboundRequestBuilder quantity(int orderedQuantity) {
+        this.orderedQuantity = orderedQuantity;
         return this;
     }
 
     public InboundCreateRequest buildCreateRequest() {
-        return new InboundCreateRequest(warehouseId, partnerId, inboundDate);
-    }
-
-    public InboundItemAddRequest buildAddItemRequest() {
-        return new InboundItemAddRequest(productId, quantity,
+        InboundCreateRequest.LineRequest lineRequest = new InboundCreateRequest.LineRequest(productId, orderedQuantity,
                 LocalDate.now().minusDays(10), LocalDate.now().plusYears(2));
+        return new InboundCreateRequest(warehouseId, partnerId, inboundDate, List.of(lineRequest));
     }
 
-    public InboundPutawayRequest buildPutawayRequest() {
-        return new InboundPutawayRequest(lotId, sectionId);
+    public InboundReceiveRequest buildReceiveRequest(Long lineId) {
+        return new InboundReceiveRequest(List.of(new InboundReceiveRequest.LineItem(lineId, orderedQuantity)));
     }
 }

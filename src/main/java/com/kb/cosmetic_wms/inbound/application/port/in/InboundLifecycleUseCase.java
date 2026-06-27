@@ -4,9 +4,7 @@ public interface InboundLifecycleUseCase {
 
     InboundResult register(RegisterInboundCommand command);
 
-    InboundResult start(Long inboundId);
-
-    InboundResult complete(Long inboundId);
+    InboundResult receive(Long inboundId, ReceiveInboundCommand command);
 
     InboundResult cancel(Long inboundId);
 }

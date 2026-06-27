@@ -12,7 +12,7 @@ public record InboundResult(
         Long partnerId,
         InboundStatus inboundStatus,
         LocalDateTime inboundDate,
-        List<InboundItemResult> items
+        List<InboundLineResult> lines
 ) {
     public static InboundResult from(Inbound inbound) {
         return new InboundResult(
@@ -21,7 +21,7 @@ public record InboundResult(
                 inbound.getPartnerId(),
                 inbound.getInboundStatus(),
                 inbound.getInboundDate(),
-                inbound.getInboundItems().stream().map(InboundItemResult::from).toList()
+                inbound.getInboundLines().stream().map(InboundLineResult::from).toList()
         );
     }
 }

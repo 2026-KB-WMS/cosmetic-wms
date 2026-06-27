@@ -12,13 +12,13 @@ public record InboundDetailResponse(
         Long partnerId,
         InboundStatus inboundStatus,
         LocalDateTime inboundDate,
-        List<InboundItemResponse> items
+        List<InboundLineResponse> lines
 ) {
     public static InboundDetailResponse from(InboundResult result) {
         return new InboundDetailResponse(
                 result.id(), result.warehouseId(), result.partnerId(),
                 result.inboundStatus(), result.inboundDate(),
-                result.items().stream().map(InboundItemResponse::from).toList()
+                result.lines().stream().map(InboundLineResponse::from).toList()
         );
     }
 }
