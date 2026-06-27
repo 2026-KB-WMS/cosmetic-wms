@@ -2,30 +2,21 @@ package com.kb.cosmetic_wms.inbound;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.application.exception.InboundPartnerNotFoundException;
+import com.kb.cosmetic_wms.inbound.application.exception.InboundWarehouseNotFoundException;
 import com.kb.cosmetic_wms.inbound.application.port.in.*;
 import com.kb.cosmetic_wms.inbound.application.port.out.InboundPort;
+import com.kb.cosmetic_wms.inbound.application.port.out.PartnerQueryPort;
+import com.kb.cosmetic_wms.inbound.application.port.out.ProductQueryPort;
+import com.kb.cosmetic_wms.inbound.application.port.out.StorageQueryPort;
 import com.kb.cosmetic_wms.inbound.application.service.InboundService;
-import com.kb.cosmetic_wms.inbound.domain.constants.InboundConstants;
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
 import com.kb.cosmetic_wms.inbound.domain.enums.InspectionStatus;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundErrorCode;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundEmptyItemsException;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundItemNotFoundException;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundNotFoundException;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundProductNotFoundException;
+import com.kb.cosmetic_wms.inbound.domain.exception.*;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundItem;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
 import com.kb.cosmetic_wms.inbound.fixture.InboundTestBuilder;
-import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;
-import com.kb.cosmetic_wms.partner.domain.exception.PartnerErrorCode;
-import com.kb.cosmetic_wms.partner.domain.exception.PartnerNotFoundException;
-import com.kb.cosmetic_wms.partner.domain.model.Partner;
-import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
-import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
-import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
-import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
-import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,11 +46,11 @@ class InboundServiceTest {
     @Mock
     private InboundPort inboundPort;
     @Mock
-    private StoragePort storagePort;
+    private StorageQueryPort storagePort;
     @Mock
-    private PartnerPort partnerPort;
+    private PartnerQueryPort partnerPort;
     @Mock
-    private FindProductUseCase findProductUseCase;
+    private ProductQueryPort productQueryPort;
     @Mock
     private EventPublisher eventPublisher;
 
@@ -82,8 +73,8 @@ class InboundServiceTest {
             // given
             RegisterInboundCommand command = new RegisterInboundCommand(1L, 1L, LocalDateTime.now().plusDays(1));
 
-            given(storagePort.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
-            given(partnerPort.findById(1L)).willReturn(Optional.of(mock(Partner.class)));
+            given(storagePort.existsById(1L)).willReturn(true);
+            given(partnerPort.existsById(1L)).willReturn(true);
             given(inboundPort.save(any(Inbound.class))).willReturn(defaultInbound);
 
             // when
@@ -100,25 +91,25 @@ class InboundServiceTest {
         void 존재하지_않는_창고_ID로_등록하면_WarehouseNotFoundException이_발생한다() {
             // given
             RegisterInboundCommand command = new RegisterInboundCommand(999L, 1L, LocalDateTime.now().plusDays(1));
-            given(storagePort.findById(999L)).willReturn(Optional.empty());
+            given(storagePort.existsById(999L)).willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> inboundService.register(command))
-                    .isInstanceOf(WarehouseNotFoundException.class)
-                    .hasMessage(StorageErrorCode.STORAGE_NOT_FOUND.getMessage());
+                    .isInstanceOf(InboundWarehouseNotFoundException.class)
+                    .hasMessage(InboundErrorCode.INBOUND_WAREHOUSE_NOT_FOUND.getMessage());
         }
 
         @Test
         void 존재하지_않는_파트너_ID로_등록하면_PartnerNotFoundException이_발생한다() {
             // given
             RegisterInboundCommand command = new RegisterInboundCommand(1L, 999L, LocalDateTime.now().plusDays(1));
-            given(storagePort.findById(1L)).willReturn(Optional.of(mock(Warehouse.class)));
-            given(partnerPort.findById(999L)).willReturn(Optional.empty());
+            given(storagePort.existsById(1L)).willReturn(true);
+            given(partnerPort.existsById(999L)).willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> inboundService.register(command))
-                    .isInstanceOf(PartnerNotFoundException.class)
-                    .hasMessage(PartnerErrorCode.PARTNER_NOT_FOUND.getMessage());
+                    .isInstanceOf(InboundPartnerNotFoundException.class)
+                    .hasMessage(InboundErrorCode.INBOUND_PARTNER_NOT_FOUND.getMessage());
         }
     }
 
@@ -135,7 +126,7 @@ class InboundServiceTest {
             AddInboundItemCommand command = new AddInboundItemCommand(1L, 100,
                     LocalDate.now().minusDays(10), LocalDate.now().plusYears(2));
             given(inboundPort.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
-            given(findProductUseCase.existsById(1L)).willReturn(true);
+            given(productQueryPort.existsById(1L)).willReturn(true);
             given(inboundPort.save(any(Inbound.class))).willAnswer(inv -> inv.getArgument(0));
 
             // when
@@ -165,7 +156,7 @@ class InboundServiceTest {
             AddInboundItemCommand command = new AddInboundItemCommand(999L, 100,
                     LocalDate.now().minusDays(10), LocalDate.now().plusYears(2));
             given(inboundPort.findByIdWithItems(1L)).willReturn(Optional.of(defaultInbound));
-            given(findProductUseCase.existsById(999L)).willReturn(false);
+            given(productQueryPort.existsById(999L)).willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> inboundService.addItem(1L, command))
@@ -174,17 +165,17 @@ class InboundServiceTest {
         }
 
         @Test
-        void SCHEDULED_이외_상태의_입고_전표에_품목_추가를_시도하면_IllegalStateException이_전파된다() {
+        void SCHEDULED_이외_상태의_입고_전표에_품목_추가를_시도하면_InboundInvalidAddItemStatusException이_발생한다() {
             // given - IN_PROGRESS 상태의 입고 전표 (품목 포함)
             Inbound inProgress = new InboundTestBuilder().id(1L).buildInProgress();
             given(inboundPort.findByIdWithItems(1L)).willReturn(Optional.of(inProgress));
-            given(findProductUseCase.existsById(1L)).willReturn(true);
+            given(productQueryPort.existsById(1L)).willReturn(true);
 
             // when & then
             assertThatThrownBy(() -> inboundService.addItem(1L,
                     new AddInboundItemCommand(1L, 100, LocalDate.now().minusDays(10), LocalDate.now().plusYears(2))))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(InboundConstants.INVALID_ADD_ITEM_MESSAGE);
+                    .isInstanceOf(InboundInvalidAddItemStatusException.class)
+                    .hasMessage(InboundErrorCode.INBOUND_INVALID_ADD_ITEM_STATUS.getMessage());
         }
     }
 
@@ -233,14 +224,14 @@ class InboundServiceTest {
         }
 
         @Test
-        void 이미_진행_중인_입고_전표에_작업_시작을_요청하면_IllegalStateException이_전파된다() {
+        void 이미_진행_중인_입고_전표에_작업_시작을_요청하면_InboundInvalidStartStatusException이_발생한다() {
             // given - 품목을 가진 IN_PROGRESS 입고 전표
             Inbound inProgress = new InboundTestBuilder().id(1L).buildInProgress();
             given(inboundPort.findByIdWithItems(1L)).willReturn(Optional.of(inProgress));
 
             // when & then
             assertThatThrownBy(() -> inboundService.start(1L))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InboundInvalidStartStatusException.class)
                     .hasMessageContaining("입고 예정 상태에서만 작업을 시작할 수 있습니다");
         }
     }
@@ -284,7 +275,7 @@ class InboundServiceTest {
         }
 
         @Test
-        void 이미_적재가_완료된_품목에_다시_적재를_요청하면_IllegalStateException이_전파된다() {
+        void 이미_적재가_완료된_품목에_다시_적재를_요청하면_InboundInvalidPutawayStatusException이_발생한다() {
             // given - INSPECTING 상태 품목을 가진 Inbound
             InboundItem item = InboundItem.reconstitute(1L, 1L, 100,
                     LocalDate.now().minusDays(1), LocalDate.now().plusYears(2),
@@ -295,7 +286,7 @@ class InboundServiceTest {
 
             // when & then
             assertThatThrownBy(() -> inboundService.completePutaway(1L, 1L, new PutawayCommand(100L, 200L)))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InboundInvalidPutawayStatusException.class)
                     .hasMessageContaining("이미 적재가 완료되었거나 검수가 진행된 품목입니다");
         }
     }
@@ -337,7 +328,7 @@ class InboundServiceTest {
         }
 
         @Test
-        void 적재_전_WAITING_상태의_품목에_정상_완료를_요청하면_IllegalStateException이_전파된다() {
+        void 적재_전_WAITING_상태의_품목에_정상_완료를_요청하면_InboundInvalidApproveStatusException이_발생한다() {
             // given - WAITING 상태 품목을 가진 Inbound
             InboundItem item = InboundItem.reconstitute(1L, 1L, 100,
                     LocalDate.now().minusDays(1), LocalDate.now().plusYears(2),
@@ -348,8 +339,8 @@ class InboundServiceTest {
 
             // when & then
             assertThatThrownBy(() -> inboundService.approve(1L, 1L))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(InboundConstants.INVALID_NORMAL_STATUS_MESSAGE);
+                    .isInstanceOf(InboundInvalidApproveStatusException.class)
+                    .hasMessage(InboundErrorCode.INBOUND_INVALID_APPROVE_STATUS.getMessage());
         }
     }
 
@@ -390,7 +381,7 @@ class InboundServiceTest {
         }
 
         @Test
-        void 이미_NORMAL_상태인_품목에_보류를_요청하면_IllegalStateException을_던진다() {
+        void 이미_NORMAL_상태인_품목에_보류를_요청하면_InboundInvalidHoldStatusException이_발생한다() {
             // given - NORMAL 상태 품목을 가진 Inbound
             InboundItem item = InboundItem.reconstitute(1L, 1L, 100,
                     LocalDate.now().minusDays(1), LocalDate.now().plusYears(2),
@@ -401,8 +392,8 @@ class InboundServiceTest {
 
             // when & then
             assertThatThrownBy(() -> inboundService.hold(1L, 1L))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(InboundConstants.INVALID_HOLD_STATUS_MESSAGE);
+                    .isInstanceOf(InboundInvalidHoldStatusException.class)
+                    .hasMessage(InboundErrorCode.INBOUND_INVALID_HOLD_STATUS.getMessage());
         }
     }
 
@@ -442,7 +433,7 @@ class InboundServiceTest {
         }
 
         @Test
-        void 검수_미완료_품목이_남아있으면_입고_완료_처리_시_IllegalStateException이_전파된다() {
+        void 검수_미완료_품목이_남아있으면_입고_완료_처리_시_InboundInspectionIncompleteException이_발생한다() {
             // given - WAITING 상태 품목이 포함된 IN_PROGRESS 입고
             InboundItem item = InboundItem.reconstitute(1L, 1L, 100,
                     LocalDate.now().minusDays(1), LocalDate.now().plusYears(1),
@@ -453,8 +444,8 @@ class InboundServiceTest {
 
             // when & then
             assertThatThrownBy(() -> inboundService.complete(1L))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage(InboundConstants.INCOMPLETE_INSPECTION_MESSAGE);
+                    .isInstanceOf(InboundInspectionIncompleteException.class)
+                    .hasMessage(InboundErrorCode.INBOUND_INSPECTION_INCOMPLETE.getMessage());
         }
 
         @Test
@@ -469,13 +460,13 @@ class InboundServiceTest {
         }
 
         @Test
-        void SCHEDULED_상태의_입고에_완료를_요청하면_IllegalStateException이_전파된다() {
+        void SCHEDULED_상태의_입고에_완료를_요청하면_InboundInvalidCompleteStatusException이_발생한다() {
             // given - SCHEDULED(기본) 상태 그대로 사용
             given(inboundPort.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(defaultInbound));
 
             // when & then
             assertThatThrownBy(() -> inboundService.complete(1L))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InboundInvalidCompleteStatusException.class)
                     .hasMessageContaining("작업이 진행 중인 상태에서만 입고 완료 처리가 가능합니다");
         }
 
@@ -511,7 +502,7 @@ class InboundServiceTest {
 
             // when & then
             assertThatThrownBy(() -> inboundService.complete(1L))
-                    .isInstanceOf(IllegalStateException.class);
+                    .isInstanceOf(InboundInspectionIncompleteException.class);
 
             verify(eventPublisher, never()).publish(any());
         }
@@ -566,14 +557,14 @@ class InboundServiceTest {
         }
 
         @Test
-        void 이미_진행_중인_입고에_취소를_요청하면_IllegalStateException이_전파된다() {
+        void 이미_진행_중인_입고에_취소를_요청하면_InboundInvalidCancelStatusException이_발생한다() {
             // given
             Inbound inProgress = new InboundTestBuilder().id(1L).buildInProgress();
             given(inboundPort.findByIdWithItems(1L)).willReturn(Optional.of(inProgress));
 
             // when & then
             assertThatThrownBy(() -> inboundService.cancel(1L))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InboundInvalidCancelStatusException.class)
                     .hasMessageContaining("이미 작업이 진행되었거나 완료된 입고 건은 취소할 수 없습니다");
         }
     }

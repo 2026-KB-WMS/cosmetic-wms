@@ -16,4 +16,6 @@ public interface StoragePort {
     List<Warehouse> findAll();
 
     Warehouse save(Warehouse warehouse);
+
+    boolean existsById(Long warehouseId);
 }

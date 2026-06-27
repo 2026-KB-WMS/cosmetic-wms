@@ -1,8 +1,8 @@
 package com.kb.cosmetic_wms.product.product.adapter.out.persistence;
 
-import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
 import com.kb.cosmetic_wms.product.category.adapter.out.persistence.CategoryEntity;
 import com.kb.cosmetic_wms.product.category.adapter.out.persistence.CategoryJpaRepository;
+import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
 import com.kb.cosmetic_wms.product.product.domain.model.Product;
 import com.kb.cosmetic_wms.product.producttype.adapter.out.persistence.ProductTypeEntity;
 import com.kb.cosmetic_wms.product.producttype.adapter.out.persistence.ProductTypeJpaRepository;
@@ -26,6 +26,11 @@ public class ProductPersistenceAdapter implements ProductPort {
                                           int volumeValue, String volumeUnit) {
         return productJpaRepository.existsDuplicateProduct(
                 brandName, productName, categoryId, productTypeId, volumeValue, volumeUnit);
+    }
+
+    @Override
+    public boolean existsById(Long productId) {
+        return productJpaRepository.existsById(productId);
     }
 
     @Override

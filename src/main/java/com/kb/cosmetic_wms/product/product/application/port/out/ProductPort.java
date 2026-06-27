@@ -10,6 +10,8 @@ public interface ProductPort {
                                    Long categoryId, Long productTypeId,
                                    int volumeValue, String volumeUnit);
 
+    boolean existsById(Long productId);
+
     boolean existsByCategoryId(Long categoryId);
 
     boolean existsByProductTypeId(Long productTypeId);

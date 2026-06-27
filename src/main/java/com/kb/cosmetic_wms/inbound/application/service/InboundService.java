@@ -2,19 +2,19 @@ package com.kb.cosmetic_wms.inbound.application.service;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.application.exception.InboundPartnerNotFoundException;
+import com.kb.cosmetic_wms.inbound.application.exception.InboundWarehouseNotFoundException;
 import com.kb.cosmetic_wms.inbound.application.port.in.*;
 import com.kb.cosmetic_wms.inbound.application.port.out.InboundPort;
+import com.kb.cosmetic_wms.inbound.application.port.out.PartnerQueryPort;
+import com.kb.cosmetic_wms.inbound.application.port.out.ProductQueryPort;
+import com.kb.cosmetic_wms.inbound.application.port.out.StorageQueryPort;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundEmptyItemsException;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundItem;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
-import com.kb.cosmetic_wms.partner.application.port.out.PartnerPort;
-import com.kb.cosmetic_wms.partner.domain.exception.PartnerNotFoundException;
-import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
-import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
-import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +25,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class InboundService implements InboundLifecycleUseCase, InboundItemUseCase, FindInboundUseCase {
 
     private final InboundPort inboundPort;
-    private final StoragePort storagePort;
-    private final PartnerPort partnerPort;
-    private final FindProductUseCase findProductUseCase;
+    private final StorageQueryPort storageQueryPort;
+    private final PartnerQueryPort partnerQueryPort;
+    private final ProductQueryPort productQueryPort;
     private final EventPublisher eventPublisher;
 
     @Override
     @Transactional
     public InboundResult register(RegisterInboundCommand command) {
-        storagePort.findById(command.warehouseId()).orElseThrow(WarehouseNotFoundException::new);
-        partnerPort.findById(command.partnerId()).orElseThrow(PartnerNotFoundException::new);
+        if (!storageQueryPort.existsById(command.warehouseId())) {
+            throw new InboundWarehouseNotFoundException();
+        }
+        if (!partnerQueryPort.existsById(command.partnerId())) {
+            throw new InboundPartnerNotFoundException();
+        }
         Inbound inbound = Inbound.create(command.inboundDate(), command.warehouseId(), command.partnerId());
         return InboundResult.from(inboundPort.save(inbound));
     }
@@ -43,7 +47,7 @@ public class InboundService implements InboundLifecycleUseCase, InboundItemUseCa
     @Transactional
     public InboundResult addItem(Long inboundId, AddInboundItemCommand command) {
         Inbound inbound = findInboundOrThrow(inboundId);
-        if (!findProductUseCase.existsById(command.productId())) {
+        if (!productQueryPort.existsById(command.productId())) {
             throw new InboundProductNotFoundException();
         }
         InboundLine line = new InboundLine(command.productId(), command.quantity(),
