@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.adapter.out.persistence;
 
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import com.kb.cosmetic_wms.storage.domain.model.Section;
 import com.kb.cosmetic_wms.storage.domain.model.SectionAllocationStatus;
@@ -50,7 +50,7 @@ class SectionEntity extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "temperature_type", nullable = false, length = 10)
-    private TemperatureType temperatureType;
+    private TemperatureZone temperatureType;
 
     @Column(name = "max_capacity", nullable = false)
     private int maxCapacity;
@@ -60,7 +60,7 @@ class SectionEntity extends BaseEntity {
 
     private SectionEntity(Long id, WarehouseEntity warehouse, String sectionCode, String sectionName,
                           SectionType sectionType, SectionQualityStatus qualityStatus,
-                          SectionAllocationStatus allocationStatus, TemperatureType temperatureType,
+                          SectionAllocationStatus allocationStatus, TemperatureZone temperatureType,
                           int maxCapacity, int currentCapacity) {
         this.id = id;
         this.warehouse = warehouse;

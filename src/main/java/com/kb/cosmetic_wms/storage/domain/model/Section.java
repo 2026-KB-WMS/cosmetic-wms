@@ -1,6 +1,5 @@
 package com.kb.cosmetic_wms.storage.domain.model;
 
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityUnderflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
@@ -16,13 +15,13 @@ public class Section {
     private final SectionType sectionType;
     private final SectionQualityStatus qualityStatus;
     private final SectionAllocationStatus allocationStatus;
-    private final TemperatureType temperatureType;
+    private final TemperatureZone temperatureType;
     private final int maxCapacity;
     private int currentCapacity;
 
     private Section(Long sectionId, SectionCode sectionCode, String sectionName,
                     SectionType sectionType, SectionQualityStatus qualityStatus,
-                    SectionAllocationStatus allocationStatus, TemperatureType temperatureType,
+                    SectionAllocationStatus allocationStatus, TemperatureZone temperatureType,
                     int maxCapacity, int currentCapacity) {
         this.sectionId = sectionId;
         this.sectionCode = sectionCode;
@@ -36,7 +35,7 @@ public class Section {
     }
 
     static Section createStorageSection(SectionCode sectionCode, String sectionName,
-                                        SectionType sectionType, TemperatureType temperatureType,
+                                        SectionType sectionType, TemperatureZone temperatureType,
                                         int maxCapacity) {
         validateMaxCapacity(maxCapacity);
         validateSectionName(sectionName);
@@ -47,7 +46,7 @@ public class Section {
     }
 
     static Section createDockingSection(SectionCode sectionCode, String sectionName,
-                                        TemperatureType temperatureType, int maxCapacity) {
+                                        TemperatureZone temperatureType, int maxCapacity) {
         validateMaxCapacity(maxCapacity);
         validateSectionName(sectionName);
         return new Section(null, sectionCode, sectionName, SectionType.DOCKING,
@@ -60,13 +59,14 @@ public class Section {
         validateSectionName(sectionName);
         return new Section(null, sectionCode, sectionName, SectionType.QUARANTINE,
                 SectionQualityStatus.HOLD, SectionAllocationStatus.EXCLUDED,
-                TemperatureType.ROOM, maxCapacity, 0);
+                TemperatureZone.ROOM, maxCapacity, 0);
+
     }
 
     public static Section reconstitute(Long sectionId, SectionCode sectionCode, String sectionName,
                                        SectionType sectionType, SectionQualityStatus qualityStatus,
                                        SectionAllocationStatus allocationStatus,
-                                       TemperatureType temperatureType, int maxCapacity, int currentCapacity) {
+                                       TemperatureZone temperatureType, int maxCapacity, int currentCapacity) {
         return new Section(sectionId, sectionCode, sectionName, sectionType,
                 qualityStatus, allocationStatus, temperatureType, maxCapacity, currentCapacity);
     }

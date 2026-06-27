@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage;
 
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityUnderflowException;
@@ -106,6 +106,6 @@ public class SectionEntityTest {
 
         assertThat(section.getQualityStatus()).isEqualTo(SectionQualityStatus.HOLD);
         assertThat(section.getAllocationStatus()).isEqualTo(SectionAllocationStatus.EXCLUDED);
-        assertThat(section.getTemperatureType()).isEqualTo(TemperatureType.ROOM);
+        assertThat(section.getTemperatureType()).isEqualTo(TemperatureZone.ROOM);
     }
 }

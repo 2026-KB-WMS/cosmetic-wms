@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.inbound;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.application.exception.InboundCapacityExceededException;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundPartnerNotFoundException;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundWarehouseNotFoundException;
 import com.kb.cosmetic_wms.inbound.application.port.in.InboundResult;
@@ -35,6 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -147,6 +150,7 @@ class InboundServiceTest {
         void SCHEDULED_상태의_입고_전표에_수령_확인을_하면_RECEIVED_상태로_전환되고_이벤트가_발행된다() {
             Inbound inbound = scheduledInboundWithLine(1L);
             given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(inbound));
+            given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
             given(inboundPort.save(any(Inbound.class))).willAnswer(inv -> inv.getArgument(0));
 
             ReceiveInboundCommand command = new ReceiveInboundCommand(
@@ -163,6 +167,7 @@ class InboundServiceTest {
         void 수령_확인_시_InboundCompletedEvent에_partnerId와_LineSnapshot이_포함된다() {
             Inbound inbound = scheduledInboundWithLine(10L);
             given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(inbound));
+            given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
             given(inboundPort.save(any(Inbound.class))).willAnswer(inv -> inv.getArgument(0));
 
             inboundService.receive(1L, new ReceiveInboundCommand(
@@ -193,8 +198,10 @@ class InboundServiceTest {
             Inbound alreadyReceived = Inbound.reconstitute(1L, InboundStatus.RECEIVED,
                     LocalDateTime.now().plusDays(1), 1L, 1L, List.of(line));
             given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(alreadyReceived));
+            given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
 
-            assertThatThrownBy(() -> inboundService.receive(1L, new ReceiveInboundCommand(List.of())))
+            assertThatThrownBy(() -> inboundService.receive(1L, new ReceiveInboundCommand(
+                    List.of(new ReceiveInboundCommand.LineItem(1L, 50)))))
                     .isInstanceOf(InboundInvalidReceiveStatusException.class);
         }
 
@@ -202,12 +209,28 @@ class InboundServiceTest {
         void 요청의_라인_ID가_입고_전표와_불일치하면_InboundReceiveLineMismatchException이_발생한다() {
             Inbound inbound = scheduledInboundWithLine(1L);
             given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(inbound));
+            given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
 
             ReceiveInboundCommand wrongCommand = new ReceiveInboundCommand(
                     List.of(new ReceiveInboundCommand.LineItem(999L, 50)));
 
             assertThatThrownBy(() -> inboundService.receive(1L, wrongCommand))
                     .isInstanceOf(InboundReceiveLineMismatchException.class);
+
+            verify(eventPublisher, never()).publish(any());
+        }
+
+        @Test
+        void 창고의_DOCKING_수용량이_부족하면_InboundCapacityExceededException이_발생한다() {
+            Inbound inbound = scheduledInboundWithLine(1L);
+            given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(inbound));
+            given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(false);
+
+            ReceiveInboundCommand command = new ReceiveInboundCommand(
+                    List.of(new ReceiveInboundCommand.LineItem(1L, 95)));
+
+            assertThatThrownBy(() -> inboundService.receive(1L, command))
+                    .isInstanceOf(InboundCapacityExceededException.class);
 
             verify(eventPublisher, never()).publish(any());
         }
