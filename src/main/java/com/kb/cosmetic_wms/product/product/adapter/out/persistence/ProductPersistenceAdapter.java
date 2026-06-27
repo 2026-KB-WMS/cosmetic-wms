@@ -9,11 +9,15 @@ import com.kb.cosmetic_wms.product.producttype.adapter.out.persistence.ProductTy
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -40,6 +44,15 @@ public class ProductPersistenceAdapter implements ProductPort {
     public boolean allExistByIds(Collection<Long> productIds) {
         Set<Long> uniqueIds = new HashSet<>(productIds);
         return productJpaRepository.countByIdIn(uniqueIds) == uniqueIds.size();
+    }
+
+    @Override
+    public Map<Long, TemperatureType> findTemperatureTypesByIds(Collection<Long> productIds) {
+        return productJpaRepository.findIdAndTemperatureTypeByIdIn(productIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (TemperatureType) row[1]
+                ));
     }
 
     @Override

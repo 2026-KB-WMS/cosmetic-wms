@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.product.product.adapter.out.persistence;
 
+import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +18,9 @@ interface ProductJpaRepository extends JpaRepository<ProductEntity, Long> {
     Optional<ProductEntity> findByIdWithDetails(@Param("id") Long id);
 
     long countByIdIn(Collection<Long> ids);
+
+    @Query("SELECT p.id, p.temperatureType FROM ProductEntity p WHERE p.id IN :ids")
+    List<Object[]> findIdAndTemperatureTypeByIdIn(@Param("ids") Collection<Long> ids);
 
     boolean existsByCategory_Id(Long categoryId);
 

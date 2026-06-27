@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.application.port.in;
 
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.domain.model.Section;
 import com.kb.cosmetic_wms.storage.domain.model.SectionAllocationStatus;
 import com.kb.cosmetic_wms.storage.domain.model.SectionQualityStatus;
@@ -13,7 +13,7 @@ public record SectionResult(
         SectionType sectionType,
         SectionQualityStatus qualityStatus,
         SectionAllocationStatus allocationStatus,
-        TemperatureType temperatureType,
+        TemperatureZone temperatureType,
         int maxCapacity,
         int currentCapacity
 ) {

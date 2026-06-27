@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
@@ -102,12 +102,12 @@ public class StorageControllerTest extends RestDocsSupport {
     void 특정_창고에_보관구역_섹션을_정상_추가하면_200_OK와_함께_업데이트된_창고정보가_반환된다() throws Exception {
         Long warehouseId = 1L;
         SectionCreateRequest request = new SectionCreateRequest(
-                SectionType.HIGH_ROT, "A동 상단랙", TemperatureType.ROOM, 5000);
+                SectionType.HIGH_ROT, "A동 상단랙", TemperatureZone.ROOM, 5000);
 
         SectionResult sectionResult = new SectionResult(
                 1L, "WH01-HIGH-R-01", "A동 상단랙",
                 SectionType.HIGH_ROT, SectionQualityStatus.NORMAL, SectionAllocationStatus.AVAILABLE,
-                TemperatureType.ROOM, 5000, 0);
+                TemperatureZone.ROOM, 5000, 0);
         WarehouseResult warehouseResult = new WarehouseResult(
                 warehouseId, "용인 신선 센터", "경기도 용인시", "0~5도", 30000, List.of(sectionResult));
 
@@ -131,7 +131,7 @@ public class StorageControllerTest extends RestDocsSupport {
     void 구역_편입_시_허용_용량을_초과하면_400_에러를_반환하고_문서화된다() throws Exception {
         Long warehouseId = 1L;
         SectionCreateRequest request = new SectionCreateRequest(
-                SectionType.MID_ROT, "초과 구역", TemperatureType.ROOM, 40000);
+                SectionType.MID_ROT, "초과 구역", TemperatureZone.ROOM, 40000);
         given(addSectionUseCase.addSection(eq(warehouseId), any(AddSectionCommand.class)))
                 .willThrow(new StorageExceedCapacityException());
 

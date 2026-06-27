@@ -1,11 +1,14 @@
 package com.kb.cosmetic_wms.storage.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
+import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
+import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -47,5 +50,13 @@ public class StoragePersistenceAdapter implements StoragePort {
     public Warehouse save(Warehouse warehouse) {
         WarehouseEntity entity = warehouseJpaRepository.save(WarehouseEntity.fromDomain(warehouse));
         return entity.toDomain();
+    }
+
+    @Override
+    public boolean canAccommodate(Long warehouseId, Map<TemperatureZone, Integer> requiredByZone) {
+        Warehouse warehouse = warehouseJpaRepository.findById(warehouseId)
+                .map(WarehouseEntity::toDomain)
+                .orElseThrow(WarehouseNotFoundException::new);
+        return warehouse.canAccommodateDocking(requiredByZone);
     }
 }

@@ -1,6 +1,5 @@
 package com.kb.cosmetic_wms.storage.domain.model;
 
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
@@ -10,6 +9,8 @@ import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Getter
 public class Warehouse {
@@ -49,13 +50,13 @@ public class Warehouse {
     }
 
     public Section addSection(SectionType sectionType, String sectionName,
-                              TemperatureType temperatureType, int maxCapacity) {
+                              TemperatureZone temperatureType, int maxCapacity) {
         if (warehouseId == null) {
             throw new StorageValidationException(StorageErrorCode.INVALID_STORAGE_STATE);
         }
         int sequence = nextSequenceFor(sectionType);
         String warehouseCode = String.format("WH%02d", warehouseId);
-        TemperatureType resolvedTemp = sectionType == SectionType.QUARANTINE ? TemperatureType.ROOM : temperatureType;
+        TemperatureZone resolvedTemp = sectionType == SectionType.QUARANTINE ? TemperatureZone.ROOM : temperatureType;
         SectionCode code = new SectionCodeGenerator().generate(warehouseCode, sectionType, resolvedTemp, sequence);
 
         return switch (sectionType) {
@@ -72,7 +73,7 @@ public class Warehouse {
     }
 
     public Section addStorageSection(SectionCode sectionCode, String sectionName,
-                                     SectionType sectionType, TemperatureType temperatureType,
+                                     SectionType sectionType, TemperatureZone temperatureType,
                                      int maxCapacity) {
         validateDuplicateSectionCode(sectionCode);
         validateTotalSectionCapacity(maxCapacity);
@@ -82,7 +83,7 @@ public class Warehouse {
     }
 
     public Section addDockingSection(SectionCode sectionCode, String sectionName,
-                                     TemperatureType temperatureType, int maxCapacity) {
+                                     TemperatureZone temperatureType, int maxCapacity) {
         validateDuplicateSectionCode(sectionCode);
         validateTotalSectionCapacity(maxCapacity);
         Section section = Section.createDockingSection(sectionCode, sectionName, temperatureType, maxCapacity);
@@ -96,6 +97,17 @@ public class Warehouse {
         Section section = Section.createQuarantineSection(sectionCode, sectionName, maxCapacity);
         sections.add(section);
         return section;
+    }
+
+    public boolean canAccommodateDocking(Map<TemperatureZone, Integer> requiredByZone) {
+        Map<TemperatureZone, Integer> availableByZone = sections.stream()
+                .filter(s -> s.getSectionType() == SectionType.DOCKING)
+                .collect(Collectors.groupingBy(
+                        Section::getTemperatureType,
+                        Collectors.summingInt(s -> s.getMaxCapacity() - s.getCurrentCapacity())
+                ));
+        return requiredByZone.entrySet().stream()
+                .allMatch(e -> availableByZone.getOrDefault(e.getKey(), 0) >= e.getValue());
     }
 
     private void validateDuplicateSectionCode(SectionCode sectionCode) {
