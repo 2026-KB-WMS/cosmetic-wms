@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inbound;
 
-import com.kb.cosmetic_wms.inbound.domain.constants.InboundConstants;
 import com.kb.cosmetic_wms.inbound.domain.enums.InspectionStatus;
+import com.kb.cosmetic_wms.inbound.domain.exception.*;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundItem;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
@@ -22,12 +22,9 @@ class InboundItemEntityTest {
     private static final Long SECTION_ID = 10L;
 
     private static final int QUANTITY = 100;
-    private static final LocalDate MANUFACTURE_DATE =
-            LocalDate.now();
-    private static final LocalDate EXPIRATION_DATE =
-            LocalDate.now().plusYears(3);
-    private static final LocalDateTime INBOUND_DATE =
-            LocalDateTime.now().plusYears(1);
+    private static final LocalDate MANUFACTURE_DATE = LocalDate.now().minusDays(1);
+    private static final LocalDate EXPIRATION_DATE = LocalDate.now().plusYears(3);
+    private static final LocalDateTime INBOUND_DATE = LocalDateTime.now().plusYears(1);
 
     private Inbound createStubInbound() {
         return Inbound.create(INBOUND_DATE, 1L, 1L);
@@ -61,8 +58,8 @@ class InboundItemEntityTest {
         InboundLine line = new InboundLine(PRODUCT_ID, invalidQuantity, MANUFACTURE_DATE, EXPIRATION_DATE);
 
         assertThatThrownBy(() -> inbound.addItem(line))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(InboundConstants.INVALID_INBOUND_QUANTITY_MESSAGE);
+                .isInstanceOf(InboundInvalidQuantityException.class)
+                .hasMessage(InboundErrorCode.INBOUND_ITEM_INVALID_QUANTITY.getMessage());
     }
 
     @Test
@@ -90,10 +87,8 @@ class InboundItemEntityTest {
 
         // when & then
         assertThatThrownBy(() -> inboundItem.completePutaway(LOT_ID, SECTION_ID))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(String.format(
-                        InboundConstants.INVALID_PUTAWAY_STATUS_MESSAGE,
-                        InspectionStatus.INSPECTING.getDescription()));
+                .isInstanceOf(InboundInvalidPutawayStatusException.class)
+                .hasMessageContaining("이미 적재가 완료되었거나 검수가 진행된 품목입니다.");
     }
 
     @Test
@@ -119,8 +114,8 @@ class InboundItemEntityTest {
         InboundLine line = createStandardLine();
 
         assertThatThrownBy(() -> inbound.addItem(line))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage(InboundConstants.INVALID_ADD_ITEM_MESSAGE);
+                .isInstanceOf(InboundInvalidAddItemStatusException.class)
+                .hasMessage(InboundErrorCode.INBOUND_INVALID_ADD_ITEM_STATUS.getMessage());
     }
 
     @Test
@@ -131,8 +126,8 @@ class InboundItemEntityTest {
 
         // when & then
         assertThatThrownBy(() -> inbound.addItem(line))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(InboundConstants.INBOUND_PRODUCT_REQUIRED_MESSAGE);
+                .isInstanceOf(InboundItemProductRequiredException.class)
+                .hasMessage(InboundErrorCode.INBOUND_ITEM_PRODUCT_REQUIRED.getMessage());
     }
 
     @Test
@@ -143,8 +138,8 @@ class InboundItemEntityTest {
 
         // when & then
         assertThatThrownBy(() -> inboundItem.completePutaway(null, SECTION_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(InboundConstants.PUTAWAY_LOT_REQUIRED_MESSAGE);
+                .isInstanceOf(InboundPutawayLotRequiredException.class)
+                .hasMessage(InboundErrorCode.INBOUND_PUTAWAY_LOT_REQUIRED.getMessage());
     }
 
     @Test
@@ -155,8 +150,8 @@ class InboundItemEntityTest {
 
         // when & then
         assertThatThrownBy(() -> inboundItem.completePutaway(LOT_ID, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(InboundConstants.PUTAWAY_SECTION_REQUIRED_MESSAGE);
+                .isInstanceOf(InboundPutawaySectionRequiredException.class)
+                .hasMessage(InboundErrorCode.INBOUND_PUTAWAY_SECTION_REQUIRED.getMessage());
     }
 
     @Test
@@ -181,7 +176,7 @@ class InboundItemEntityTest {
 
         // when & then
         assertThatThrownBy(inboundItem::changeToHold)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage(InboundConstants.INVALID_HOLD_STATUS_MESSAGE);
+                .isInstanceOf(InboundInvalidHoldStatusException.class)
+                .hasMessage(InboundErrorCode.INBOUND_INVALID_HOLD_STATUS.getMessage());
     }
 }

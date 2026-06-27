@@ -1,10 +1,9 @@
 package com.kb.cosmetic_wms.inbound.adapter.in.web;
 
-import com.kb.cosmetic_wms.inbound.domain.constants.InboundConstants;
 import jakarta.validation.constraints.NotNull;
 
 public record InboundPutawayRequest(
-        @NotNull(message = InboundConstants.PUTAWAY_LOT_REQUIRED_MESSAGE) Long lotId,
-        @NotNull(message = InboundConstants.PUTAWAY_SECTION_REQUIRED_MESSAGE) Long sectionId
+        @NotNull(message = "적재 시 생성된 로트(Lot) 정보는 필수입니다.") Long lotId,
+        @NotNull(message = "적재될 섹션 정보는 필수입니다.") Long sectionId
 ) {
 }

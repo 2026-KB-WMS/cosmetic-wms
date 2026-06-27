@@ -1,9 +1,8 @@
 package com.kb.cosmetic_wms.inbound.domain.model;
 
-import com.kb.cosmetic_wms.inbound.domain.constants.InboundConstants;
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
 import com.kb.cosmetic_wms.inbound.domain.enums.InspectionStatus;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundItemNotFoundException;
+import com.kb.cosmetic_wms.inbound.domain.exception.*;
 import lombok.Getter;
 
 import java.time.LocalDate;
@@ -45,8 +44,8 @@ public class Inbound {
     }
 
     public InboundItem addItem(InboundLine line) {
-        if (this.inboundStatus != InboundStatus.SCHEDULED) {
-            throw new IllegalStateException(InboundConstants.INVALID_ADD_ITEM_MESSAGE);
+        if (!this.inboundStatus.canAddItem()) {
+            throw new InboundInvalidAddItemStatusException();
         }
         InboundItem item = new InboundItem(line);
         this.inboundItems.add(item);
@@ -79,37 +78,28 @@ public class Inbound {
     }
 
     public void startExecution() {
-        if (this.inboundStatus != InboundStatus.SCHEDULED) {
-            throw new IllegalStateException(
-                    String.format(InboundConstants.INVALID_START_STATUS_MESSAGE,
-                            this.inboundStatus.getDescription())
-            );
+        if (!this.inboundStatus.canStart()) {
+            throw new InboundInvalidStartStatusException(this.inboundStatus.getDescription());
         }
         this.inboundStatus = InboundStatus.IN_PROGRESS;
     }
 
     public void completeExecution() {
-        if (this.inboundStatus != InboundStatus.IN_PROGRESS) {
-            throw new IllegalStateException(
-                    String.format(InboundConstants.INVALID_COMPLETE_STATUS_MESSAGE,
-                            this.inboundStatus.getDescription())
-            );
+        if (!this.inboundStatus.canComplete()) {
+            throw new InboundInvalidCompleteStatusException(this.inboundStatus.getDescription());
         }
         boolean isAllInspected = this.inboundItems.stream()
                 .allMatch(item -> item.getInspectionStatus() == InspectionStatus.NORMAL
                         || item.getInspectionStatus() == InspectionStatus.HOLD);
         if (!isAllInspected) {
-            throw new IllegalStateException(InboundConstants.INCOMPLETE_INSPECTION_MESSAGE);
+            throw new InboundInspectionIncompleteException();
         }
         this.inboundStatus = InboundStatus.COMPLETED;
     }
 
     public void cancel() {
-        if (this.inboundStatus != InboundStatus.SCHEDULED) {
-            throw new IllegalStateException(
-                    String.format(InboundConstants.INVALID_CANCEL_STATUS_MESSAGE,
-                            this.inboundStatus.getDescription())
-            );
+        if (!this.inboundStatus.canCancel()) {
+            throw new InboundInvalidCancelStatusException(this.inboundStatus.getDescription());
         }
         this.inboundStatus = InboundStatus.CANCELED;
     }
@@ -120,22 +110,22 @@ public class Inbound {
 
     private static void validateInboundDate(LocalDateTime inboundDate) {
         if (inboundDate == null) {
-            throw new IllegalArgumentException(InboundConstants.DATE_REQUIRED_MESSAGE);
+            throw new InboundDateRequiredException();
         }
         if (inboundDate.toLocalDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException(InboundConstants.PAST_INBOUND_DATE_MESSAGE);
+            throw new InboundPastDateException();
         }
     }
 
     private static void validateWarehouseId(Long warehouseId) {
         if (warehouseId == null) {
-            throw new IllegalArgumentException(InboundConstants.WAREHOUSE_REQUIRED_MESSAGE);
+            throw new InboundWarehouseIdRequiredException();
         }
     }
 
     private static void validatePartnerId(Long partnerId) {
         if (partnerId == null) {
-            throw new IllegalArgumentException(InboundConstants.PARTNER_REQUIRED_MESSAGE);
+            throw new InboundPartnerIdRequiredException();
         }
     }
 }

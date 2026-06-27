@@ -14,4 +14,16 @@ public enum InspectionStatus {
     InspectionStatus(String description) {
         this.description = description;
     }
+
+    public boolean canPutaway() {
+        return this == WAITING;
+    }
+
+    public boolean canApprove() {
+        return this == INSPECTING;
+    }
+
+    public boolean canHold() {
+        return this == INSPECTING;
+    }
 }

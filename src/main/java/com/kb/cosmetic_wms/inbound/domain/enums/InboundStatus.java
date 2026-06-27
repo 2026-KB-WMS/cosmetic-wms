@@ -14,4 +14,20 @@ public enum InboundStatus {
     InboundStatus(String description) {
         this.description = description;
     }
+
+    public boolean canAddItem() {
+        return this == SCHEDULED;
+    }
+
+    public boolean canStart() {
+        return this == SCHEDULED;
+    }
+
+    public boolean canComplete() {
+        return this == IN_PROGRESS;
+    }
+
+    public boolean canCancel() {
+        return this == SCHEDULED;
+    }
 }

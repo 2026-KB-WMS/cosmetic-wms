@@ -1,15 +1,14 @@
 package com.kb.cosmetic_wms.inbound.adapter.in.web;
 
-import com.kb.cosmetic_wms.inbound.domain.constants.InboundConstants;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 
 public record InboundItemAddRequest(
-        @NotNull(message = InboundConstants.INBOUND_PRODUCT_REQUIRED_MESSAGE) Long productId,
-        @Positive(message = InboundConstants.INVALID_INBOUND_QUANTITY_MESSAGE) int quantity,
-        @NotNull(message = InboundConstants.MANUFACTURE_DATE_REQUIRED_MESSAGE) LocalDate manufactureDate,
-        @NotNull(message = InboundConstants.EXPIRATION_DATE_REQUIRED_MESSAGE) LocalDate expirationDate
+        @NotNull(message = "입고 상품 정보는 필수입니다.") Long productId,
+        @Positive(message = "입고 예정 수량은 0보다 커야 합니다.") int quantity,
+        @NotNull(message = "제조일자는 필수입니다.") LocalDate manufactureDate,
+        @NotNull(message = "유통기한은 필수입니다.") LocalDate expirationDate
 ) {
 }

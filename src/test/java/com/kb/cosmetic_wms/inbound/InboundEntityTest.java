@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inbound;
 
-import com.kb.cosmetic_wms.inbound.domain.constants.InboundConstants;
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
+import com.kb.cosmetic_wms.inbound.domain.exception.*;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundItem;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
@@ -39,8 +39,8 @@ class InboundEntityTest {
         assertThatThrownBy(() ->
                 Inbound.create(pastInboundDate, warehouseId, partnerId)
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(InboundConstants.PAST_INBOUND_DATE_MESSAGE);
+                .isInstanceOf(InboundPastDateException.class)
+                .hasMessage(InboundErrorCode.INBOUND_PAST_DATE.getMessage());
     }
 
     @Test
@@ -52,8 +52,8 @@ class InboundEntityTest {
         assertThatThrownBy(() ->
                 Inbound.create(inboundDate, null, partnerId)
         )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(InboundConstants.WAREHOUSE_REQUIRED_MESSAGE);
+                .isInstanceOf(InboundWarehouseIdRequiredException.class)
+                .hasMessage(InboundErrorCode.INBOUND_WAREHOUSE_ID_REQUIRED.getMessage());
     }
 
     @Test
@@ -80,7 +80,7 @@ class InboundEntityTest {
 
         // when & then
         assertThatThrownBy(inbound::cancel)
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InboundInvalidCancelStatusException.class)
                 .hasMessageContaining("이미 작업이 진행되었거나 완료된 입고 건은 취소할 수 없습니다.");
     }
 
@@ -92,7 +92,7 @@ class InboundEntityTest {
 
         // when & then
         assertThatThrownBy(inbound::completeExecution)
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InboundInvalidCompleteStatusException.class)
                 .hasMessageContaining("작업이 진행 중인 상태에서만 입고 완료 처리가 가능합니다.");
     }
 
@@ -100,22 +100,22 @@ class InboundEntityTest {
     void 모든_품목의_검수_및_적재가_완료되지_않은_상태에서_입고_완료를_시도하면_예외를_던진다() {
         // given
         Inbound inbound = Inbound.create(LocalDateTime.now().plusDays(1), 1L, 1L);
-        InboundLine line = new InboundLine(1L, 100, LocalDate.now(), LocalDate.now().plusYears(3));
+        InboundLine line = new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(3));
         InboundItem item = inbound.addItem(line);
 
         inbound.startExecution();
 
         assertThatThrownBy(inbound::completeExecution)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("아직 적재가 완료되지 않았거나 검수 중인 품목이 존재");
+                .isInstanceOf(InboundInspectionIncompleteException.class)
+                .hasMessage(InboundErrorCode.INBOUND_INSPECTION_INCOMPLETE.getMessage());
     }
 
     @Test
     void 모든_품목이_NORMAL_또는_HOLD_상태로_검수가_끝나면_정상적으로_입고_완료_처리된다() {
         // given
         Inbound inbound = Inbound.create(LocalDateTime.now().plusDays(1), 1L, 1L);
-        InboundLine line1 = new InboundLine(1L, 50, LocalDate.now(), LocalDate.now().plusYears(3));
-        InboundLine line2 = new InboundLine(2L, 30, LocalDate.now(), LocalDate.now().plusYears(3));
+        InboundLine line1 = new InboundLine(1L, 50, LocalDate.now().minusDays(1), LocalDate.now().plusYears(3));
+        InboundLine line2 = new InboundLine(2L, 30, LocalDate.now().minusDays(1), LocalDate.now().plusYears(3));
 
         InboundItem item1 = inbound.addItem(line1);
         InboundItem item2 = inbound.addItem(line2);
