@@ -35,7 +35,7 @@ class InboundEntity extends BaseEntity {
     private Long partnerId;
 
     @OneToMany(mappedBy = "inbound", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InboundItemEntity> inboundItems = new ArrayList<>();
+    private List<InboundLineEntity> inboundLines = new ArrayList<>();
 
     private InboundEntity(Long id, InboundStatus inboundStatus, LocalDateTime inboundDate,
                           Long warehouseId, Long partnerId) {
@@ -51,18 +51,18 @@ class InboundEntity extends BaseEntity {
                 inbound.getId(), inbound.getInboundStatus(),
                 inbound.getInboundDate(), inbound.getWarehouseId(), inbound.getPartnerId()
         );
-        inbound.getInboundItems().forEach(item -> {
-            InboundItemEntity itemEntity = InboundItemEntity.fromDomain(item);
-            itemEntity.setInbound(entity);
-            entity.inboundItems.add(itemEntity);
+        inbound.getInboundLines().forEach(line -> {
+            InboundLineEntity lineEntity = InboundLineEntity.fromDomain(line);
+            lineEntity.setInbound(entity);
+            entity.inboundLines.add(lineEntity);
         });
         return entity;
     }
 
     Inbound toDomain() {
-        List<com.kb.cosmetic_wms.inbound.domain.model.InboundItem> items = inboundItems.stream()
-                .map(InboundItemEntity::toDomain)
-                .toList();
-        return Inbound.reconstitute(id, inboundStatus, inboundDate, warehouseId, partnerId, items);
+        return Inbound.reconstitute(
+                id, inboundStatus, inboundDate, warehouseId, partnerId,
+                inboundLines.stream().map(InboundLineEntity::toDomain).toList()
+        );
     }
 }

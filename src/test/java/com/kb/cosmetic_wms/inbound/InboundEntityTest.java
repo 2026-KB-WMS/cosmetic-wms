@@ -3,135 +3,110 @@ package com.kb.cosmetic_wms.inbound;
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
 import com.kb.cosmetic_wms.inbound.domain.exception.*;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
-import com.kb.cosmetic_wms.inbound.domain.model.InboundItem;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class InboundEntityTest {
 
-    private final Long warehouseId = 1L;
-    private final Long partnerId = 1L;
+    private static final Long WAREHOUSE_ID = 1L;
+    private static final Long PARTNER_ID = 1L;
+    private static final LocalDateTime FUTURE_DATE = LocalDateTime.now().plusDays(1);
+
+    private List<InboundLine> defaultLines() {
+        return List.of(InboundLine.create(1L, 100,
+                LocalDate.now().minusDays(1), LocalDate.now().plusYears(3)));
+    }
 
     @Test
-    void 입고_엔티티는_필수_값이_모두_존재하면_SCHEDULED_상태로_성공적으로_생성된다() {
-        // given
-        LocalDateTime inboundDate = LocalDateTime.now().plusYears(1);
+    void 필수_값이_모두_존재하면_SCHEDULED_상태로_입고_전표가_생성된다() {
+        Inbound inbound = Inbound.create(FUTURE_DATE, WAREHOUSE_ID, PARTNER_ID, defaultLines());
 
-        // when
-        Inbound inbound = Inbound.create(inboundDate, warehouseId, partnerId);
-
-        // then
         assertThat(inbound.getInboundStatus()).isEqualTo(InboundStatus.SCHEDULED);
+        assertThat(inbound.getInboundLines()).hasSize(1);
+    }
+
+    @Test
+    void 품목_라인이_없으면_InboundLinesRequiredException이_발생한다() {
+        assertThatThrownBy(() -> Inbound.create(FUTURE_DATE, WAREHOUSE_ID, PARTNER_ID, List.of()))
+                .isInstanceOf(InboundLinesRequiredException.class)
+                .hasMessage(InboundErrorCode.INBOUND_LINES_REQUIRED.getMessage());
     }
 
     @Test
     void 입고_예정일이_현재_날짜보다_과거이면_예외를_던진다() {
-        // given
-        LocalDateTime pastInboundDate = LocalDateTime.now().minusYears(1);
-
-        // when & then
         assertThatThrownBy(() ->
-                Inbound.create(pastInboundDate, warehouseId, partnerId)
-        )
+                Inbound.create(LocalDateTime.now().minusDays(1), WAREHOUSE_ID, PARTNER_ID, defaultLines()))
                 .isInstanceOf(InboundPastDateException.class)
                 .hasMessage(InboundErrorCode.INBOUND_PAST_DATE.getMessage());
     }
 
     @Test
-    void 입고_생성_시_창고_객체가_누락되면_예외를_던진다() {
-        // given
-        LocalDateTime inboundDate = LocalDateTime.now().plusYears(1);
-
-        // when & then
-        assertThatThrownBy(() ->
-                Inbound.create(inboundDate, null, partnerId)
-        )
+    void 창고_ID가_누락되면_예외를_던진다() {
+        assertThatThrownBy(() -> Inbound.create(FUTURE_DATE, null, PARTNER_ID, defaultLines()))
                 .isInstanceOf(InboundWarehouseIdRequiredException.class)
                 .hasMessage(InboundErrorCode.INBOUND_WAREHOUSE_ID_REQUIRED.getMessage());
     }
 
     @Test
-    void 입고_예정_상태에서는_취소가_가능하다() {
-        // given
-        LocalDateTime inboundDate = LocalDateTime.now().plusYears(1);
-        Inbound inbound = Inbound.create(inboundDate, warehouseId, partnerId);
+    void SCHEDULED_상태에서_수령_확인하면_RECEIVED로_전환된다() {
+        Inbound inbound = Inbound.create(FUTURE_DATE, WAREHOUSE_ID, PARTNER_ID, defaultLines());
+        Inbound persisted = Inbound.reconstitute(1L, InboundStatus.SCHEDULED, FUTURE_DATE,
+                WAREHOUSE_ID, PARTNER_ID,
+                List.of(InboundLine.reconstitute(1L, 1L, 100, 0,
+                        LocalDate.now().minusDays(1), LocalDate.now().plusYears(3))));
 
-        // when
+        persisted.receive(Map.of(1L, 95));
+
+        assertThat(persisted.getInboundStatus()).isEqualTo(InboundStatus.RECEIVED);
+        assertThat(persisted.getInboundLines().get(0).getReceivedQuantity()).isEqualTo(95);
+    }
+
+    @Test
+    void 수령_확인_요청의_라인_ID가_입고_전표와_일치하지_않으면_InboundReceiveLineMismatchException이_발생한다() {
+        Inbound inbound = Inbound.reconstitute(1L, InboundStatus.SCHEDULED, FUTURE_DATE,
+                WAREHOUSE_ID, PARTNER_ID,
+                List.of(InboundLine.reconstitute(1L, 1L, 100, 0,
+                        LocalDate.now().minusDays(1), LocalDate.now().plusYears(3))));
+
+        assertThatThrownBy(() -> inbound.receive(Map.of()))
+                .isInstanceOf(InboundReceiveLineMismatchException.class)
+                .hasMessage(InboundErrorCode.INBOUND_RECEIVE_LINE_MISMATCH.getMessage());
+    }
+
+    @Test
+    void RECEIVED_상태에서_수령_확인을_다시_시도하면_InboundInvalidReceiveStatusException이_발생한다() {
+        Inbound received = Inbound.reconstitute(1L, InboundStatus.RECEIVED, FUTURE_DATE,
+                WAREHOUSE_ID, PARTNER_ID, defaultLines());
+
+        assertThatThrownBy(() -> received.receive(Map.of()))
+                .isInstanceOf(InboundInvalidReceiveStatusException.class)
+                .hasMessageContaining("입고 예정(SCHEDULED) 상태에서만 수령 확인이 가능합니다");
+    }
+
+    @Test
+    void SCHEDULED_상태에서_취소하면_CANCELED로_전환된다() {
+        Inbound inbound = Inbound.create(FUTURE_DATE, WAREHOUSE_ID, PARTNER_ID, defaultLines());
+
         inbound.cancel();
 
-        // then
         assertThat(inbound.getInboundStatus()).isEqualTo(InboundStatus.CANCELED);
     }
 
     @Test
-    void 이미_작업이_진행_중인_입고_건은_취소_시_예외를_던진다() {
-        // given
-        LocalDateTime inboundDate = LocalDateTime.now().plusYears(1);
-        Inbound inbound = Inbound.create(inboundDate, warehouseId, partnerId);
+    void RECEIVED_상태에서_취소를_시도하면_InboundInvalidCancelStatusException이_발생한다() {
+        Inbound received = Inbound.reconstitute(1L, InboundStatus.RECEIVED, FUTURE_DATE,
+                WAREHOUSE_ID, PARTNER_ID, defaultLines());
 
-        // when
-        inbound.startExecution();
-
-        // when & then
-        assertThatThrownBy(inbound::cancel)
+        assertThatThrownBy(received::cancel)
                 .isInstanceOf(InboundInvalidCancelStatusException.class)
-                .hasMessageContaining("이미 작업이 진행되었거나 완료된 입고 건은 취소할 수 없습니다.");
-    }
-
-    @Test
-    void 입고_완료_처리는_입고_진행_상태에서만_가능해야_한다() {
-        // given
-        LocalDateTime inboundDate = LocalDateTime.now().plusYears(1);
-        Inbound inbound = Inbound.create(inboundDate, warehouseId, partnerId);
-
-        // when & then
-        assertThatThrownBy(inbound::completeExecution)
-                .isInstanceOf(InboundInvalidCompleteStatusException.class)
-                .hasMessageContaining("작업이 진행 중인 상태에서만 입고 완료 처리가 가능합니다.");
-    }
-
-    @Test
-    void 모든_품목의_검수_및_적재가_완료되지_않은_상태에서_입고_완료를_시도하면_예외를_던진다() {
-        // given
-        Inbound inbound = Inbound.create(LocalDateTime.now().plusDays(1), 1L, 1L);
-        InboundLine line = new InboundLine(1L, 100, LocalDate.now().minusDays(1), LocalDate.now().plusYears(3));
-        InboundItem item = inbound.addItem(line);
-
-        inbound.startExecution();
-
-        assertThatThrownBy(inbound::completeExecution)
-                .isInstanceOf(InboundInspectionIncompleteException.class)
-                .hasMessage(InboundErrorCode.INBOUND_INSPECTION_INCOMPLETE.getMessage());
-    }
-
-    @Test
-    void 모든_품목이_NORMAL_또는_HOLD_상태로_검수가_끝나면_정상적으로_입고_완료_처리된다() {
-        // given
-        Inbound inbound = Inbound.create(LocalDateTime.now().plusDays(1), 1L, 1L);
-        InboundLine line1 = new InboundLine(1L, 50, LocalDate.now().minusDays(1), LocalDate.now().plusYears(3));
-        InboundLine line2 = new InboundLine(2L, 30, LocalDate.now().minusDays(1), LocalDate.now().plusYears(3));
-
-        InboundItem item1 = inbound.addItem(line1);
-        InboundItem item2 = inbound.addItem(line2);
-
-        inbound.startExecution();
-
-        item1.completePutaway(100L, 10L);
-        item1.changeToNormal();
-
-        item2.completePutaway(101L, 10L);
-        item2.changeToHold();
-
-        // when
-        inbound.completeExecution();
-
-        // then
-        assertThat(inbound.getInboundStatus()).isEqualTo(InboundStatus.COMPLETED);
+                .hasMessageContaining("이미 작업이 진행되었거나 완료된 입고 건은 취소할 수 없습니다");
     }
 }
