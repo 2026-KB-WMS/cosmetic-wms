@@ -49,9 +49,8 @@ public final class ApiSchemas {
     // Inbound
     public static final String INBOUND_CREATE_REQUEST = "InboundCreateRequest";
     public static final String INBOUND_DETAIL_RESPONSE = "InboundDetailResponse";
-    public static final String INBOUND_ITEM_ADD_REQUEST = "InboundItemAddRequest";
-    public static final String INBOUND_PUTAWAY_REQUEST = "InboundPutawayRequest";
-    public static final String INBOUND_ITEM_RESPONSE = "InboundItemResponse";
+    public static final String INBOUND_RECEIVE_REQUEST = "InboundReceiveRequest";
+    public static final String INBOUND_LINE_RESPONSE = "InboundLineResponse";
 
     // Inspection
     public static final String INSPECTION_START_REQUEST = "InspectionStartRequest";

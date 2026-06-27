@@ -2,7 +2,6 @@ package com.kb.cosmetic_wms.inbound.fixture;
 
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
-import com.kb.cosmetic_wms.inbound.domain.model.InboundItem;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
 
 import java.time.LocalDate;
@@ -16,7 +15,7 @@ public class InboundTestBuilder {
     private Long partnerId = 1L;
     private LocalDateTime inboundDate = LocalDateTime.now().plusDays(1);
     private InboundStatus status = InboundStatus.SCHEDULED;
-    private List<InboundItem> items = List.of();
+    private List<InboundLine> lines = List.of();
 
     public InboundTestBuilder id(Long id) {
         this.id = id;
@@ -43,26 +42,35 @@ public class InboundTestBuilder {
         return this;
     }
 
-    public InboundTestBuilder items(List<InboundItem> items) {
-        this.items = items;
+    public InboundTestBuilder lines(List<InboundLine> lines) {
+        this.lines = lines;
         return this;
     }
 
     public Inbound build() {
         if (id == null) {
-            return Inbound.create(inboundDate, warehouseId, partnerId);
+            List<InboundLine> defaultLines = lines.isEmpty() ? defaultLines() : lines;
+            return Inbound.create(inboundDate, warehouseId, partnerId, defaultLines);
         }
-        return Inbound.reconstitute(id, status, inboundDate, warehouseId, partnerId, items);
+        return Inbound.reconstitute(id, status, inboundDate, warehouseId, partnerId, lines);
     }
 
-    public Inbound buildInProgress() {
+    public Inbound buildWithLines(List<InboundLine> lines) {
         if (id == null) {
-            Inbound inbound = Inbound.create(inboundDate, warehouseId, partnerId);
-            inbound.addItem(new InboundLine(1L, 100, LocalDate.now().minusDays(10), LocalDate.now().plusYears(2)));
-            inbound.startExecution();
-            return inbound;
+            return Inbound.create(inboundDate, warehouseId, partnerId, lines);
         }
-        InboundItem item = new InboundItemTestBuilder().id(1L).build();
-        return Inbound.reconstitute(id, InboundStatus.IN_PROGRESS, inboundDate, warehouseId, partnerId, List.of(item));
+        return Inbound.reconstitute(id, status, inboundDate, warehouseId, partnerId, lines);
+    }
+
+    public Inbound buildReceived() {
+        InboundLine line = InboundLine.reconstitute(1L, 1L, 100, 100,
+                LocalDate.now().minusDays(10), LocalDate.now().plusYears(2));
+        return Inbound.reconstitute(id != null ? id : 1L, InboundStatus.RECEIVED,
+                inboundDate, warehouseId, partnerId, List.of(line));
+    }
+
+    private static List<InboundLine> defaultLines() {
+        return List.of(InboundLine.create(1L, 100,
+                LocalDate.now().minusDays(10), LocalDate.now().plusYears(2)));
     }
 }
