@@ -1,18 +1,19 @@
-package com.kb.cosmetic_wms.inbound.application.port.in;
+package com.kb.cosmetic_wms.inbound.application.event;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
-public record RegisterInboundCommand(
+public record InboundCompletedEvent(
+        Long inboundId,
         Long warehouseId,
         Long partnerId,
-        LocalDateTime inboundDate,
-        List<LineItem> lines
+        List<LineSnapshot> lines
 ) {
-    public record LineItem(
+    public record LineSnapshot(
+            Long lineId,
             Long productId,
             int orderedQuantity,
+            int receivedQuantity,
             LocalDate manufactureDate,
             LocalDate expirationDate
     ) {}

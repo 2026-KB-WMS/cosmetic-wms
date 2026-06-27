@@ -10,10 +10,10 @@ import java.util.Optional;
 
 interface InboundJpaRepository extends JpaRepository<InboundEntity, Long> {
 
-    @Query("SELECT i FROM InboundEntity i JOIN FETCH i.inboundItems WHERE i.id = :id")
-    Optional<InboundEntity> findByIdWithItems(@Param("id") Long id);
+    @Query("SELECT i FROM InboundEntity i JOIN FETCH i.inboundLines WHERE i.id = :id")
+    Optional<InboundEntity> findByIdWithLines(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT i FROM InboundEntity i JOIN FETCH i.inboundItems WHERE i.id = :id")
-    Optional<InboundEntity> findByIdWithItemsForUpdate(@Param("id") Long id);
+    @Query("SELECT i FROM InboundEntity i JOIN FETCH i.inboundLines WHERE i.id = :id")
+    Optional<InboundEntity> findByIdWithLinesForUpdate(@Param("id") Long id);
 }

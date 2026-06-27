@@ -1,16 +1,19 @@
 package com.kb.cosmetic_wms.product.product.adapter.out.persistence;
 
-import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
 import com.kb.cosmetic_wms.product.category.adapter.out.persistence.CategoryEntity;
 import com.kb.cosmetic_wms.product.category.adapter.out.persistence.CategoryJpaRepository;
+import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
 import com.kb.cosmetic_wms.product.product.domain.model.Product;
 import com.kb.cosmetic_wms.product.producttype.adapter.out.persistence.ProductTypeEntity;
 import com.kb.cosmetic_wms.product.producttype.adapter.out.persistence.ProductTypeJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -26,6 +29,17 @@ public class ProductPersistenceAdapter implements ProductPort {
                                           int volumeValue, String volumeUnit) {
         return productJpaRepository.existsDuplicateProduct(
                 brandName, productName, categoryId, productTypeId, volumeValue, volumeUnit);
+    }
+
+    @Override
+    public boolean existsById(Long productId) {
+        return productJpaRepository.existsById(productId);
+    }
+
+    @Override
+    public boolean allExistByIds(Collection<Long> productIds) {
+        Set<Long> uniqueIds = new HashSet<>(productIds);
+        return productJpaRepository.countByIdIn(uniqueIds) == uniqueIds.size();
     }
 
     @Override

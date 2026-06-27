@@ -20,6 +20,11 @@ public class StoragePersistenceAdapter implements StoragePort {
     }
 
     @Override
+    public boolean existsById(Long warehouseId) {
+        return warehouseJpaRepository.existsById(warehouseId);
+    }
+
+    @Override
     public Optional<Warehouse> findById(Long warehouseId) {
         return warehouseJpaRepository.findById(warehouseId)
                 .map(WarehouseEntity::toDomain);
