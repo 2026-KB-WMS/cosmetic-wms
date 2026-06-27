@@ -9,8 +9,11 @@ import com.kb.cosmetic_wms.product.producttype.adapter.out.persistence.ProductTy
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -31,6 +34,12 @@ public class ProductPersistenceAdapter implements ProductPort {
     @Override
     public boolean existsById(Long productId) {
         return productJpaRepository.existsById(productId);
+    }
+
+    @Override
+    public boolean allExistByIds(Collection<Long> productIds) {
+        Set<Long> uniqueIds = new HashSet<>(productIds);
+        return productJpaRepository.countByIdIn(uniqueIds) == uniqueIds.size();
     }
 
     @Override

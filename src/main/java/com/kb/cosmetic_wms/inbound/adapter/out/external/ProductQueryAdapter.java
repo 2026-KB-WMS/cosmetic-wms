@@ -5,6 +5,8 @@ import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+
 @Component
 @RequiredArgsConstructor
 public class ProductQueryAdapter implements ProductQueryPort {
@@ -14,5 +16,10 @@ public class ProductQueryAdapter implements ProductQueryPort {
     @Override
     public boolean existsById(Long productId) {
         return productPort.existsById(productId);
+    }
+
+    @Override
+    public boolean allExistByIds(Collection<Long> productIds) {
+        return productPort.allExistByIds(productIds);
     }
 }
