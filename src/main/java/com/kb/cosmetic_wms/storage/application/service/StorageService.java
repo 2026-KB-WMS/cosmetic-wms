@@ -56,4 +56,5 @@ public class StorageService implements RegisterWarehouseUseCase, AddSectionUseCa
                 .map(WarehouseResult::from)
                 .toList();
     }
+
 }

@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.fixture;
 
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.domain.model.Section;
 import com.kb.cosmetic_wms.storage.domain.model.SectionCode;
 import com.kb.cosmetic_wms.storage.domain.model.SectionType;
@@ -12,7 +12,7 @@ public class SectionTestBuilder {
     private String sectionCode = "WH01-HIGH-R-01";
     private String sectionName = "인천 제1 센터 상온 고회전 1구역";
     private SectionType sectionType = SectionType.HIGH_ROT;
-    private TemperatureType temperatureType = TemperatureType.ROOM;
+    private TemperatureZone temperatureType = TemperatureZone.ROOM;
     private int maxCapacity = 5000;
 
     public SectionTestBuilder warehouse(Warehouse warehouse) {
@@ -35,7 +35,7 @@ public class SectionTestBuilder {
         return this;
     }
 
-    public SectionTestBuilder temperatureType(TemperatureType temperatureType) {
+    public SectionTestBuilder temperatureType(TemperatureZone temperatureType) {
         this.temperatureType = temperatureType;
         return this;
     }
