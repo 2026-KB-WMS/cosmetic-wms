@@ -6,9 +6,9 @@ import java.util.Optional;
 
 public interface InboundPort {
 
-    Optional<Inbound> findByIdWithItems(Long id);
+    Optional<Inbound> findByIdWithLines(Long id);
 
-    Optional<Inbound> findByIdWithItemsForUpdate(Long id);
+    Optional<Inbound> findByIdWithLinesForUpdate(Long id);
 
     Inbound save(Inbound inbound);
 }

@@ -19,6 +19,11 @@ public class PartnerPersistenceAdapter implements PartnerPort {
     }
 
     @Override
+    public boolean existsById(Long partnerId) {
+        return partnerJpaRepository.existsById(partnerId);
+    }
+
+    @Override
     public Optional<Partner> findById(Long partnerId) {
         return partnerJpaRepository.findById(partnerId)
                 .map(PartnerEntity::toDomain);

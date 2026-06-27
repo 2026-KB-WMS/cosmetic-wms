@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.inspection.adapter.in.event;
 
-import com.kb.cosmetic_wms.global.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionCommand;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
@@ -17,17 +17,20 @@ public class InboundCompletedEventAdapter {
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onInboundCompleted(InboundCompletedEvent event) {
-        for (var item : event.items()) {
+        for (var line : event.lines()) {
+            if (line.receivedQuantity() <= 0) {
+                continue;
+            }
             inspectionLifecycleUseCase.create(new CreateInspectionCommand(
                     InspectionSourceType.INBOUND,
-                    item.inboundItemId(),
+                    line.lineId(),
                     null,
-                    item.quantity(),
-                    item.productId(),
-                    item.lotId(),
-                    item.sectionId(),
+                    line.receivedQuantity(),
+                    line.productId(),
+                    null,
+                    null,
                     event.warehouseId(),
-                    item.expiryDate()
+                    line.expirationDate()
             ));
         }
     }

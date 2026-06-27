@@ -4,14 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
-import com.kb.cosmetic_wms.inbound.adapter.in.web.*;
+import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundController;
+import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundCreateRequest;
+import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundReceiveRequest;
 import com.kb.cosmetic_wms.inbound.application.port.in.*;
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
-import com.kb.cosmetic_wms.inbound.domain.enums.InspectionStatus;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundErrorCode;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundItemNotFoundException;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundNotFoundException;
-import com.kb.cosmetic_wms.inbound.domain.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.inbound.fixture.InboundRequestBuilder;
 import com.kb.cosmetic_wms.partner.domain.exception.PartnerErrorCode;
 import com.kb.cosmetic_wms.partner.domain.exception.PartnerNotFoundException;
@@ -55,9 +54,6 @@ public class InboundControllerTest extends RestDocsSupport {
     private InboundLifecycleUseCase inboundLifecycleUseCase;
 
     @MockitoBean
-    private InboundItemUseCase inboundItemUseCase;
-
-    @MockitoBean
     private FindInboundUseCase findInboundUseCase;
 
     // --- 입고 전표 등록 ---
@@ -68,23 +64,18 @@ public class InboundControllerTest extends RestDocsSupport {
         @Test
         @WithMockUser
         void 올바른_정보로_입고_전표를_등록하면_201_Created와_API_문서가_생성된다() throws Exception {
-            // given
             InboundCreateRequest request = new InboundRequestBuilder().buildCreateRequest();
-            InboundDetailResponse response = buildScheduledInboundResponse();
-            given(inboundLifecycleUseCase.register(any(RegisterInboundCommand.class))).willReturn(
-                    buildScheduledInboundResult());
+            given(inboundLifecycleUseCase.register(any(RegisterInboundCommand.class)))
+                    .willReturn(buildScheduledResult());
 
-            // when & then
             mockMvc.perform(post("/api/v1/inbounds")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.warehouseId").value(1L))
-                    .andExpect(jsonPath("$.partnerId").value(1L))
                     .andExpect(jsonPath("$.inboundStatus").value("SCHEDULED"))
-                    .andExpect(jsonPath("$.items").isArray())
+                    .andExpect(jsonPath("$.lines").isArray())
                     .andDo(document("inbound-register-success",
                             buildParams(INBOUND, "입고 전표 등록", INBOUND_CREATE_REQUEST, INBOUND_DETAIL_RESPONSE),
                             createRequestFields(getInboundCreateRequestFields()),
@@ -94,31 +85,22 @@ public class InboundControllerTest extends RestDocsSupport {
 
         @Test
         @WithMockUser
-        void 창고_ID가_null이면_400_Bad_Request를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
+        void 창고_ID가_null이면_400_Bad_Request를_반환한다() throws Exception {
             InboundCreateRequest invalidRequest = new InboundRequestBuilder().warehouseId(null).buildCreateRequest();
 
-            // when & then
             mockMvc.perform(post("/api/v1/inbounds")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(invalidRequest)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
-                    .andExpect(jsonPath("$.timestamp").exists())
-                    .andDo(document("inbound-register-fail-null-warehouse",
-                            buildErrorParams(INBOUND, "입고 전표 등록"),
-                            globalErrorResponseFields()
-                    ));
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"));
         }
 
         @Test
         @WithMockUser
         void 파트너_ID가_null이면_400_Bad_Request를_반환한다() throws Exception {
-            // given
             InboundCreateRequest invalidRequest = new InboundRequestBuilder().partnerId(null).buildCreateRequest();
 
-            // when & then
             mockMvc.perform(post("/api/v1/inbounds")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -130,12 +112,10 @@ public class InboundControllerTest extends RestDocsSupport {
         @Test
         @WithMockUser
         void 존재하지_않는_창고_ID로_등록하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
             InboundCreateRequest request = new InboundRequestBuilder().buildCreateRequest();
             given(inboundLifecycleUseCase.register(any(RegisterInboundCommand.class)))
                     .willThrow(new WarehouseNotFoundException());
 
-            // when & then
             mockMvc.perform(post("/api/v1/inbounds")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -152,12 +132,10 @@ public class InboundControllerTest extends RestDocsSupport {
         @Test
         @WithMockUser
         void 존재하지_않는_파트너_ID로_등록하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
             InboundCreateRequest request = new InboundRequestBuilder().buildCreateRequest();
             given(inboundLifecycleUseCase.register(any(RegisterInboundCommand.class)))
                     .willThrow(new PartnerNotFoundException());
 
-            // when & then
             mockMvc.perform(post("/api/v1/inbounds")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -180,16 +158,13 @@ public class InboundControllerTest extends RestDocsSupport {
         @Test
         @WithMockUser
         void 존재하는_입고_ID로_조회하면_200_OK와_상세정보를_반환하고_API_문서가_생성된다() throws Exception {
-            // given
-            given(findInboundUseCase.findById(1L)).willReturn(buildScheduledInboundResult());
+            given(findInboundUseCase.findById(1L)).willReturn(buildScheduledResult());
 
-            // when & then
             mockMvc.perform(get("/api/v1/inbounds/{inboundId}", 1L)
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1L))
                     .andExpect(jsonPath("$.inboundStatus").value("SCHEDULED"))
-                    .andExpect(jsonPath("$.inboundDate").exists())
                     .andDo(document("inbound-get-success",
                             buildParams(INBOUND, "입고 전표 조회", null, INBOUND_DETAIL_RESPONSE),
                             createResponseFields(getInboundDetailResponseFields())
@@ -199,10 +174,8 @@ public class InboundControllerTest extends RestDocsSupport {
         @Test
         @WithMockUser
         void 존재하지_않는_입고_ID로_조회하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
             given(findInboundUseCase.findById(999L)).willThrow(new InboundNotFoundException());
 
-            // when & then
             mockMvc.perform(get("/api/v1/inbounds/{inboundId}", 999L)
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound())
@@ -215,191 +188,59 @@ public class InboundControllerTest extends RestDocsSupport {
         }
     }
 
-    // --- 품목 추가 ---
+    // --- 수령 확인 ---
 
     @Nested
-    class 품목_추가 {
+    class 수령_확인 {
 
         @Test
         @WithMockUser
-        void 올바른_품목_정보를_추가하면_200_OK와_갱신된_입고_전표를_반환하고_API_문서가_생성된다() throws Exception {
-            // given
-            InboundItemAddRequest request = new InboundRequestBuilder().buildAddItemRequest();
-            given(inboundItemUseCase.addItem(eq(1L), any(AddInboundItemCommand.class)))
-                    .willReturn(buildInboundResultWithItem());
+        void 수령_확인을_요청하면_200_OK와_RECEIVED_상태의_전표가_반환되고_API_문서가_생성된다() throws Exception {
+            InboundReceiveRequest request = new InboundRequestBuilder().buildReceiveRequest(1L);
+            given(inboundLifecycleUseCase.receive(eq(1L), any(ReceiveInboundCommand.class)))
+                    .willReturn(buildResult(InboundStatus.RECEIVED, 100, 100));
 
-            // when & then
-            mockMvc.perform(post("/api/v1/inbounds/{inboundId}/items", 1L)
+            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/receive", 1L)
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.inboundStatus").value("SCHEDULED"))
-                    .andExpect(jsonPath("$.items").isArray())
-                    .andExpect(jsonPath("$.items[0].productId").value(1L))
-                    .andExpect(jsonPath("$.items[0].inspectionStatus").value("WAITING"))
-                    .andDo(document("inbound-add-item-success",
-                            buildParams(INBOUND, "입고 품목 추가", INBOUND_ITEM_ADD_REQUEST, INBOUND_DETAIL_RESPONSE),
-                            createRequestFields(getInboundItemAddRequestFields()),
+                    .andExpect(jsonPath("$.inboundStatus").value("RECEIVED"))
+                    .andExpect(jsonPath("$.lines[0].receivedQuantity").value(100))
+                    .andDo(document("inbound-receive-success",
+                            buildParams(INBOUND, "수령 확인", INBOUND_RECEIVE_REQUEST, INBOUND_DETAIL_RESPONSE),
+                            createRequestFields(getInboundReceiveRequestFields()),
                             createResponseFields(getInboundDetailResponseFields())
                     ));
         }
 
         @Test
         @WithMockUser
-        void 상품_ID가_null이면_400_Bad_Request를_반환한다() throws Exception {
-            // given
-            InboundItemAddRequest invalidRequest = new InboundRequestBuilder().productId(null).buildAddItemRequest();
-
-            // when & then
-            mockMvc.perform(post("/api/v1/inbounds/{inboundId}/items", 1L)
+        void 라인_목록이_비어있으면_400_Bad_Request를_반환한다() throws Exception {
+            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/receive", 1L)
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(invalidRequest)))
+                            .content("{\"lines\": []}"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"));
         }
 
         @Test
         @WithMockUser
-        void 수량이_0이면_400_Bad_Request를_반환한다() throws Exception {
-            // given
-            InboundItemAddRequest invalidRequest = new InboundRequestBuilder().quantity(0).buildAddItemRequest();
-
-            // when & then
-            mockMvc.perform(post("/api/v1/inbounds/{inboundId}/items", 1L)
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(invalidRequest)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"));
-        }
-
-        @Test
-        @WithMockUser
-        void 존재하지_않는_입고_ID에_품목을_추가하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
-            InboundItemAddRequest request = new InboundRequestBuilder().buildAddItemRequest();
-            given(inboundItemUseCase.addItem(eq(999L), any(AddInboundItemCommand.class)))
+        void 존재하지_않는_입고_ID로_수령_확인을_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
+            InboundReceiveRequest request = new InboundRequestBuilder().buildReceiveRequest(1L);
+            given(inboundLifecycleUseCase.receive(eq(999L), any(ReceiveInboundCommand.class)))
                     .willThrow(new InboundNotFoundException());
 
-            // when & then
-            mockMvc.perform(post("/api/v1/inbounds/{inboundId}/items", 999L)
+            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/receive", 999L)
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("INBOUND_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_NOT_FOUND.getMessage()))
-                    .andDo(document("inbound-add-item-fail-inbound-not-found",
-                            buildErrorParams(INBOUND, "입고 품목 추가"),
-                            globalErrorResponseFields()
-                    ));
-        }
-
-        @Test
-        @WithMockUser
-        void 존재하지_않는_상품_ID로_품목을_추가하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
-            InboundItemAddRequest request = new InboundRequestBuilder().buildAddItemRequest();
-            given(inboundItemUseCase.addItem(eq(1L), any(AddInboundItemCommand.class)))
-                    .willThrow(new InboundProductNotFoundException());
-
-            // when & then
-            mockMvc.perform(post("/api/v1/inbounds/{inboundId}/items", 1L)
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("INBOUND_PRODUCT_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_PRODUCT_NOT_FOUND.getMessage()))
-                    .andDo(document("inbound-add-item-fail-product-not-found",
-                            buildErrorParams(INBOUND, "입고 품목 추가"),
-                            globalErrorResponseFields()
-                    ));
-        }
-    }
-
-    // --- 입고 작업 시작 ---
-
-    @Nested
-    class 입고_작업_시작 {
-
-        @Test
-        @WithMockUser
-        void 입고_작업을_시작하면_200_OK와_IN_PROGRESS_상태의_전표가_반환되고_API_문서가_생성된다() throws Exception {
-            // given
-            given(inboundLifecycleUseCase.start(1L)).willReturn(buildInboundResult(InboundStatus.IN_PROGRESS));
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/start", 1L)
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.inboundStatus").value("IN_PROGRESS"))
-                    .andDo(document("inbound-start-success",
-                            buildParams(INBOUND, "입고 작업 시작", null, INBOUND_DETAIL_RESPONSE),
-                            createResponseFields(getInboundDetailResponseFields())
-                    ));
-        }
-
-        @Test
-        @WithMockUser
-        void 존재하지_않는_입고_ID로_작업_시작을_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
-            given(inboundLifecycleUseCase.start(999L)).willThrow(new InboundNotFoundException());
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/start", 999L)
-                            .with(csrf()))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("INBOUND_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_NOT_FOUND.getMessage()))
-                    .andDo(document("inbound-start-fail-not-found",
-                            buildErrorParams(INBOUND, "입고 작업 시작"),
-                            globalErrorResponseFields()
-                    ));
-        }
-    }
-
-    // --- 입고 완료 ---
-
-    @Nested
-    class 입고_완료 {
-
-        @Test
-        @WithMockUser
-        void 입고를_완료하면_200_OK와_COMPLETED_상태의_전표가_반환되고_API_문서가_생성된다() throws Exception {
-            // given
-            given(inboundLifecycleUseCase.complete(1L)).willReturn(buildInboundResult(InboundStatus.COMPLETED));
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/complete", 1L)
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.inboundStatus").value("COMPLETED"))
-                    .andDo(document("inbound-complete-success",
-                            buildParams(INBOUND, "입고 완료", null, INBOUND_DETAIL_RESPONSE),
-                            createResponseFields(getInboundDetailResponseFields())
-                    ));
-        }
-
-        @Test
-        @WithMockUser
-        void 존재하지_않는_입고_ID로_완료를_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
-            given(inboundLifecycleUseCase.complete(999L)).willThrow(new InboundNotFoundException());
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/complete", 999L)
-                            .with(csrf()))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("INBOUND_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_NOT_FOUND.getMessage()))
-                    .andDo(document("inbound-complete-fail-not-found",
-                            buildErrorParams(INBOUND, "입고 완료"),
+                    .andDo(document("inbound-receive-fail-not-found",
+                            buildErrorParams(INBOUND, "수령 확인"),
                             globalErrorResponseFields()
                     ));
         }
@@ -413,10 +254,8 @@ public class InboundControllerTest extends RestDocsSupport {
         @Test
         @WithMockUser
         void 입고를_취소하면_200_OK와_CANCELED_상태의_전표가_반환되고_API_문서가_생성된다() throws Exception {
-            // given
-            given(inboundLifecycleUseCase.cancel(1L)).willReturn(buildInboundResult(InboundStatus.CANCELED));
+            given(inboundLifecycleUseCase.cancel(1L)).willReturn(buildResult(InboundStatus.CANCELED, 100, 0));
 
-            // when & then
             mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/cancel", 1L)
                             .with(csrf()))
                     .andExpect(status().isOk())
@@ -431,15 +270,12 @@ public class InboundControllerTest extends RestDocsSupport {
         @Test
         @WithMockUser
         void 존재하지_않는_입고_ID로_취소를_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
             given(inboundLifecycleUseCase.cancel(999L)).willThrow(new InboundNotFoundException());
 
-            // when & then
             mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/cancel", 999L)
                             .with(csrf()))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("INBOUND_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_NOT_FOUND.getMessage()))
                     .andDo(document("inbound-cancel-fail-not-found",
                             buildErrorParams(INBOUND, "입고 취소"),
                             globalErrorResponseFields()
@@ -447,204 +283,21 @@ public class InboundControllerTest extends RestDocsSupport {
         }
     }
 
-    // --- 실물 적재 완료 ---
-
-    @Nested
-    class 실물_적재_완료 {
-
-        @Test
-        @WithMockUser
-        void 적재를_완료하면_200_OK와_INSPECTING_상태의_품목이_반환되고_API_문서가_생성된다() throws Exception {
-            // given
-            InboundPutawayRequest request = new InboundRequestBuilder().buildPutawayRequest();
-            given(inboundItemUseCase.completePutaway(eq(1L), eq(1L), any(PutawayCommand.class)))
-                    .willReturn(buildItemResult(InspectionStatus.INSPECTING, 100L, 200L));
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/items/{itemId}/putaway", 1L, 1L)
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.inspectionStatus").value("INSPECTING"))
-                    .andExpect(jsonPath("$.lotId").value(100L))
-                    .andExpect(jsonPath("$.sectionId").value(200L))
-                    .andDo(document("inbound-item-putaway-success",
-                            buildParams(INBOUND, "실물 적재 완료", INBOUND_PUTAWAY_REQUEST, INBOUND_ITEM_RESPONSE),
-                            createRequestFields(getInboundPutawayRequestFields()),
-                            createResponseFields(getInboundItemResponseFields())
-                    ));
-        }
-
-        @Test
-        @WithMockUser
-        void 로트_ID가_null이면_400_Bad_Request를_반환한다() throws Exception {
-            // given — lotId 없이 전송
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/items/{itemId}/putaway", 1L, 1L)
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"sectionId\": 200}"))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"));
-        }
-
-        @Test
-        @WithMockUser
-        void 존재하지_않는_품목_ID로_적재를_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
-            InboundPutawayRequest request = new InboundRequestBuilder().buildPutawayRequest();
-            given(inboundItemUseCase.completePutaway(eq(1L), eq(999L), any(PutawayCommand.class)))
-                    .willThrow(new InboundItemNotFoundException());
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/items/{itemId}/putaway", 1L, 999L)
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("INBOUND_ITEM_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_ITEM_NOT_FOUND.getMessage()))
-                    .andDo(document("inbound-item-putaway-fail-not-found",
-                            buildErrorParams(INBOUND, "실물 적재 완료"),
-                            globalErrorResponseFields()
-                    ));
-        }
-    }
-
-    // --- 검수 정상 완료 ---
-
-    @Nested
-    class 검수_정상_완료 {
-
-        @Test
-        @WithMockUser
-        void 검수를_정상_완료하면_200_OK와_NORMAL_상태의_품목이_반환되고_API_문서가_생성된다() throws Exception {
-            // given
-            given(inboundItemUseCase.approve(1L, 1L))
-                    .willReturn(buildItemResult(InspectionStatus.NORMAL, 100L, 200L));
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/items/{itemId}/approve", 1L, 1L)
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.inspectionStatus").value("NORMAL"))
-                    .andDo(document("inbound-item-approve-success",
-                            buildParams(INBOUND, "검수 정상 완료", null, INBOUND_ITEM_RESPONSE),
-                            createResponseFields(getInboundItemResponseFields())
-                    ));
-        }
-
-        @Test
-        @WithMockUser
-        void 존재하지_않는_품목_ID로_검수_정상_처리를_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
-            given(inboundItemUseCase.approve(1L, 999L)).willThrow(new InboundItemNotFoundException());
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/items/{itemId}/approve", 1L, 999L)
-                            .with(csrf()))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("INBOUND_ITEM_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_ITEM_NOT_FOUND.getMessage()))
-                    .andDo(document("inbound-item-approve-fail-not-found",
-                            buildErrorParams(INBOUND, "검수 정상 완료"),
-                            globalErrorResponseFields()
-                    ));
-        }
-    }
-
-    // --- 검수 보류 ---
-
-    @Nested
-    class 검수_보류 {
-
-        @Test
-        @WithMockUser
-        void 검수를_보류_처리하면_200_OK와_HOLD_상태의_품목이_반환되고_API_문서가_생성된다() throws Exception {
-            // given
-            given(inboundItemUseCase.hold(1L, 1L))
-                    .willReturn(buildItemResult(InspectionStatus.HOLD, 100L, 200L));
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/items/{itemId}/hold", 1L, 1L)
-                            .with(csrf()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.inspectionStatus").value("HOLD"))
-                    .andDo(document("inbound-item-hold-success",
-                            buildParams(INBOUND, "검수 보류", null, INBOUND_ITEM_RESPONSE),
-                            createResponseFields(getInboundItemResponseFields())
-                    ));
-        }
-
-        @Test
-        @WithMockUser
-        void 존재하지_않는_품목_ID로_검수_보류를_요청하면_404_Not_Found를_반환하고_에러응답이_문서화된다() throws Exception {
-            // given
-            given(inboundItemUseCase.hold(1L, 999L)).willThrow(new InboundItemNotFoundException());
-
-            // when & then
-            mockMvc.perform(patch("/api/v1/inbounds/{inboundId}/items/{itemId}/hold", 1L, 999L)
-                            .with(csrf()))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.errorCode").value("INBOUND_ITEM_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value(InboundErrorCode.INBOUND_ITEM_NOT_FOUND.getMessage()))
-                    .andDo(document("inbound-item-hold-fail-not-found",
-                            buildErrorParams(INBOUND, "검수 보류"),
-                            globalErrorResponseFields()
-                    ));
-        }
-    }
-
     // --- 응답 픽스처 ---
 
-    private static InboundDetailResponse buildScheduledInboundResponse() {
-        return buildInboundResponse(InboundStatus.SCHEDULED);
+    private static InboundResult buildScheduledResult() {
+        return buildResult(InboundStatus.SCHEDULED, 100, 0);
     }
 
-    private static InboundDetailResponse buildInboundResponse(InboundStatus status) {
-        return new InboundDetailResponse(
-                1L, 1L, 1L, status,
-                LocalDateTime.of(2026, 7, 1, 10, 0),
-                List.of()
+    private static InboundResult buildResult(InboundStatus status, int orderedQty, int receivedQty) {
+        InboundLineResult line = new InboundLineResult(
+                1L, 1L, orderedQty, receivedQty,
+                LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1)
         );
-    }
-
-    private static InboundResult buildScheduledInboundResult() {
-        return buildInboundResult(InboundStatus.SCHEDULED);
-    }
-
-    private static InboundResult buildInboundResult(InboundStatus status) {
         return new InboundResult(
                 1L, 1L, 1L, status,
                 LocalDateTime.of(2026, 7, 1, 10, 0),
-                List.of()
-        );
-    }
-
-    private static InboundResult buildInboundResultWithItem() {
-        InboundItemResult item = new InboundItemResult(
-                1L, 1L, 100,
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2028, 1, 1),
-                InspectionStatus.WAITING, null, null
-        );
-        return new InboundResult(
-                1L, 1L, 1L, InboundStatus.SCHEDULED,
-                LocalDateTime.of(2026, 7, 1, 10, 0),
-                List.of(item)
-        );
-    }
-
-    private static InboundItemResult buildItemResult(
-            InspectionStatus status, Long lotId, Long sectionId) {
-        return new InboundItemResult(
-                1L, 1L, 100,
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2028, 1, 1),
-                status, lotId, sectionId
+                List.of(line)
         );
     }
 
@@ -657,29 +310,28 @@ public class InboundControllerTest extends RestDocsSupport {
                 fieldWithPath("partnerId").type(JsonFieldType.NUMBER)
                         .description("협력사 ID (필수)"),
                 fieldWithPath("inboundDate").type(JsonFieldType.STRING)
-                        .description("입고 예정일 (ISO-8601, 오늘 이후여야 함)")
-        };
-    }
-
-    private static FieldDescriptor[] getInboundItemAddRequestFields() {
-        return new FieldDescriptor[]{
-                fieldWithPath("productId").type(JsonFieldType.NUMBER)
-                        .description("입고 상품 ID (필수)"),
-                fieldWithPath("quantity").type(JsonFieldType.NUMBER)
-                        .description("입고 예정 수량 (1 이상)"),
-                fieldWithPath("manufactureDate").type(JsonFieldType.STRING)
+                        .description("입고 예정일 (ISO-8601, 오늘 이후여야 함)"),
+                fieldWithPath("lines").type(JsonFieldType.ARRAY)
+                        .description("입고 품목 라인 목록 (1개 이상 필수)"),
+                fieldWithPath("lines[].productId").type(JsonFieldType.NUMBER)
+                        .description("상품 ID"),
+                fieldWithPath("lines[].orderedQuantity").type(JsonFieldType.NUMBER)
+                        .description("발주 수량 (1 이상)"),
+                fieldWithPath("lines[].manufactureDate").type(JsonFieldType.STRING)
                         .description("제조일자 (ISO-8601)"),
-                fieldWithPath("expirationDate").type(JsonFieldType.STRING)
+                fieldWithPath("lines[].expirationDate").type(JsonFieldType.STRING)
                         .description("유통기한 (ISO-8601)")
         };
     }
 
-    private static FieldDescriptor[] getInboundPutawayRequestFields() {
+    private static FieldDescriptor[] getInboundReceiveRequestFields() {
         return new FieldDescriptor[]{
-                fieldWithPath("lotId").type(JsonFieldType.NUMBER)
-                        .description("적재 완료 후 발행된 로트 ID (필수)"),
-                fieldWithPath("sectionId").type(JsonFieldType.NUMBER)
-                        .description("상품이 적재된 섹션 ID (필수)")
+                fieldWithPath("lines").type(JsonFieldType.ARRAY)
+                        .description("수령 확인 라인 목록 (1개 이상 필수)"),
+                fieldWithPath("lines[].lineId").type(JsonFieldType.NUMBER)
+                        .description("입고 라인 ID"),
+                fieldWithPath("lines[].receivedQuantity").type(JsonFieldType.NUMBER)
+                        .description("실제 수령 수량 (0 이상)")
         };
     }
 
@@ -694,48 +346,23 @@ public class InboundControllerTest extends RestDocsSupport {
                 fieldWithPath("partnerId").type(JsonFieldType.NUMBER)
                         .description("협력사 ID"),
                 fieldWithPath("inboundStatus").type(JsonFieldType.STRING)
-                        .description("입고 상태 (SCHEDULED / IN_PROGRESS / COMPLETED / CANCELED)"),
+                        .description("입고 상태 (SCHEDULED / RECEIVED / CANCELED)"),
                 fieldWithPath("inboundDate").type(JsonFieldType.STRING)
                         .description("입고 예정일"),
-                fieldWithPath("items").type(JsonFieldType.ARRAY)
-                        .description("입고 품목 목록"),
-                fieldWithPath("items[].id").type(JsonFieldType.NUMBER)
-                        .description("품목 ID").optional(),
-                fieldWithPath("items[].productId").type(JsonFieldType.NUMBER)
+                fieldWithPath("lines").type(JsonFieldType.ARRAY)
+                        .description("입고 품목 라인 목록"),
+                fieldWithPath("lines[].id").type(JsonFieldType.NUMBER)
+                        .description("라인 ID").optional(),
+                fieldWithPath("lines[].productId").type(JsonFieldType.NUMBER)
                         .description("상품 ID").optional(),
-                fieldWithPath("items[].quantity").type(JsonFieldType.NUMBER)
-                        .description("수량").optional(),
-                fieldWithPath("items[].manufactureDate").type(JsonFieldType.STRING)
+                fieldWithPath("lines[].orderedQuantity").type(JsonFieldType.NUMBER)
+                        .description("발주 수량").optional(),
+                fieldWithPath("lines[].receivedQuantity").type(JsonFieldType.NUMBER)
+                        .description("수령 수량 (수령 전 0)").optional(),
+                fieldWithPath("lines[].manufactureDate").type(JsonFieldType.STRING)
                         .description("제조일자").optional(),
-                fieldWithPath("items[].expirationDate").type(JsonFieldType.STRING)
-                        .description("유통기한").optional(),
-                fieldWithPath("items[].inspectionStatus").type(JsonFieldType.STRING)
-                        .description("검수 상태 (WAITING / INSPECTING / NORMAL / HOLD)").optional(),
-                fieldWithPath("items[].lotId").type(JsonFieldType.VARIES)
-                        .description("로트 ID (적재 전 null)").optional(),
-                fieldWithPath("items[].sectionId").type(JsonFieldType.VARIES)
-                        .description("섹션 ID (적재 전 null)").optional()
-        };
-    }
-
-    private static FieldDescriptor[] getInboundItemResponseFields() {
-        return new FieldDescriptor[]{
-                fieldWithPath("id").type(JsonFieldType.NUMBER)
-                        .description("품목 ID"),
-                fieldWithPath("productId").type(JsonFieldType.NUMBER)
-                        .description("상품 ID"),
-                fieldWithPath("quantity").type(JsonFieldType.NUMBER)
-                        .description("수량"),
-                fieldWithPath("manufactureDate").type(JsonFieldType.STRING)
-                        .description("제조일자"),
-                fieldWithPath("expirationDate").type(JsonFieldType.STRING)
-                        .description("유통기한"),
-                fieldWithPath("inspectionStatus").type(JsonFieldType.STRING)
-                        .description("검수 상태 (WAITING / INSPECTING / NORMAL / HOLD)"),
-                fieldWithPath("lotId").type(JsonFieldType.VARIES)
-                        .description("로트 ID (적재 전 null)").optional(),
-                fieldWithPath("sectionId").type(JsonFieldType.VARIES)
-                        .description("섹션 ID (적재 전 null)").optional()
+                fieldWithPath("lines[].expirationDate").type(JsonFieldType.STRING)
+                        .description("유통기한").optional()
         };
     }
 }

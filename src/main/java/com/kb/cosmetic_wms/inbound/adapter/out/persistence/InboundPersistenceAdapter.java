@@ -14,13 +14,13 @@ public class InboundPersistenceAdapter implements InboundPort {
     private final InboundJpaRepository inboundJpaRepository;
 
     @Override
-    public Optional<Inbound> findByIdWithItems(Long id) {
-        return inboundJpaRepository.findByIdWithItems(id).map(InboundEntity::toDomain);
+    public Optional<Inbound> findByIdWithLines(Long id) {
+        return inboundJpaRepository.findByIdWithLines(id).map(InboundEntity::toDomain);
     }
 
     @Override
-    public Optional<Inbound> findByIdWithItemsForUpdate(Long id) {
-        return inboundJpaRepository.findByIdWithItemsForUpdate(id).map(InboundEntity::toDomain);
+    public Optional<Inbound> findByIdWithLinesForUpdate(Long id) {
+        return inboundJpaRepository.findByIdWithLinesForUpdate(id).map(InboundEntity::toDomain);
     }
 
     @Override

@@ -6,6 +6,10 @@ import java.util.Optional;
 
 public interface PartnerPort {
     boolean existsByBusinessNumber(String businessNumber);
+
+    boolean existsById(Long partnerId);
+
     Optional<Partner> findById(Long partnerId);
+
     Partner save(Partner partner);
 }
