@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage;
 
-import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
+import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.storage.fixture.WarehouseTestBuilder;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
@@ -106,7 +106,7 @@ public class WarehouseEntityTest {
                 .warehouse(warehouse).sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING).maxCapacity(2000).build();
         Section highRotSection = new SectionTestBuilder()
                 .warehouse(warehouse).sectionCode("WH01-HIGH-C-01").sectionType(SectionType.HIGH_ROT)
-                .temperatureType(TemperatureType.COOL).maxCapacity(5000).build();
+                .temperatureType(TemperatureZone.COOL).maxCapacity(5000).build();
 
         assertThat(warehouse.getSections()).hasSize(2);
         assertThat(dockingSection.getSectionCode().value()).isEqualTo("WH01-DOCK-R-01");
