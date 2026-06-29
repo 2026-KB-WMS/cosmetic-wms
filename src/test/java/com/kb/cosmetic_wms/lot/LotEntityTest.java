@@ -24,10 +24,11 @@ import static com.kb.cosmetic_wms.lot.domain.enums.LotStatus.*;
 public class LotEntityTest {
 
     @Test
-    void 올바른_로트_번호가_주어졌을_때_Lot_객체가_정상_생성되며_초기_상태는_AVAILABLE이어야_한다() {
+    void 올바른_정보가_주어졌을_때_Lot_객체가_정상_생성되며_초기_상태는_AVAILABLE이어야_한다() {
         Lot lot = new LotTestBuilder().build();
 
-        Assertions.assertThat(lot.getLotNumber().value()).isEqualTo("260101-1-LOT0001");
+        Assertions.assertThat(lot.getInboundId()).isEqualTo(1L);
+        Assertions.assertThat(lot.getManufacturerLotNumber()).isEqualTo("LOT0001");
         Assertions.assertThat(lot.getStatus()).isEqualTo(LotStatus.AVAILABLE);
     }
 
@@ -75,7 +76,7 @@ public class LotEntityTest {
     class 상태_전환 {
 
         private Lot lotWithStatus(LotStatus status) {
-            return Lot.reconstitute(1L, "260101-1-LOT0001",
+            return Lot.reconstitute(1L, 1L, "LOT0001",
                     LocalDateTime.of(2026, 1, 1, 0, 0),
                     LocalDateTime.of(2027, 1, 1, 0, 0),
                     status, 1L);

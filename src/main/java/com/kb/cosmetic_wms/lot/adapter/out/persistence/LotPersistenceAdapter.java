@@ -15,8 +15,8 @@ public class LotPersistenceAdapter implements LotPort {
     private final LotJpaRepository lotJpaRepository;
 
     @Override
-    public boolean existsByLotNumber(String lotNumber) {
-        return lotJpaRepository.existsByLotNumber(lotNumber);
+    public boolean existsByInboundIdAndManufacturerLotNumber(Long inboundId, String manufacturerLotNumber) {
+        return lotJpaRepository.existsByInboundIdAndManufacturerLotNumber(inboundId, manufacturerLotNumber);
     }
 
     @Override
