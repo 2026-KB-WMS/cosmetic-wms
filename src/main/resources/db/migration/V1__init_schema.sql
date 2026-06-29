@@ -122,19 +122,20 @@ CREATE TABLE product (
 );
 
 CREATE TABLE lot (
-    lot_id             BIGINT      NOT NULL AUTO_INCREMENT,
-    lot_number         VARCHAR(50) NOT NULL,
-    manufacturing_date DATETIME(6) NOT NULL,
-    expiration_date    DATETIME(6) NOT NULL,
-    status             VARCHAR(20) NOT NULL,
-    product_id         BIGINT      NOT NULL,
-    created_by         BIGINT      NOT NULL,
-    created_at         DATETIME(6) NOT NULL,
-    updated_by         BIGINT,
-    updated_at         DATETIME(6),
+    lot_id              BIGINT      NOT NULL AUTO_INCREMENT,
+    inbound_id          BIGINT      NOT NULL,
+    manufacturer_lot_no VARCHAR(50) NOT NULL,
+    manufacturing_date  DATETIME(6) NOT NULL,
+    expiration_date     DATETIME(6) NOT NULL,
+    status              VARCHAR(20) NOT NULL,
+    product_id          BIGINT      NOT NULL,
+    created_by          BIGINT      NOT NULL,
+    created_at          DATETIME(6) NOT NULL,
+    updated_by          BIGINT,
+    updated_at          DATETIME(6),
     PRIMARY KEY (lot_id),
-    CONSTRAINT uq_lot_number UNIQUE (lot_number),
-    CONSTRAINT chk_lot_date  CHECK  (manufacturing_date <= expiration_date)
+    CONSTRAINT uq_lot_inbound_manufacturer UNIQUE (inbound_id, manufacturer_lot_no),
+    CONSTRAINT chk_lot_date                CHECK  (manufacturing_date <= expiration_date)
 );
 
 CREATE TABLE inventory (
@@ -215,10 +216,8 @@ CREATE TABLE quality_inspection (
     inspection_id       BIGINT      NOT NULL AUTO_INCREMENT,
     source_type         VARCHAR(20) NOT NULL,
     source_id           BIGINT      NOT NULL,
-    inventory_id        BIGINT,
     product_id          BIGINT      NOT NULL,
     lot_id              BIGINT      NOT NULL,
-    section_id          BIGINT      NOT NULL,
     warehouse_id        BIGINT      NOT NULL,
     inspector_id        BIGINT,
     status              VARCHAR(20) NOT NULL,
