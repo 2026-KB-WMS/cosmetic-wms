@@ -30,7 +30,7 @@ public class InboundCompletedEventAdapter {
                     null,
                     null,
                     event.warehouseId(),
-                    line.expirationDate()
+                    line.expirationDate() != null ? line.expirationDate().toLocalDate() : null
             ));
         }
     }

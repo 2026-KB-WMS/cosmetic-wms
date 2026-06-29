@@ -15,6 +15,7 @@ import com.kb.cosmetic_wms.inbound.domain.exception.InboundNotFoundException;
 import com.kb.cosmetic_wms.inbound.domain.exception.InboundProductNotFoundException;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
+import com.kb.cosmetic_wms.inbound.domain.model.ReceiveLineData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,8 +52,7 @@ public class InboundService implements InboundLifecycleUseCase, FindInboundUseCa
         }
 
         List<InboundLine> lines = command.lines().stream()
-                .map(l -> InboundLine.create(l.productId(), l.orderedQuantity(),
-                        l.manufactureDate(), l.expirationDate()))
+                .map(l -> InboundLine.create(l.productId(), l.orderedQuantity()))
                 .toList();
 
         Inbound inbound = Inbound.create(command.inboundDate(), command.warehouseId(),
@@ -68,13 +68,14 @@ public class InboundService implements InboundLifecycleUseCase, FindInboundUseCa
 
         validateWarehouseCapacity(inbound, command);
 
-        Map<Long, Integer> quantityByLineId = command.lines().stream()
+        Map<Long, ReceiveLineData> receiveData = command.lines().stream()
                 .collect(Collectors.toMap(
                         ReceiveInboundCommand.LineItem::lineId,
-                        ReceiveInboundCommand.LineItem::receivedQuantity
+                        l -> new ReceiveLineData(l.receivedQuantity(), l.manufacturerLotNumber(),
+                                l.manufacturingDate(), l.expirationDate())
                 ));
 
-        inbound.receive(quantityByLineId);
+        inbound.receive(receiveData);
         Inbound saved = inboundPort.save(inbound);
         eventPublisher.publish(toInboundCompletedEvent(saved));
         return InboundResult.from(saved);
@@ -87,6 +88,7 @@ public class InboundService implements InboundLifecycleUseCase, FindInboundUseCa
         List<IncomingProduct> items = command.lines().stream()
                 .map(l -> new IncomingProduct(productIdByLineId.get(l.lineId()), l.receivedQuantity()))
                 .toList();
+
 
         if (!storageQueryPort.canAccommodate(inbound.getWarehouseId(), items)) {
             throw new InboundCapacityExceededException();
@@ -115,10 +117,16 @@ public class InboundService implements InboundLifecycleUseCase, FindInboundUseCa
                 .map(line -> new InboundCompletedEvent.LineSnapshot(
                         line.getId(), line.getProductId(),
                         line.getOrderedQuantity(), line.getReceivedQuantity(),
-                        line.getManufactureDate(), line.getExpirationDate()
+                        line.getManufacturerLotNumber(),
+                        line.getManufacturingDate(), line.getExpirationDate()
                 ))
                 .toList();
-        return new InboundCompletedEvent(inbound.getId(), inbound.getWarehouseId(),
-                inbound.getPartnerId(), snapshots);
+        return new InboundCompletedEvent(
+                inbound.getId(),
+                inbound.getInboundDate().toLocalDate(),
+                inbound.getWarehouseId(),
+                inbound.getPartnerId(),
+                snapshots
+        );
     }
 }

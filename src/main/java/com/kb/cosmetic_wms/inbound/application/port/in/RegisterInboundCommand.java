@@ -1,6 +1,5 @@
 package com.kb.cosmetic_wms.inbound.application.port.in;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,8 +11,6 @@ public record RegisterInboundCommand(
 ) {
     public record LineItem(
             Long productId,
-            int orderedQuantity,
-            LocalDate manufactureDate,
-            LocalDate expirationDate
+            int orderedQuantity
     ) {}
 }

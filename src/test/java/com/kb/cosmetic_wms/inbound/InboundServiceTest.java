@@ -27,7 +27,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -75,8 +74,7 @@ class InboundServiceTest {
 
         private RegisterInboundCommand validCommand() {
             return new RegisterInboundCommand(1L, 1L, LocalDateTime.now().plusDays(1),
-                    List.of(new RegisterInboundCommand.LineItem(1L, 100,
-                            LocalDate.now().minusDays(10), LocalDate.now().plusYears(2))));
+                    List.of(new RegisterInboundCommand.LineItem(1L, 100)));
         }
 
         @Test
@@ -96,8 +94,7 @@ class InboundServiceTest {
         void 존재하지_않는_창고_ID로_등록하면_InboundWarehouseNotFoundException이_발생한다() {
             RegisterInboundCommand command = new RegisterInboundCommand(999L, 1L,
                     LocalDateTime.now().plusDays(1),
-                    List.of(new RegisterInboundCommand.LineItem(1L, 100,
-                            LocalDate.now().minusDays(10), LocalDate.now().plusYears(2))));
+                    List.of(new RegisterInboundCommand.LineItem(1L, 100)));
             given(storagePort.existsById(999L)).willReturn(false);
 
             assertThatThrownBy(() -> inboundService.register(command))
@@ -108,8 +105,7 @@ class InboundServiceTest {
         void 존재하지_않는_파트너_ID로_등록하면_InboundPartnerNotFoundException이_발생한다() {
             RegisterInboundCommand command = new RegisterInboundCommand(1L, 999L,
                     LocalDateTime.now().plusDays(1),
-                    List.of(new RegisterInboundCommand.LineItem(1L, 100,
-                            LocalDate.now().minusDays(10), LocalDate.now().plusYears(2))));
+                    List.of(new RegisterInboundCommand.LineItem(1L, 100)));
             given(storagePort.existsById(1L)).willReturn(true);
             given(partnerPort.existsById(999L)).willReturn(false);
 
@@ -121,8 +117,7 @@ class InboundServiceTest {
         void 존재하지_않는_상품_ID로_등록하면_InboundProductNotFoundException이_발생한다() {
             RegisterInboundCommand command = new RegisterInboundCommand(1L, 1L,
                     LocalDateTime.now().plusDays(1),
-                    List.of(new RegisterInboundCommand.LineItem(999L, 100,
-                            LocalDate.now().minusDays(10), LocalDate.now().plusYears(2))));
+                    List.of(new RegisterInboundCommand.LineItem(999L, 100)));
             given(storagePort.existsById(1L)).willReturn(true);
             given(partnerPort.existsById(1L)).willReturn(true);
             given(productQueryPort.allExistByIds(anyCollection())).willReturn(false);
@@ -140,10 +135,15 @@ class InboundServiceTest {
     class 수령_확인 {
 
         private Inbound scheduledInboundWithLine(Long lineId) {
-            InboundLine line = InboundLine.reconstitute(lineId, 1L, 100, 0,
-                    LocalDate.now().minusDays(1), LocalDate.now().plusYears(2));
+            InboundLine line = InboundLine.reconstitute(lineId, 1L, 100, 0, null, null, null);
             return Inbound.reconstitute(1L, InboundStatus.SCHEDULED,
                     LocalDateTime.now().plusDays(1), 1L, 1L, List.of(line));
+        }
+
+        private ReceiveInboundCommand receiveCommand(Long lineId, int qty) {
+            return new ReceiveInboundCommand(List.of(new ReceiveInboundCommand.LineItem(
+                    lineId, qty, "LOT0001",
+                    LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2))));
         }
 
         @Test
@@ -153,8 +153,7 @@ class InboundServiceTest {
             given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
             given(inboundPort.save(any(Inbound.class))).willAnswer(inv -> inv.getArgument(0));
 
-            ReceiveInboundCommand command = new ReceiveInboundCommand(
-                    List.of(new ReceiveInboundCommand.LineItem(1L, 95)));
+            ReceiveInboundCommand command = receiveCommand(1L, 95);
 
             InboundResult result = inboundService.receive(1L, command);
 
@@ -170,8 +169,7 @@ class InboundServiceTest {
             given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
             given(inboundPort.save(any(Inbound.class))).willAnswer(inv -> inv.getArgument(0));
 
-            inboundService.receive(1L, new ReceiveInboundCommand(
-                    List.of(new ReceiveInboundCommand.LineItem(10L, 80))));
+            inboundService.receive(1L, receiveCommand(10L, 80));
 
             ArgumentCaptor<InboundCompletedEvent> captor = ArgumentCaptor.forClass(InboundCompletedEvent.class);
             verify(eventPublisher).publish(captor.capture());
@@ -193,15 +191,14 @@ class InboundServiceTest {
 
         @Test
         void RECEIVED_상태에서_수령_확인을_다시_시도하면_InboundInvalidReceiveStatusException이_발생한다() {
-            InboundLine line = InboundLine.reconstitute(1L, 1L, 100, 100,
-                    LocalDate.now().minusDays(1), LocalDate.now().plusYears(2));
+            InboundLine line = InboundLine.reconstitute(1L, 1L, 100, 100, "LOT0001",
+                    LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(2));
             Inbound alreadyReceived = Inbound.reconstitute(1L, InboundStatus.RECEIVED,
                     LocalDateTime.now().plusDays(1), 1L, 1L, List.of(line));
             given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(alreadyReceived));
             given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
 
-            assertThatThrownBy(() -> inboundService.receive(1L, new ReceiveInboundCommand(
-                    List.of(new ReceiveInboundCommand.LineItem(1L, 50)))))
+            assertThatThrownBy(() -> inboundService.receive(1L, receiveCommand(1L, 50)))
                     .isInstanceOf(InboundInvalidReceiveStatusException.class);
         }
 
@@ -211,8 +208,7 @@ class InboundServiceTest {
             given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(inbound));
             given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(true);
 
-            ReceiveInboundCommand wrongCommand = new ReceiveInboundCommand(
-                    List.of(new ReceiveInboundCommand.LineItem(999L, 50)));
+            ReceiveInboundCommand wrongCommand = receiveCommand(999L, 50);
 
             assertThatThrownBy(() -> inboundService.receive(1L, wrongCommand))
                     .isInstanceOf(InboundReceiveLineMismatchException.class);
@@ -226,10 +222,7 @@ class InboundServiceTest {
             given(inboundPort.findByIdWithLinesForUpdate(1L)).willReturn(Optional.of(inbound));
             given(storagePort.canAccommodate(anyLong(), anyList())).willReturn(false);
 
-            ReceiveInboundCommand command = new ReceiveInboundCommand(
-                    List.of(new ReceiveInboundCommand.LineItem(1L, 95)));
-
-            assertThatThrownBy(() -> inboundService.receive(1L, command))
+            assertThatThrownBy(() -> inboundService.receive(1L, receiveCommand(1L, 95)))
                     .isInstanceOf(InboundCapacityExceededException.class);
 
             verify(eventPublisher, never()).publish(any());

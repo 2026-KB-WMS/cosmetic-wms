@@ -46,21 +46,13 @@ ALTER TABLE inbound
     ADD CONSTRAINT fk_inbound_partner
         FOREIGN KEY (partner_id) REFERENCES partner (partner_id);
 
-ALTER TABLE inbound_item
-    ADD CONSTRAINT fk_inbound_item_inbound
+ALTER TABLE inbound_line
+    ADD CONSTRAINT fk_inbound_line_inbound
         FOREIGN KEY (inbound_id) REFERENCES inbound (inbound_id);
 
-ALTER TABLE inbound_item
-    ADD CONSTRAINT fk_inbound_item_product
+ALTER TABLE inbound_line
+    ADD CONSTRAINT fk_inbound_line_product
         FOREIGN KEY (product_id) REFERENCES product (product_id);
-
-ALTER TABLE inbound_item
-    ADD CONSTRAINT fk_inbound_item_lot
-        FOREIGN KEY (lot_id) REFERENCES lot (lot_id);
-
-ALTER TABLE inbound_item
-    ADD CONSTRAINT fk_inbound_item_section
-        FOREIGN KEY (section_id) REFERENCES section (section_id);
 
 ALTER TABLE quality_inspection
     ADD CONSTRAINT fk_quality_inspection_inventory
@@ -69,6 +61,22 @@ ALTER TABLE quality_inspection
 ALTER TABLE quality_inspection
     ADD CONSTRAINT fk_quality_inspection_inspector
         FOREIGN KEY (inspector_id) REFERENCES member (member_id);
+
+ALTER TABLE quality_inspection
+    ADD CONSTRAINT fk_quality_inspection_product
+        FOREIGN KEY (product_id) REFERENCES product (product_id);
+
+ALTER TABLE quality_inspection
+    ADD CONSTRAINT fk_quality_inspection_lot
+        FOREIGN KEY (lot_id) REFERENCES lot (lot_id);
+
+ALTER TABLE quality_inspection
+    ADD CONSTRAINT fk_quality_inspection_section
+        FOREIGN KEY (section_id) REFERENCES section (section_id);
+
+ALTER TABLE quality_inspection
+    ADD CONSTRAINT fk_quality_inspection_warehouse
+        FOREIGN KEY (warehouse_id) REFERENCES warehouse (warehouse_id);
 
 ALTER TABLE orders
     ADD CONSTRAINT fk_orders_store
@@ -88,25 +96,20 @@ ALTER TABLE orders_item
 
 ALTER TABLE outbound
     ADD CONSTRAINT fk_outbound_orders
-        FOREIGN KEY (orders_id)
-            REFERENCES orders (orders_id);
+        FOREIGN KEY (orders_id) REFERENCES orders (orders_id);
 
 ALTER TABLE outbound
     ADD CONSTRAINT fk_outbound_warehouse
-        FOREIGN KEY (warehouse_id)
-            REFERENCES warehouse (warehouse_id);
+        FOREIGN KEY (warehouse_id) REFERENCES warehouse (warehouse_id);
 
 ALTER TABLE outbound_item
     ADD CONSTRAINT fk_outbound_item_outbound
-        FOREIGN KEY (outbound_id)
-            REFERENCES outbound (outbound_id);
+        FOREIGN KEY (outbound_id) REFERENCES outbound (outbound_id);
 
 ALTER TABLE outbound_item
     ADD CONSTRAINT fk_outbound_item_order_item
-        FOREIGN KEY (orders_item_id)
-            REFERENCES orders_item (orders_item_id);
+        FOREIGN KEY (orders_item_id) REFERENCES orders_item (orders_item_id);
 
 ALTER TABLE outbound_item
     ADD CONSTRAINT fk_outbound_item_inventory
-        FOREIGN KEY (inventory_id)
-            REFERENCES inventory (inventory_id);
+        FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id);

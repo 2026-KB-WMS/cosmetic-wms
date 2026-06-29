@@ -4,7 +4,6 @@ import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -64,13 +63,14 @@ public class InboundTestBuilder {
 
     public Inbound buildReceived() {
         InboundLine line = InboundLine.reconstitute(1L, 1L, 100, 100,
-                LocalDate.now().minusDays(10), LocalDate.now().plusYears(2));
+                "LOT0001",
+                LocalDateTime.now().minusDays(10),
+                LocalDateTime.now().plusYears(2));
         return Inbound.reconstitute(id != null ? id : 1L, InboundStatus.RECEIVED,
                 inboundDate, warehouseId, partnerId, List.of(line));
     }
 
     private static List<InboundLine> defaultLines() {
-        return List.of(InboundLine.create(1L, 100,
-                LocalDate.now().minusDays(10), LocalDate.now().plusYears(2)));
+        return List.of(InboundLine.create(1L, 100));
     }
 }
