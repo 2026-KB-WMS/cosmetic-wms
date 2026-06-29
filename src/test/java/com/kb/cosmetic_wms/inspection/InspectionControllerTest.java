@@ -61,7 +61,7 @@ public class InspectionControllerTest extends RestDocsSupport {
             // given
             Long inspectionId = 1L;
             InspectionResult result = new InspectionResult(
-                    inspectionId, InspectionSourceType.INBOUND, 10L, 100L,
+                    inspectionId, InspectionSourceType.INBOUND, 10L,
                     null, InspectionStatus.WAITING, 20, 0, 0, null);
 
             given(findInspectionUseCase.findById(inspectionId)).willReturn(result);
@@ -110,7 +110,7 @@ public class InspectionControllerTest extends RestDocsSupport {
             Long inspectionId = 1L;
             InspectionStartRequest request = new InspectionStartRequest(14L);
             InspectionResult result = new InspectionResult(
-                    inspectionId, InspectionSourceType.INBOUND, 10L, 100L,
+                    inspectionId, InspectionSourceType.INBOUND, 10L,
                     14L, InspectionStatus.IN_PROGRESS, 20, 0, 0, null);
 
             given(inspectionLifecycleUseCase.start(eq(inspectionId), eq(14L))).willReturn(result);
@@ -179,12 +179,12 @@ public class InspectionControllerTest extends RestDocsSupport {
         void 올바른_수량으로_완료_요청하면_200_OK와_완료된_전표를_반환한다() throws Exception {
             // given
             Long inspectionId = 2L;
-            InspectionCompleteRequest request = new InspectionCompleteRequest(18, 2, "포장 불량", 200L);
+            InspectionCompleteRequest request = new InspectionCompleteRequest(18, 2, "포장 불량");
             InspectionResult result = new InspectionResult(
-                    inspectionId, InspectionSourceType.INBOUND, 10L, 100L,
+                    inspectionId, InspectionSourceType.INBOUND, 10L,
                     14L, InspectionStatus.COMPLETED, 20, 18, 2, "포장 불량");
 
-            given(inspectionLifecycleUseCase.complete(eq(inspectionId), eq(18), eq(2), eq("포장 불량"), eq(200L)))
+            given(inspectionLifecycleUseCase.complete(eq(inspectionId), eq(18), eq(2), eq("포장 불량")))
                     .willReturn(result);
 
             // when & then
@@ -208,8 +208,8 @@ public class InspectionControllerTest extends RestDocsSupport {
         @WithMockUser
         void IN_PROGRESS가_아닌_상태에서_완료_요청하면_409_CONFLICT를_반환한다() throws Exception {
             // given
-            InspectionCompleteRequest request = new InspectionCompleteRequest(20, 0, null, 200L);
-            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any(), anyLong()))
+            InspectionCompleteRequest request = new InspectionCompleteRequest(20, 0, null);
+            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any()))
                     .willThrow(new InspectionCompleteNotAllowedException());
 
             // when & then
@@ -229,8 +229,8 @@ public class InspectionControllerTest extends RestDocsSupport {
         @WithMockUser
         void 수량_합계가_총_검사수량과_불일치하면_422_UNPROCESSABLE_ENTITY를_반환한다() throws Exception {
             // given
-            InspectionCompleteRequest request = new InspectionCompleteRequest(5, 5, null, 200L);
-            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any(), anyLong()))
+            InspectionCompleteRequest request = new InspectionCompleteRequest(5, 5, null);
+            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any()))
                     .willThrow(new InspectionQuantityMismatchException(20));
 
             // when & then
@@ -257,8 +257,7 @@ public class InspectionControllerTest extends RestDocsSupport {
         return new FieldDescriptor[]{
                 fieldWithPath("passedQuantity").description("합격 판정 수량 (0 이상)"),
                 fieldWithPath("failedQuantity").description("반려 판정 수량 (0 이상)"),
-                fieldWithPath("defectReason").description("부적합 사유 (반려 수량 > 0인 경우 필수, 그 외 생략 가능)").optional(),
-                fieldWithPath("sectionId").description("검사 완료 후 입고 배치할 구역 ID (필수)")
+                fieldWithPath("defectReason").description("부적합 사유 (반려 수량 > 0인 경우 필수, 그 외 생략 가능)").optional()
         };
     }
 
@@ -267,7 +266,6 @@ public class InspectionControllerTest extends RestDocsSupport {
                 fieldWithPath("id").description("품질 검사 전표 ID"),
                 fieldWithPath("sourceType").description("검사 요청 출처 유형 (INBOUND 등)"),
                 fieldWithPath("sourceId").description("출처 대상 ID (예: 입고 품목 ID)"),
-                fieldWithPath("inventoryId").description("연관 재고 ID (없는 경우 null)").optional(),
                 fieldWithPath("inspectorId").description("검사자 ID (검사 시작 전 null)").optional(),
                 fieldWithPath("status").description("검사 상태 (WAITING / IN_PROGRESS / COMPLETED)"),
                 fieldWithPath("inspectionQuantity").description("총 검사 대상 수량"),

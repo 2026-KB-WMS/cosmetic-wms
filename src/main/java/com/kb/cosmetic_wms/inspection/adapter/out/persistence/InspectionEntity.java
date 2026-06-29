@@ -27,17 +27,11 @@ class InspectionEntity extends BaseEntity {
     @Column(name = "source_id", nullable = false)
     private Long sourceId;
 
-    @Column(name = "inventory_id")
-    private Long inventoryId;
-
     @Column(name = "product_id", nullable = false)
     private Long productId;
 
     @Column(name = "lot_id", nullable = false)
     private Long lotId;
-
-    @Column(name = "section_id")
-    private Long sectionId;
 
     @Column(name = "warehouse_id", nullable = false)
     private Long warehouseId;
@@ -65,18 +59,15 @@ class InspectionEntity extends BaseEntity {
     private LocalDate expiryDate;
 
     private InspectionEntity(Long id, InspectionSourceType sourceType, Long sourceId,
-                             Long inventoryId, Long productId, Long lotId,
-                             Long sectionId, Long warehouseId, Long inspectorId,
+                             Long productId, Long lotId, Long warehouseId, Long inspectorId,
                              InspectionStatus status, int inspectionQuantity,
                              int passedQuantity, int failedQuantity, String defectReason,
                              LocalDate expiryDate) {
         this.id = id;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
-        this.inventoryId = inventoryId;
         this.productId = productId;
         this.lotId = lotId;
-        this.sectionId = sectionId;
         this.warehouseId = warehouseId;
         this.inspectorId = inspectorId;
         this.status = status;
@@ -92,10 +83,8 @@ class InspectionEntity extends BaseEntity {
                 inspection.getId(),
                 inspection.getSourceType(),
                 inspection.getSourceId(),
-                inspection.getInventoryId(),
                 inspection.getProductId(),
                 inspection.getLotId(),
-                inspection.getSectionId(),
                 inspection.getWarehouseId(),
                 inspection.getInspectorId(),
                 inspection.getStatus(),
@@ -109,8 +98,8 @@ class InspectionEntity extends BaseEntity {
 
     Inspection toDomain() {
         return Inspection.reconstitute(
-                id, sourceType, sourceId, inventoryId, productId, lotId,
-                sectionId, warehouseId, inspectorId, status, inspectionQuantity,
+                id, sourceType, sourceId, productId, lotId,
+                warehouseId, inspectorId, status, inspectionQuantity,
                 passedQuantity, failedQuantity, defectReason, expiryDate
         );
     }

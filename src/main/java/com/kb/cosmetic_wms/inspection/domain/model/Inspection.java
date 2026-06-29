@@ -21,10 +21,8 @@ public class Inspection {
     private Long id;
     private InspectionSourceType sourceType;
     private Long sourceId;
-    private Long inventoryId;
     private Long productId;
     private Long lotId;
-    private Long sectionId;
     private Long warehouseId;
     private Long inspectorId;
     private InspectionStatus status;
@@ -34,17 +32,15 @@ public class Inspection {
     private String defectReason;
     private LocalDate expiryDate;
 
-    private Inspection(Long id, InspectionSourceType sourceType, Long sourceId, Long inventoryId,
-                       Long productId, Long lotId, Long sectionId, Long warehouseId,
+    private Inspection(Long id, InspectionSourceType sourceType, Long sourceId,
+                       Long productId, Long lotId, Long warehouseId,
                        Long inspectorId, InspectionStatus status, int inspectionQuantity,
                        int passedQuantity, int failedQuantity, String defectReason, LocalDate expiryDate) {
         this.id = id;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
-        this.inventoryId = inventoryId;
         this.productId = productId;
         this.lotId = lotId;
-        this.sectionId = sectionId;
         this.warehouseId = warehouseId;
         this.inspectorId = inspectorId;
         this.status = status;
@@ -59,19 +55,18 @@ public class Inspection {
                                            int inspectionQuantity, Long productId, Long lotId,
                                            Long warehouseId, LocalDate expiryDate) {
         validateInitial(sourceType, sourceId, inspectionQuantity);
-        return new Inspection(null, sourceType, sourceId, null,
-                productId, lotId, null, warehouseId,
+        return new Inspection(null, sourceType, sourceId,
+                productId, lotId, warehouseId,
                 null, InspectionStatus.WAITING, inspectionQuantity, 0, 0, null, expiryDate);
     }
 
     public static Inspection reconstitute(Long id, InspectionSourceType sourceType, Long sourceId,
-                                          Long inventoryId, Long productId, Long lotId,
-                                          Long sectionId, Long warehouseId, Long inspectorId,
-                                          InspectionStatus status, int inspectionQuantity,
+                                          Long productId, Long lotId, Long warehouseId,
+                                          Long inspectorId, InspectionStatus status, int inspectionQuantity,
                                           int passedQuantity, int failedQuantity, String defectReason,
                                           LocalDate expiryDate) {
-        return new Inspection(id, sourceType, sourceId, inventoryId,
-                productId, lotId, sectionId, warehouseId, inspectorId,
+        return new Inspection(id, sourceType, sourceId,
+                productId, lotId, warehouseId, inspectorId,
                 status, inspectionQuantity, passedQuantity, failedQuantity, defectReason, expiryDate);
     }
 
@@ -86,12 +81,11 @@ public class Inspection {
         this.status = InspectionStatus.IN_PROGRESS;
     }
 
-    public void completeInspection(int passedQty, int failedQty, String defectReason, Long sectionId) {
+    public void completeInspection(int passedQty, int failedQty, String defectReason) {
         validateCompletion(passedQty, failedQty, defectReason);
         this.passedQuantity = passedQty;
         this.failedQuantity = failedQty;
         this.defectReason = (failedQty > 0) ? defectReason.trim() : null;
-        this.sectionId = sectionId;
         this.status = InspectionStatus.COMPLETED;
     }
 

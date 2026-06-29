@@ -56,7 +56,6 @@ class CreateInspectionServiceTest {
         assertThat(captor.getValue().getStatus()).isEqualTo(InspectionStatus.WAITING);
         assertThat(captor.getValue().getLotId()).isEqualTo(100L);
         assertThat(captor.getValue().getSourceId()).isEqualTo(10L);
-        assertThat(captor.getValue().getSectionId()).isNull();
     }
 
     @Test

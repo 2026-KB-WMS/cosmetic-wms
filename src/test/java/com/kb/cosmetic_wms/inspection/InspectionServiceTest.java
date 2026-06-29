@@ -107,7 +107,7 @@ public class InspectionServiceTest {
             when(inspectionPort.save(any())).thenReturn(inProgressInspection);
 
             // when
-            inspectionService.complete(2L, 10, 0, null, 200L);
+            inspectionService.complete(2L, 10, 0, null);
 
             // then
             assertThat(inProgressInspection.getStatus()).isEqualTo(InspectionStatus.COMPLETED);
@@ -127,8 +127,8 @@ public class InspectionServiceTest {
             when(inspectionPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             // when
-            inspectionService.complete(2L, 10, 0, null, 200L);
-            inspectionService.complete(4L, 0, 10, "전량 불량", 200L);
+            inspectionService.complete(2L, 10, 0, null);
+            inspectionService.complete(4L, 0, 10, "전량 불량");
 
             // then
             verify(eventPublisher, times(2)).publish(any(InspectionCompletedEvent.class));
@@ -142,7 +142,7 @@ public class InspectionServiceTest {
             ArgumentCaptor<InspectionCompletedEvent> captor = ArgumentCaptor.forClass(InspectionCompletedEvent.class);
 
             // when
-            inspectionService.complete(2L, 7, 3, "포장 불량", 200L);
+            inspectionService.complete(2L, 7, 3, "포장 불량");
 
             // then
             verify(eventPublisher).publish(captor.capture());
@@ -152,7 +152,6 @@ public class InspectionServiceTest {
             assertThat(event.sourceType()).isEqualTo("INBOUND");
             assertThat(event.productId()).isEqualTo(1L);
             assertThat(event.lotId()).isEqualTo(100L);
-            assertThat(event.sectionId()).isEqualTo(200L);
             assertThat(event.warehouseId()).isEqualTo(300L);
             assertThat(event.passedQuantity()).isEqualTo(7);
             assertThat(event.failedQuantity()).isEqualTo(3);
@@ -167,10 +166,10 @@ public class InspectionServiceTest {
             when(inspectionPort.findByIdForUpdate(3L)).thenReturn(Optional.of(completedInspection));
 
             // then
-            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null, 200L))
+            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class);
 
-            assertThatThrownBy(() -> inspectionService.complete(3L, 10, 0, null, 200L))
+            assertThatThrownBy(() -> inspectionService.complete(3L, 10, 0, null))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class);
         }
 
@@ -180,7 +179,7 @@ public class InspectionServiceTest {
             when(inspectionPort.findByIdForUpdate(1L)).thenReturn(Optional.of(waitingInspection));
 
             // when
-            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null, 200L))
+            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class);
 
             // then
@@ -193,7 +192,7 @@ public class InspectionServiceTest {
             when(inspectionPort.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
             // then
-            assertThatThrownBy(() -> inspectionService.complete(999L, 10, 0, null, 200L))
+            assertThatThrownBy(() -> inspectionService.complete(999L, 10, 0, null))
                     .isInstanceOf(InspectionNotFoundException.class);
         }
     }

@@ -152,7 +152,7 @@ public class InspectionEntityTest {
         void 합격_수량이나_반려_수량_중_하나라도_음수가_입력되면_예외를_던진다() {
             Inspection inspection = new InspectionTestBuilder().buildInProgress();
 
-            assertThatThrownBy(() -> inspection.completeInspection(-1, 11, null, 200L))
+            assertThatThrownBy(() -> inspection.completeInspection(-1, 11, null))
                     .isInstanceOf(InspectionNegativeQuantityException.class)
                     .hasMessage(InspectionErrorCode.INSPECTION_NEGATIVE_QUANTITY.getMessage());
         }
@@ -163,7 +163,7 @@ public class InspectionEntityTest {
                     .inspectionQuantity(10)
                     .buildInProgress();
 
-            assertThatThrownBy(() -> inspection.completeInspection(5, 3, null, 200L))
+            assertThatThrownBy(() -> inspection.completeInspection(5, 3, null))
                     .isInstanceOf(InspectionQuantityMismatchException.class)
                     .hasMessage("합격 수량과 반려 수량의 합이 총 검사 수량(10)과 일치해야 합니다.");
         }
@@ -177,11 +177,11 @@ public class InspectionEntityTest {
                     .inspectionQuantity(10)
                     .buildInProgress();
 
-            assertThatThrownBy(() -> inspectionForNull.completeInspection(8, 2, null, 200L))
+            assertThatThrownBy(() -> inspectionForNull.completeInspection(8, 2, null))
                     .isInstanceOf(InspectionDefectReasonRequiredException.class)
                     .hasMessage(InspectionErrorCode.INSPECTION_DEFECT_REASON_REQUIRED.getMessage());
 
-            assertThatThrownBy(() -> inspectionForBlank.completeInspection(8, 2, "   ", 200L))
+            assertThatThrownBy(() -> inspectionForBlank.completeInspection(8, 2, "   "))
                     .isInstanceOf(InspectionDefectReasonRequiredException.class)
                     .hasMessage(InspectionErrorCode.INSPECTION_DEFECT_REASON_REQUIRED.getMessage());
         }
@@ -190,7 +190,7 @@ public class InspectionEntityTest {
         void IN_PROGRESS_상태가_아닌_전표에_완료_처리_요청_시_예외를_던진다() {
             Inspection waiting = new InspectionTestBuilder().buildPending();
 
-            assertThatThrownBy(() -> waiting.completeInspection(10, 0, null, 200L))
+            assertThatThrownBy(() -> waiting.completeInspection(10, 0, null))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class)
                     .hasMessage(InspectionErrorCode.INSPECTION_COMPLETE_NOT_ALLOWED.getMessage());
         }

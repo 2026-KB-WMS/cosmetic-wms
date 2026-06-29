@@ -4,5 +4,5 @@ public interface InspectionLifecycleUseCase {
 
     InspectionResult start(Long inspectionId, Long inspectorId);
 
-    InspectionResult complete(Long inspectionId, int passedQty, int failedQty, String defectReason, Long sectionId);
+    InspectionResult complete(Long inspectionId, int passedQty, int failedQty, String defectReason);
 }

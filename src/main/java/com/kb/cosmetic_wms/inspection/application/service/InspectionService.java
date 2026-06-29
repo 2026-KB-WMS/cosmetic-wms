@@ -36,10 +36,10 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
 
     @Override
     @Transactional
-    public InspectionResult complete(Long inspectionId, int passedQty, int failedQty, String defectReason, Long sectionId) {
+    public InspectionResult complete(Long inspectionId, int passedQty, int failedQty, String defectReason) {
         Inspection inspection = inspectionPort.findByIdForUpdate(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
-        inspection.completeInspection(passedQty, failedQty, defectReason, sectionId);
+        inspection.completeInspection(passedQty, failedQty, defectReason);
         Inspection saved = inspectionPort.save(inspection);
         eventPublisher.publish(toInspectionCompletedEvent(saved));
         return InspectionResult.from(saved);
@@ -57,7 +57,6 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
                 inspection.getSourceId(),
                 inspection.getProductId(),
                 inspection.getLotId(),
-                inspection.getSectionId(),
                 inspection.getWarehouseId(),
                 inspection.getInspectionQuantity(),
                 inspection.getPassedQuantity(),

@@ -1,1 +1,2 @@
-ALTER TABLE quality_inspection ALTER COLUMN section_id BIGINT NULL;
+ALTER TABLE quality_inspection DROP COLUMN section_id;
+ALTER TABLE quality_inspection DROP COLUMN inventory_id;
