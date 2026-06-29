@@ -16,7 +16,7 @@ public class InboundCompletedEventAdapter {
 
     private final CreateInspectionUseCase createInspectionUseCase;
 
-    @Async
+    @Async("eventTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onInboundCompleted(InboundCompletedEvent event) {
         for (var line : event.lines()) {
