@@ -4,12 +4,15 @@ import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.storage.fixture.WarehouseTestBuilder;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
+import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageValidationException;
 import com.kb.cosmetic_wms.storage.domain.model.Section;
 import com.kb.cosmetic_wms.storage.domain.model.SectionType;
 import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
+
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -123,5 +126,57 @@ public class WarehouseEntityTest {
         );
 
         assertThat(warehouse.getSections()).hasSize(2);
+    }
+
+    @Test
+    void DOCKING_섹션에_수령_수량을_반영하면_currentCapacity가_증가한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 500));
+
+        Section docking = warehouse.getSections().get(0);
+        assertThat(docking.getCurrentCapacity()).isEqualTo(500);
+    }
+
+    @Test
+    void 여러_온도대의_DOCKING_섹션에_수령_수량을_반영하면_각_온도대별로_currentCapacity가_증가한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-C-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.COOL).maxCapacity(2000).build();
+
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 300, TemperatureZone.COOL, 200));
+
+        assertThat(warehouse.getSections().get(0).getCurrentCapacity()).isEqualTo(300);
+        assertThat(warehouse.getSections().get(1).getCurrentCapacity()).isEqualTo(200);
+    }
+
+    @Test
+    void DOCKING_수용량을_초과하는_수령_수량이_들어오면_SectionCapacityOverflowException이_발생한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(100).build();
+
+        assertThatThrownBy(() -> warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 200)))
+                .isInstanceOf(SectionCapacityOverflowException.class)
+                .hasMessage(StorageErrorCode.SECTION_CAPACITY_OVERFLOW.getMessage());
+    }
+
+    @Test
+    void 해당_온도대의_DOCKING_섹션이_없으면_SectionCapacityOverflowException이_발생한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+
+        assertThatThrownBy(() -> warehouse.receiveToDocking(Map.of(TemperatureZone.COOL, 100)))
+                .isInstanceOf(SectionCapacityOverflowException.class);
     }
 }

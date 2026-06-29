@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.storage;
 
 import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
+import com.kb.cosmetic_wms.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.storage.fixture.WarehouseTestBuilder;
 import com.kb.cosmetic_wms.storage.application.port.in.*;
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
@@ -19,12 +20,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class StorageServiceTest {
@@ -102,5 +105,32 @@ public class StorageServiceTest {
 
         assertThatThrownBy(() -> storageService.findById(invalidWarehouseId))
                 .isInstanceOf(WarehouseNotFoundException.class);
+    }
+
+    @Test
+    void DOCKING_수용량_갱신_시_창고를_비관적_잠금으로_조회하여_저장한다() {
+        Long warehouseId = 1L;
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(warehouseId).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+
+        given(storagePort.findByIdForUpdate(warehouseId)).willReturn(Optional.of(warehouse));
+        given(storagePort.save(any(Warehouse.class))).willAnswer(inv -> inv.getArgument(0));
+
+        storageService.updateDockingCapacity(warehouseId, Map.of(TemperatureZone.ROOM, 500));
+
+        verify(storagePort).findByIdForUpdate(warehouseId);
+        verify(storagePort).save(warehouse);
+        assertThat(warehouse.getSections().get(0).getCurrentCapacity()).isEqualTo(500);
+    }
+
+    @Test
+    void DOCKING_수용량_갱신_시_창고가_존재하지_않으면_WarehouseNotFoundException이_발생한다() {
+        given(storagePort.findByIdForUpdate(99L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                storageService.updateDockingCapacity(99L, Map.of(TemperatureZone.ROOM, 100))
+        ).isInstanceOf(WarehouseNotFoundException.class);
     }
 }
