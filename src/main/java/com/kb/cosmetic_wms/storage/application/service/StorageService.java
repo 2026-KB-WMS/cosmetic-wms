@@ -4,20 +4,17 @@ import com.kb.cosmetic_wms.storage.application.port.in.*;
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateWarehouseException;
 import com.kb.cosmetic_wms.storage.domain.exception.WarehouseNotFoundException;
-import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class StorageService implements RegisterWarehouseUseCase, AddSectionUseCase,
-        FindWarehouseUseCase, UpdateDockingCapacityUseCase {
+public class StorageService implements RegisterWarehouseUseCase, AddSectionUseCase, FindWarehouseUseCase {
 
     private final StoragePort storagePort;
 
@@ -58,14 +55,5 @@ public class StorageService implements RegisterWarehouseUseCase, AddSectionUseCa
         return storagePort.findAll().stream()
                 .map(WarehouseResult::from)
                 .toList();
-    }
-
-    @Override
-    @Transactional
-    public void updateDockingCapacity(Long warehouseId, Map<TemperatureZone, Integer> receivedByZone) {
-        Warehouse warehouse = storagePort.findByIdForUpdate(warehouseId)
-                .orElseThrow(WarehouseNotFoundException::new);
-        warehouse.receiveToDocking(receivedByZone);
-        storagePort.save(warehouse);
     }
 }
