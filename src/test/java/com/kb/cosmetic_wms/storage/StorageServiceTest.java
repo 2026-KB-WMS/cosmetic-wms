@@ -103,4 +103,5 @@ public class StorageServiceTest {
         assertThatThrownBy(() -> storageService.findById(invalidWarehouseId))
                 .isInstanceOf(WarehouseNotFoundException.class);
     }
+
 }

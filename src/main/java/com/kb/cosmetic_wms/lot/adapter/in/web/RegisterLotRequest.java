@@ -7,13 +7,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record RegisterLotRequest(
-
-        @NotNull(message = "입고일자는 필수 입력 값입니다.")
-        LocalDate inboundDate,
 
         @NotNull(message = "입고 ID는 필수 입력 값입니다.")
         @Positive(message = "입고 ID는 양수여야 합니다.")
@@ -36,7 +32,7 @@ public record RegisterLotRequest(
 
 ) {
     public RegisterLotCommand toCommand() {
-        return new RegisterLotCommand(inboundDate, inboundId, manufacturerLotNumber,
+        return new RegisterLotCommand(inboundId, manufacturerLotNumber,
                 manufacturingDate, expirationDate, productId);
     }
 }

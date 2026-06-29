@@ -47,16 +47,18 @@ public class Inbound {
         return new Inbound(id, inboundStatus, inboundDate, warehouseId, partnerId, lines);
     }
 
-    public void receive(Map<Long, Integer> receivedQuantities) {
+    public void receive(Map<Long, ReceiveLineData> receiveData) {
         if (!this.inboundStatus.canReceive()) {
             throw new InboundInvalidReceiveStatusException(this.inboundStatus.getDescription());
         }
         Set<Long> lineIds = inboundLines.stream().map(InboundLine::getId).collect(Collectors.toSet());
-        if (!lineIds.equals(receivedQuantities.keySet())) {
+        if (!lineIds.equals(receiveData.keySet())) {
             throw new InboundReceiveLineMismatchException();
         }
         for (InboundLine line : inboundLines) {
-            line.receive(receivedQuantities.get(line.getId()));
+            ReceiveLineData data = receiveData.get(line.getId());
+            line.receive(data.receivedQuantity(), data.manufacturerLotNumber(),
+                    data.manufacturingDate(), data.expirationDate());
         }
         this.inboundStatus = InboundStatus.RECEIVED;
     }

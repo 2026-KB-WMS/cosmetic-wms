@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.storage.domain.model;
 
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
+import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageValidationException;
@@ -97,6 +98,28 @@ public class Warehouse {
         Section section = Section.createQuarantineSection(sectionCode, sectionName, maxCapacity);
         sections.add(section);
         return section;
+    }
+
+    public void receiveToDocking(Map<TemperatureZone, Integer> receivedByZone) {
+        for (Map.Entry<TemperatureZone, Integer> entry : receivedByZone.entrySet()) {
+            int remaining = entry.getValue();
+            for (Section section : getDockingSectionsByZone(entry.getKey())) {
+                if (remaining <= 0) break;
+                int available = section.getMaxCapacity() - section.getCurrentCapacity();
+                int toAdd = Math.min(remaining, available);
+                section.plusCapacity(toAdd);
+                remaining -= toAdd;
+            }
+            if (remaining > 0) {
+                throw new SectionCapacityOverflowException();
+            }
+        }
+    }
+
+    private List<Section> getDockingSectionsByZone(TemperatureZone zone) {
+        return sections.stream()
+                .filter(s -> s.getSectionType() == SectionType.DOCKING && s.getTemperatureType() == zone)
+                .toList();
     }
 
     public boolean canAccommodateDocking(Map<TemperatureZone, Integer> requiredByZone) {

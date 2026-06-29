@@ -1,15 +1,15 @@
 CREATE TABLE member (
-    member_id         BIGINT       NOT NULL AUTO_INCREMENT,
-    login_id          VARCHAR(50)  NOT NULL,
-    password          VARCHAR(255) NOT NULL,
-    role              VARCHAR(50)  NOT NULL,
-    member_name       VARCHAR(50)  NOT NULL,
-    email             VARCHAR(50)  NOT NULL,
-    phone_number      VARCHAR(50)  NOT NULL,
-    created_by        BIGINT       NOT NULL,
-    created_at        DATETIME(6)  NOT NULL,
-    updated_by        BIGINT,
-    updated_at        DATETIME(6),
+    member_id    BIGINT       NOT NULL AUTO_INCREMENT,
+    login_id     VARCHAR(50)  NOT NULL,
+    password     VARCHAR(255) NOT NULL,
+    role         VARCHAR(50)  NOT NULL,
+    member_name  VARCHAR(50)  NOT NULL,
+    email        VARCHAR(50)  NOT NULL,
+    phone_number VARCHAR(50)  NOT NULL,
+    created_by   BIGINT       NOT NULL,
+    created_at   DATETIME(6)  NOT NULL,
+    updated_by   BIGINT,
+    updated_at   DATETIME(6),
     PRIMARY KEY (member_id),
     CONSTRAINT uq_login_id     UNIQUE (login_id),
     CONSTRAINT uq_email        UNIQUE (email),
@@ -121,15 +121,6 @@ CREATE TABLE product (
     CONSTRAINT chk_volume_positive            CHECK  (volume > 0)
 );
 
-CREATE TABLE sku_sequence (
-    brand_name    VARCHAR(255) NOT NULL,
-    category_code VARCHAR(255) NOT NULL,
-    type_code     VARCHAR(255) NOT NULL,
-    volume        INT          NOT NULL,
-    current_seq   INT          NOT NULL,
-    PRIMARY KEY (brand_name, category_code, type_code, volume)
-);
-
 CREATE TABLE lot (
     lot_id             BIGINT      NOT NULL AUTO_INCREMENT,
     lot_number         VARCHAR(50) NOT NULL,
@@ -157,6 +148,7 @@ CREATE TABLE inventory (
     alloc_status       VARCHAR(20) NOT NULL,
     quality_status     VARCHAR(20) NOT NULL,
     loc_status         VARCHAR(20) NOT NULL,
+    expiry_date        DATE        NOT NULL DEFAULT '9999-12-31',
     created_by         BIGINT      NOT NULL,
     created_at         DATETIME(6) NOT NULL,
     updated_by         BIGINT,
@@ -203,21 +195,20 @@ CREATE TABLE inbound (
     PRIMARY KEY (inbound_id)
 );
 
-CREATE TABLE inbound_item (
-    inbound_item_id   BIGINT      NOT NULL AUTO_INCREMENT,
-    inbound_id        BIGINT      NOT NULL,
-    product_id        BIGINT      NOT NULL,
-    quantity          INT         NOT NULL,
-    manufacture_date  DATE        NOT NULL,
-    expiration_date   DATE        NOT NULL,
-    inspection_status VARCHAR(20) NOT NULL,
-    lot_id            BIGINT,
-    section_id        BIGINT,
-    created_by        BIGINT      NOT NULL,
-    created_at        DATETIME(6) NOT NULL,
-    updated_by        BIGINT,
-    updated_at        DATETIME(6),
-    PRIMARY KEY (inbound_item_id)
+CREATE TABLE inbound_line (
+    inbound_line_id     BIGINT      NOT NULL AUTO_INCREMENT,
+    inbound_id          BIGINT      NOT NULL,
+    product_id          BIGINT      NOT NULL,
+    ordered_quantity    INT         NOT NULL,
+    received_quantity   INT         NOT NULL DEFAULT 0,
+    manufacturer_lot_no VARCHAR(50) NULL     COMMENT '실물 수령 시 확정된 제조사 로트 번호',
+    manufacturing_date  DATETIME(6) NULL     COMMENT '실물 수령 시 확정된 제조일자',
+    expiration_date     DATETIME(6) NULL     COMMENT '실물 수령 시 확정된 유통기한',
+    created_by          BIGINT      NOT NULL,
+    created_at          DATETIME(6) NOT NULL,
+    updated_by          BIGINT,
+    updated_at          DATETIME(6),
+    PRIMARY KEY (inbound_line_id)
 );
 
 CREATE TABLE quality_inspection (
@@ -225,12 +216,17 @@ CREATE TABLE quality_inspection (
     source_type         VARCHAR(20) NOT NULL,
     source_id           BIGINT      NOT NULL,
     inventory_id        BIGINT,
+    product_id          BIGINT      NOT NULL,
+    lot_id              BIGINT      NOT NULL,
+    section_id          BIGINT      NOT NULL,
+    warehouse_id        BIGINT      NOT NULL,
     inspector_id        BIGINT,
     status              VARCHAR(20) NOT NULL,
     inspection_quantity INT         NOT NULL,
     passed_quantity     INT         NOT NULL,
     failed_quantity     INT         NOT NULL,
     defect_reason       VARCHAR(100),
+    expiry_date         DATE,
     created_by          BIGINT      NOT NULL,
     created_at          DATETIME(6) NOT NULL,
     updated_by          BIGINT,

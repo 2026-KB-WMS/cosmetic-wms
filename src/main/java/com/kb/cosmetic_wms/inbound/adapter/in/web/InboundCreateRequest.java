@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,15 +17,12 @@ public record InboundCreateRequest(
 ) {
     public record LineRequest(
             @NotNull(message = "입고 상품 정보는 필수입니다.") Long productId,
-            @Positive(message = "입고 예정 수량은 0보다 커야 합니다.") int orderedQuantity,
-            @NotNull(message = "제조일자는 필수입니다.") LocalDate manufactureDate,
-            @NotNull(message = "유통기한은 필수입니다.") LocalDate expirationDate
+            @Positive(message = "입고 예정 수량은 0보다 커야 합니다.") int orderedQuantity
     ) {}
 
     public RegisterInboundCommand toCommand() {
         List<RegisterInboundCommand.LineItem> lineItems = lines.stream()
-                .map(l -> new RegisterInboundCommand.LineItem(
-                        l.productId(), l.orderedQuantity(), l.manufactureDate(), l.expirationDate()))
+                .map(l -> new RegisterInboundCommand.LineItem(l.productId(), l.orderedQuantity()))
                 .toList();
         return new RegisterInboundCommand(warehouseId, partnerId, inboundDate, lineItems);
     }

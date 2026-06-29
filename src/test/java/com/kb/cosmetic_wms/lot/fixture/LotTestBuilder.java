@@ -3,22 +3,14 @@ package com.kb.cosmetic_wms.lot.fixture;
 import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
 import com.kb.cosmetic_wms.lot.domain.model.Lot;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class LotTestBuilder {
-    private LocalDate inboundDate = LocalDate.of(2026, 1, 1);
     private Long inboundId = 1L;
     private String manufacturerLotNumber = "LOT0001";
     private LocalDateTime manufacturingDate = LocalDateTime.of(2026, 1, 1, 0, 0);
     private LocalDateTime expirationDate = LocalDateTime.of(2027, 1, 1, 0, 0);
     private Long productId = 1L;
-
-    public LotTestBuilder inboundDate(LocalDate inboundDate) {
-        this.inboundDate = inboundDate;
-        return this;
-    }
 
     public LotTestBuilder inboundId(Long inboundId) {
         this.inboundId = inboundId;
@@ -46,12 +38,11 @@ public class LotTestBuilder {
     }
 
     public Lot build() {
-        return Lot.create(inboundDate, inboundId, manufacturerLotNumber, manufacturingDate, expirationDate, productId);
+        return Lot.create(inboundId, manufacturerLotNumber, manufacturingDate, expirationDate, productId);
     }
 
     public Lot buildWithId(Long id) {
-        String lotNumber = String.format("%s-%d-%s",
-                inboundDate.format(DateTimeFormatter.ofPattern("yyMMdd")), inboundId, manufacturerLotNumber);
-        return Lot.reconstitute(id, lotNumber, manufacturingDate, expirationDate, LotStatus.AVAILABLE, productId);
+        return Lot.reconstitute(id, inboundId, manufacturerLotNumber,
+                manufacturingDate, expirationDate, LotStatus.AVAILABLE, productId);
     }
 }
