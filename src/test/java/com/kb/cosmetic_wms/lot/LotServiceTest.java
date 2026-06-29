@@ -58,13 +58,13 @@ class LotServiceTest {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
             given(findProductUseCase.existsById(command.productId())).willReturn(true);
-            given(lotPort.existsByLotNumber(command.lotNumber())).willReturn(false);
+            given(lotPort.existsByLotNumber(any())).willReturn(false);
             given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
             LotResult result = lotService.register(command);
 
             assertThat(result.id()).isEqualTo(1L);
-            assertThat(result.lotNumber()).isEqualTo("SKN-240101-01-0001");
+            assertThat(result.lotNumber()).isEqualTo("260101-1-LOT0001");
             assertThat(result.status()).isEqualTo(LotStatus.AVAILABLE);
             assertThat(result.productId()).isEqualTo(1L);
         }
@@ -74,7 +74,7 @@ class LotServiceTest {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
             given(findProductUseCase.existsById(command.productId())).willReturn(true);
-            given(lotPort.existsByLotNumber(command.lotNumber())).willReturn(false);
+            given(lotPort.existsByLotNumber(any())).willReturn(false);
             given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
             LotResult result = lotService.register(command);
@@ -99,7 +99,7 @@ class LotServiceTest {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
             given(findProductUseCase.existsById(command.productId())).willReturn(true);
-            given(lotPort.existsByLotNumber(command.lotNumber())).willReturn(true);
+            given(lotPort.existsByLotNumber(any())).willReturn(true);
 
             assertThatThrownBy(() -> lotService.register(command))
                     .isInstanceOf(DuplicateLotNumberException.class)
@@ -117,7 +117,7 @@ class LotServiceTest {
             LotResult result = lotService.findById(1L);
 
             assertThat(result.id()).isEqualTo(1L);
-            assertThat(result.lotNumber()).isEqualTo("SKN-240101-01-0001");
+            assertThat(result.lotNumber()).isEqualTo("260101-1-LOT0001");
             assertThat(result.status()).isEqualTo(LotStatus.AVAILABLE);
             assertThat(result.productId()).isEqualTo(1L);
         }
@@ -137,7 +137,7 @@ class LotServiceTest {
 
         @Test
         void 상품에_등록된_로트가_여러_개이면_전체_목록을_반환한다() {
-            Lot secondLot = new LotTestBuilder().lotNumber("SKN-240101-01-0002").buildWithId(2L);
+            Lot secondLot = new LotTestBuilder().inboundId(2L).manufacturerLotNumber("LOT0002").buildWithId(2L);
 
             given(findProductUseCase.existsById(1L)).willReturn(true);
             given(lotPort.findByProductId(1L)).willReturn(List.of(defaultLot, secondLot));
@@ -147,7 +147,7 @@ class LotServiceTest {
             assertThat(result).hasSize(2);
             assertThat(result.get(0).id()).isEqualTo(1L);
             assertThat(result.get(1).id()).isEqualTo(2L);
-            assertThat(result.get(1).lotNumber()).isEqualTo("SKN-240101-01-0002");
+            assertThat(result.get(1).lotNumber()).isEqualTo("260101-2-LOT0002");
         }
 
         @Test

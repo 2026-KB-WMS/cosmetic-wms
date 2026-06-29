@@ -4,17 +4,26 @@ import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record RegisterLotRequest(
 
-        @NotBlank(message = "로트 번호는 필수 입력 값입니다.")
-        @Size(max = 50, message = "로트 번호는 최대 50자까지 입력 가능합니다.")
-        @Pattern(regexp = "^[A-Z]{3}-\\d{6}-[A-Z0-9]{2}-\\d{4}$",
-                message = "올바르지 않은 로트 번호 형식입니다. (규격: [카테고리3자]-[YYMMDD]-[공장2자]-[일련번호4자])")
-        String lotNumber,
+        @NotNull(message = "입고일자는 필수 입력 값입니다.")
+        LocalDate inboundDate,
+
+        @NotNull(message = "입고 ID는 필수 입력 값입니다.")
+        @Positive(message = "입고 ID는 양수여야 합니다.")
+        Long inboundId,
+
+        @NotBlank(message = "제조사 로트 번호는 필수 입력 값입니다.")
+        @Size(max = 20, message = "제조사 로트 번호는 최대 20자까지 입력 가능합니다.")
+        @Pattern(regexp = "^[A-Z0-9][A-Z0-9\\-]{0,19}$",
+                message = "올바르지 않은 제조사 로트 번호 형식입니다. (영문 대문자, 숫자, 하이픈만 허용, 최대 20자)")
+        String manufacturerLotNumber,
 
         @NotNull(message = "제조일자는 필수 입력 값입니다.")
         LocalDateTime manufacturingDate,
@@ -27,6 +36,7 @@ public record RegisterLotRequest(
 
 ) {
     public RegisterLotCommand toCommand() {
-        return new RegisterLotCommand(lotNumber, manufacturingDate, expirationDate, productId);
+        return new RegisterLotCommand(inboundDate, inboundId, manufacturerLotNumber,
+                manufacturingDate, expirationDate, productId);
     }
 }
