@@ -55,10 +55,6 @@ ALTER TABLE inbound_line
         FOREIGN KEY (product_id) REFERENCES product (product_id);
 
 ALTER TABLE quality_inspection
-    ADD CONSTRAINT fk_quality_inspection_inventory
-        FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id);
-
-ALTER TABLE quality_inspection
     ADD CONSTRAINT fk_quality_inspection_inspector
         FOREIGN KEY (inspector_id) REFERENCES member (member_id);
 
@@ -69,10 +65,6 @@ ALTER TABLE quality_inspection
 ALTER TABLE quality_inspection
     ADD CONSTRAINT fk_quality_inspection_lot
         FOREIGN KEY (lot_id) REFERENCES lot (lot_id);
-
-ALTER TABLE quality_inspection
-    ADD CONSTRAINT fk_quality_inspection_section
-        FOREIGN KEY (section_id) REFERENCES section (section_id);
 
 ALTER TABLE quality_inspection
     ADD CONSTRAINT fk_quality_inspection_warehouse
