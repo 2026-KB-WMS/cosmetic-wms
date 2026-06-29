@@ -26,6 +26,7 @@ import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -70,7 +71,7 @@ public class LotControllerTest extends RestDocsSupport {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.lotNumber").value("SKN-240101-01-0001"))
+                .andExpect(jsonPath("$.lotNumber").value("260101-1-LOT0001"))
                 .andExpect(jsonPath("$.status").value("AVAILABLE"))
                 .andExpect(jsonPath("$.productId").value(1L))
                 .andDo(document("lot-create-success",
@@ -82,9 +83,10 @@ public class LotControllerTest extends RestDocsSupport {
 
     @Test
     @WithMockUser
-    void 로트_번호가_빈_값이면_400_Bad_Request를_반환하고_에러응답이_문서화된다() throws Exception {
+    void 제조사_로트_번호가_빈_값이면_400_Bad_Request를_반환하고_에러응답이_문서화된다() throws Exception {
         RegisterLotRequest invalidRequest = new RegisterLotRequest(
-                "", LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), 1L);
+                LocalDate.of(2026, 1, 1), 1L, "",
+                LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), 1L);
 
         mockMvc.perform(post("/api/v1/lots")
                         .with(csrf())
@@ -101,9 +103,10 @@ public class LotControllerTest extends RestDocsSupport {
 
     @Test
     @WithMockUser
-    void 로트_번호_형식이_잘못되면_400_Bad_Request를_반환한다() throws Exception {
+    void 제조사_로트_번호_형식이_잘못되면_400_Bad_Request를_반환한다() throws Exception {
         RegisterLotRequest invalidRequest = new RegisterLotRequest(
-                "skn-240101-01-0001", LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), 1L);
+                LocalDate.of(2026, 1, 1), 1L, "lot-0001",
+                LocalDateTime.of(2026, 1, 1, 0, 0), LocalDateTime.of(2027, 1, 1, 0, 0), 1L);
 
         mockMvc.perform(post("/api/v1/lots")
                         .with(csrf())
@@ -162,7 +165,7 @@ public class LotControllerTest extends RestDocsSupport {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.lotNumber").value("SKN-240101-01-0001"))
+                .andExpect(jsonPath("$.lotNumber").value("260101-1-LOT0001"))
                 .andExpect(jsonPath("$.status").value("AVAILABLE"))
                 .andExpect(jsonPath("$.manufacturingDate").exists())
                 .andExpect(jsonPath("$.expirationDate").exists())
@@ -197,7 +200,7 @@ public class LotControllerTest extends RestDocsSupport {
     void 상품_ID로_로트_목록을_조회하면_200_OK와_전체_목록을_반환하고_API_문서가_생성된다() throws Exception {
         List<LotResult> resultList = List.of(
                 buildResult(),
-                new LotResult(2L, "SKN-240101-01-0002",
+                new LotResult(2L, "260101-2-LOT0002",
                         LocalDateTime.of(2026, 2, 1, 0, 0),
                         LocalDateTime.of(2027, 2, 1, 0, 0),
                         LotStatus.AVAILABLE, 1L)
@@ -209,9 +212,9 @@ public class LotControllerTest extends RestDocsSupport {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].lotNumber").value("SKN-240101-01-0001"))
+                .andExpect(jsonPath("$[0].lotNumber").value("260101-1-LOT0001"))
                 .andExpect(jsonPath("$[1].id").value(2L))
-                .andExpect(jsonPath("$[1].lotNumber").value("SKN-240101-01-0002"))
+                .andExpect(jsonPath("$[1].lotNumber").value("260101-2-LOT0002"))
                 .andDo(document("lot-get-by-product-success",
                         buildParams(LOT, "상품별 로트 목록 조회", null, LOT_DETAIL_RESPONSE),
                         queryParameters(
@@ -241,7 +244,7 @@ public class LotControllerTest extends RestDocsSupport {
     void 올바른_ID와_상태로_변경하면_200_OK와_갱신된_로트_정보를_반환하고_API_문서가_생성된다() throws Exception {
         UpdateLotStatusRequest request = new UpdateLotStatusRequest(LotStatus.HOLD);
         LotResult result = new LotResult(
-                1L, "SKN-240101-01-0001",
+                1L, "260101-1-LOT0001",
                 LocalDateTime.of(2026, 1, 1, 0, 0),
                 LocalDateTime.of(2027, 1, 1, 0, 0),
                 LotStatus.HOLD, 1L
@@ -326,7 +329,9 @@ public class LotControllerTest extends RestDocsSupport {
 
     private static RegisterLotRequest buildRegisterRequest() {
         return new RegisterLotRequest(
-                "SKN-240101-01-0001",
+                LocalDate.of(2026, 1, 1),
+                1L,
+                "LOT0001",
                 LocalDateTime.of(2026, 1, 1, 0, 0),
                 LocalDateTime.of(2027, 1, 1, 0, 0),
                 1L
@@ -336,7 +341,7 @@ public class LotControllerTest extends RestDocsSupport {
     private static LotResult buildResult() {
         return new LotResult(
                 1L,
-                "SKN-240101-01-0001",
+                "260101-1-LOT0001",
                 LocalDateTime.of(2026, 1, 1, 0, 0),
                 LocalDateTime.of(2027, 1, 1, 0, 0),
                 LotStatus.AVAILABLE,
@@ -346,8 +351,12 @@ public class LotControllerTest extends RestDocsSupport {
 
     private static FieldDescriptor[] getLotCreateRequestFields() {
         return new FieldDescriptor[]{
-                fieldWithPath("lotNumber").type(JsonFieldType.STRING)
-                        .description("로트 번호 (형식: [카테고리3자]-[YYMMDD]-[공장2자]-[일련번호4자], 예: SKN-240101-01-0001)"),
+                fieldWithPath("inboundDate").type(JsonFieldType.STRING)
+                        .description("입고일자 (ISO-8601 날짜, 예: 2026-01-01)"),
+                fieldWithPath("inboundId").type(JsonFieldType.NUMBER)
+                        .description("입고 ID (양수)"),
+                fieldWithPath("manufacturerLotNumber").type(JsonFieldType.STRING)
+                        .description("제조사 로트 번호 (영문 대문자·숫자·하이픈, 최대 20자, 예: LOT0001)"),
                 fieldWithPath("manufacturingDate").type(JsonFieldType.STRING)
                         .description("제조일자 (ISO-8601, 예: 2026-01-01T00:00:00)"),
                 fieldWithPath("expirationDate").type(JsonFieldType.STRING)
