@@ -8,7 +8,6 @@ public record InspectionCompletedEvent(
         Long sourceId,
         Long productId,
         Long lotId,
-        Long sectionId,
         Long warehouseId,
         int inspectionQuantity,
         int passedQuantity,

@@ -28,6 +28,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -58,13 +60,14 @@ class LotServiceTest {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
             given(findProductUseCase.existsById(command.productId())).willReturn(true);
-            given(lotPort.existsByLotNumber(any())).willReturn(false);
+            given(lotPort.existsByInboundIdAndManufacturerLotNumber(anyLong(), anyString())).willReturn(false);
             given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
             LotResult result = lotService.register(command);
 
             assertThat(result.id()).isEqualTo(1L);
-            assertThat(result.lotNumber()).isEqualTo("260101-1-LOT0001");
+            assertThat(result.inboundId()).isEqualTo(1L);
+            assertThat(result.manufacturerLotNumber()).isEqualTo("LOT0001");
             assertThat(result.status()).isEqualTo(LotStatus.AVAILABLE);
             assertThat(result.productId()).isEqualTo(1L);
         }
@@ -74,7 +77,7 @@ class LotServiceTest {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
             given(findProductUseCase.existsById(command.productId())).willReturn(true);
-            given(lotPort.existsByLotNumber(any())).willReturn(false);
+            given(lotPort.existsByInboundIdAndManufacturerLotNumber(anyLong(), anyString())).willReturn(false);
             given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
             LotResult result = lotService.register(command);
@@ -95,11 +98,11 @@ class LotServiceTest {
         }
 
         @Test
-        void 이미_등록된_로트_번호로_등록하면_DuplicateLotNumberException이_발생한다() {
+        void 이미_등록된_입고ID와_제조사_로트번호로_등록하면_DuplicateLotNumberException이_발생한다() {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
             given(findProductUseCase.existsById(command.productId())).willReturn(true);
-            given(lotPort.existsByLotNumber(any())).willReturn(true);
+            given(lotPort.existsByInboundIdAndManufacturerLotNumber(anyLong(), anyString())).willReturn(true);
 
             assertThatThrownBy(() -> lotService.register(command))
                     .isInstanceOf(DuplicateLotNumberException.class)
@@ -117,7 +120,8 @@ class LotServiceTest {
             LotResult result = lotService.findById(1L);
 
             assertThat(result.id()).isEqualTo(1L);
-            assertThat(result.lotNumber()).isEqualTo("260101-1-LOT0001");
+            assertThat(result.inboundId()).isEqualTo(1L);
+            assertThat(result.manufacturerLotNumber()).isEqualTo("LOT0001");
             assertThat(result.status()).isEqualTo(LotStatus.AVAILABLE);
             assertThat(result.productId()).isEqualTo(1L);
         }
@@ -147,7 +151,8 @@ class LotServiceTest {
             assertThat(result).hasSize(2);
             assertThat(result.get(0).id()).isEqualTo(1L);
             assertThat(result.get(1).id()).isEqualTo(2L);
-            assertThat(result.get(1).lotNumber()).isEqualTo("260101-2-LOT0002");
+            assertThat(result.get(1).inboundId()).isEqualTo(2L);
+            assertThat(result.get(1).manufacturerLotNumber()).isEqualTo("LOT0002");
         }
 
         @Test

@@ -61,7 +61,7 @@ public class InspectionControllerTest extends RestDocsSupport {
             // given
             Long inspectionId = 1L;
             InspectionResult result = new InspectionResult(
-                    inspectionId, InspectionSourceType.INBOUND, 10L, 100L,
+                    inspectionId, InspectionSourceType.INBOUND, 10L,
                     null, InspectionStatus.WAITING, 20, 0, 0, null);
 
             given(findInspectionUseCase.findById(inspectionId)).willReturn(result);
@@ -110,7 +110,7 @@ public class InspectionControllerTest extends RestDocsSupport {
             Long inspectionId = 1L;
             InspectionStartRequest request = new InspectionStartRequest(14L);
             InspectionResult result = new InspectionResult(
-                    inspectionId, InspectionSourceType.INBOUND, 10L, 100L,
+                    inspectionId, InspectionSourceType.INBOUND, 10L,
                     14L, InspectionStatus.IN_PROGRESS, 20, 0, 0, null);
 
             given(inspectionLifecycleUseCase.start(eq(inspectionId), eq(14L))).willReturn(result);
@@ -181,7 +181,7 @@ public class InspectionControllerTest extends RestDocsSupport {
             Long inspectionId = 2L;
             InspectionCompleteRequest request = new InspectionCompleteRequest(18, 2, "포장 불량");
             InspectionResult result = new InspectionResult(
-                    inspectionId, InspectionSourceType.INBOUND, 10L, 100L,
+                    inspectionId, InspectionSourceType.INBOUND, 10L,
                     14L, InspectionStatus.COMPLETED, 20, 18, 2, "포장 불량");
 
             given(inspectionLifecycleUseCase.complete(eq(inspectionId), eq(18), eq(2), eq("포장 불량")))
@@ -266,7 +266,6 @@ public class InspectionControllerTest extends RestDocsSupport {
                 fieldWithPath("id").description("품질 검사 전표 ID"),
                 fieldWithPath("sourceType").description("검사 요청 출처 유형 (INBOUND 등)"),
                 fieldWithPath("sourceId").description("출처 대상 ID (예: 입고 품목 ID)"),
-                fieldWithPath("inventoryId").description("연관 재고 ID (없는 경우 null)").optional(),
                 fieldWithPath("inspectorId").description("검사자 ID (검사 시작 전 null)").optional(),
                 fieldWithPath("status").description("검사 상태 (WAITING / IN_PROGRESS / COMPLETED)"),
                 fieldWithPath("inspectionQuantity").description("총 검사 대상 수량"),

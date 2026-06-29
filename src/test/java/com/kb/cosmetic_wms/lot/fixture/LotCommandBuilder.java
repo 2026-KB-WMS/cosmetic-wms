@@ -2,21 +2,14 @@ package com.kb.cosmetic_wms.lot.fixture;
 
 import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class LotCommandBuilder {
-    private LocalDate inboundDate = LocalDate.of(2026, 1, 1);
     private Long inboundId = 1L;
     private String manufacturerLotNumber = "LOT0001";
     private LocalDateTime manufacturingDate = LocalDateTime.of(2026, 1, 1, 0, 0);
     private LocalDateTime expirationDate = LocalDateTime.of(2027, 1, 1, 0, 0);
     private Long productId = 1L;
-
-    public LotCommandBuilder inboundDate(LocalDate inboundDate) {
-        this.inboundDate = inboundDate;
-        return this;
-    }
 
     public LotCommandBuilder inboundId(Long inboundId) {
         this.inboundId = inboundId;
@@ -34,7 +27,7 @@ public class LotCommandBuilder {
     }
 
     public RegisterLotCommand build() {
-        return new RegisterLotCommand(inboundDate, inboundId, manufacturerLotNumber,
+        return new RegisterLotCommand(inboundId, manufacturerLotNumber,
                 manufacturingDate, expirationDate, productId);
     }
 }

@@ -7,11 +7,10 @@ import java.time.LocalDate;
 public record CreateInspectionCommand(
         InspectionSourceType sourceType,
         Long sourceId,
-        Long inventoryId,
         int inspectionQuantity,
         Long productId,
-        Long lotId,
-        Long sectionId,
+        Long inboundId,
+        String manufacturerLotNumber,
         Long warehouseId,
         LocalDate expiryDate
 ) {}

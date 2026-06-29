@@ -2,7 +2,6 @@ package com.kb.cosmetic_wms.inspection.application.service;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
-import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionCommand;
 import com.kb.cosmetic_wms.inspection.application.port.in.FindInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionResult;
@@ -20,16 +19,6 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
 
     private final InspectionPort inspectionPort;
     private final EventPublisher eventPublisher;
-
-    @Override
-    @Transactional
-    public void create(CreateInspectionCommand command) {
-        Inspection inspection = Inspection.createPending(
-                command.sourceType(), command.sourceId(), command.inventoryId(),
-                command.inspectionQuantity(), command.productId(), command.lotId(),
-                command.sectionId(), command.warehouseId(), command.expiryDate());
-        inspectionPort.save(inspection);
-    }
 
     @Override
     public InspectionResult findById(Long inspectionId) {
@@ -68,7 +57,6 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
                 inspection.getSourceId(),
                 inspection.getProductId(),
                 inspection.getLotId(),
-                inspection.getSectionId(),
                 inspection.getWarehouseId(),
                 inspection.getInspectionQuantity(),
                 inspection.getPassedQuantity(),

@@ -27,7 +27,6 @@ import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -292,7 +291,9 @@ public class InboundControllerTest extends RestDocsSupport {
     private static InboundResult buildResult(InboundStatus status, int orderedQty, int receivedQty) {
         InboundLineResult line = new InboundLineResult(
                 1L, 1L, orderedQty, receivedQty,
-                LocalDate.of(2026, 1, 1), LocalDate.of(2028, 1, 1)
+                "LOT0001",
+                LocalDateTime.of(2026, 1, 1, 0, 0),
+                LocalDateTime.of(2028, 1, 1, 0, 0)
         );
         return new InboundResult(
                 1L, 1L, 1L, status,
@@ -316,11 +317,7 @@ public class InboundControllerTest extends RestDocsSupport {
                 fieldWithPath("lines[].productId").type(JsonFieldType.NUMBER)
                         .description("상품 ID"),
                 fieldWithPath("lines[].orderedQuantity").type(JsonFieldType.NUMBER)
-                        .description("발주 수량 (1 이상)"),
-                fieldWithPath("lines[].manufactureDate").type(JsonFieldType.STRING)
-                        .description("제조일자 (ISO-8601)"),
-                fieldWithPath("lines[].expirationDate").type(JsonFieldType.STRING)
-                        .description("유통기한 (ISO-8601)")
+                        .description("발주 수량 (1 이상)")
         };
     }
 
@@ -331,7 +328,13 @@ public class InboundControllerTest extends RestDocsSupport {
                 fieldWithPath("lines[].lineId").type(JsonFieldType.NUMBER)
                         .description("입고 라인 ID"),
                 fieldWithPath("lines[].receivedQuantity").type(JsonFieldType.NUMBER)
-                        .description("실제 수령 수량 (0 이상)")
+                        .description("실제 수령 수량 (0 이상)"),
+                fieldWithPath("lines[].manufacturerLotNumber").type(JsonFieldType.STRING)
+                        .description("실물에서 확인된 제조사 로트 번호"),
+                fieldWithPath("lines[].manufacturingDate").type(JsonFieldType.STRING)
+                        .description("실물에서 확인된 제조일자 (ISO-8601)"),
+                fieldWithPath("lines[].expirationDate").type(JsonFieldType.STRING)
+                        .description("실물에서 확인된 유통기한 (ISO-8601)")
         };
     }
 
@@ -359,10 +362,12 @@ public class InboundControllerTest extends RestDocsSupport {
                         .description("발주 수량").optional(),
                 fieldWithPath("lines[].receivedQuantity").type(JsonFieldType.NUMBER)
                         .description("수령 수량 (수령 전 0)").optional(),
-                fieldWithPath("lines[].manufactureDate").type(JsonFieldType.STRING)
-                        .description("제조일자").optional(),
+                fieldWithPath("lines[].manufacturerLotNumber").type(JsonFieldType.STRING)
+                        .description("제조사 로트 번호 (수령 후 확정)").optional(),
+                fieldWithPath("lines[].manufacturingDate").type(JsonFieldType.STRING)
+                        .description("제조일자 (수령 후 확정)").optional(),
                 fieldWithPath("lines[].expirationDate").type(JsonFieldType.STRING)
-                        .description("유통기한").optional()
+                        .description("유통기한 (수령 후 확정)").optional()
         };
     }
 }
