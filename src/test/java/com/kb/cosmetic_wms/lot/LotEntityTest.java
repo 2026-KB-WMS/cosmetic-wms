@@ -27,7 +27,7 @@ public class LotEntityTest {
     void 올바른_로트_번호가_주어졌을_때_Lot_객체가_정상_생성되며_초기_상태는_AVAILABLE이어야_한다() {
         Lot lot = new LotTestBuilder().build();
 
-        Assertions.assertThat(lot.getLotNumber().value()).isEqualTo("SKN-240101-01-0001");
+        Assertions.assertThat(lot.getLotNumber().value()).isEqualTo("260101-1-LOT0001");
         Assertions.assertThat(lot.getStatus()).isEqualTo(LotStatus.AVAILABLE);
     }
 
@@ -43,11 +43,18 @@ public class LotEntityTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"SKN240101010001", "skn-240101-01-0001", "SKN-240101-1-0001", "SKN-240101-01-000!"})
-    void 로트_번호가_정해진_패턴과_일치하지_않을_때_예외를_던진다(String invalidLotNumber) {
+    @ValueSource(strings = {
+            "lot0001",                   // 소문자 사용
+            "!LOT01",                    // 특수문자로 시작
+            "LOT 001",                   // 공백 포함
+            "LOT_001",                   // 언더스코어 포함
+            "-LOT001",                   // 하이픈으로 시작 (첫 자리는 A-Z·0-9만 허용)
+            "ABCDEFGHIJKLMNOPQRSTUV"     // 21자 초과 (최대 20자)
+    })
+    void 제조사_로트_번호가_정해진_패턴과_일치하지_않을_때_예외를_던진다(String invalidManufacturerLotNumber) {
         Assertions.assertThatThrownBy(() ->
                         new LotTestBuilder()
-                                .lotNumber(invalidLotNumber)
+                                .manufacturerLotNumber(invalidManufacturerLotNumber)
                                 .build()
                 )
                 .isInstanceOf(InvalidLotNumberFormatException.class);
@@ -68,7 +75,7 @@ public class LotEntityTest {
     class 상태_전환 {
 
         private Lot lotWithStatus(LotStatus status) {
-            return Lot.reconstitute(1L, "SKN-240101-01-0001",
+            return Lot.reconstitute(1L, "260101-1-LOT0001",
                     LocalDateTime.of(2026, 1, 1, 0, 0),
                     LocalDateTime.of(2027, 1, 1, 0, 0),
                     status, 1L);

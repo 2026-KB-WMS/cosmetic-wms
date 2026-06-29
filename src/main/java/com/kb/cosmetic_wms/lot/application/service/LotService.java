@@ -28,16 +28,19 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
         if (!findProductUseCase.existsById(command.productId())) {
             throw new LotProductNotFoundException();
         }
-        if (lotPort.existsByLotNumber(command.lotNumber())) {
-            throw new DuplicateLotNumberException();
-        }
 
         Lot lot = Lot.create(
-                command.lotNumber(),
+                command.inboundDate(),
+                command.inboundId(),
+                command.manufacturerLotNumber(),
                 command.manufacturingDate(),
                 command.expirationDate(),
                 command.productId()
         );
+
+        if (lotPort.existsByLotNumber(lot.getLotNumber().value())) {
+            throw new DuplicateLotNumberException();
+        }
         return LotResult.from(lotPort.save(lot));
     }
 
