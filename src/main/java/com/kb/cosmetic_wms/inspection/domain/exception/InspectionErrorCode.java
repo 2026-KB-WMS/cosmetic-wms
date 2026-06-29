@@ -58,6 +58,11 @@ public enum InspectionErrorCode implements ErrorCode {
             HttpStatus.CONFLICT,
             "INSPECTION_COMPLETE_NOT_ALLOWED",
             "진행 중(IN_PROGRESS) 상태인 전표만 판정을 완료할 수 있습니다."
+    ),
+    INSPECTION_LOT_NOT_FOUND(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "INSPECTION_LOT_NOT_FOUND",
+            "검사 대상 로트를 찾을 수 없습니다."
     );
 
     private final HttpStatus status;

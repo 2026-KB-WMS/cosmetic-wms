@@ -30,7 +30,6 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
         }
 
         Lot lot = Lot.create(
-                command.inboundDate(),
                 command.inboundId(),
                 command.manufacturerLotNumber(),
                 command.manufacturingDate(),
@@ -38,7 +37,7 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
                 command.productId()
         );
 
-        if (lotPort.existsByLotNumber(lot.getLotNumber().value())) {
+        if (lotPort.existsByInboundIdAndManufacturerLotNumber(lot.getInboundId(), lot.getManufacturerLotNumber())) {
             throw new DuplicateLotNumberException();
         }
         return LotResult.from(lotPort.save(lot));

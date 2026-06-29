@@ -13,7 +13,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "lot",
-        uniqueConstraints = @UniqueConstraint(name = "uq_lot_number", columnNames = "lot_number")
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_lot_inbound_manufacturer",
+                columnNames = {"inbound_id", "manufacturer_lot_no"})
 )
 @Check(name = "chk_lot_date", constraints = "manufacturing_date <= expiration_date")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -24,8 +26,11 @@ class LotEntity extends BaseEntity {
     @Column(name = "lot_id")
     private Long id;
 
-    @Column(name = "lot_number", nullable = false, length = 50)
-    private String lotNumber;
+    @Column(name = "inbound_id", nullable = false)
+    private Long inboundId;
+
+    @Column(name = "manufacturer_lot_no", nullable = false, length = 50)
+    private String manufacturerLotNumber;
 
     @Column(name = "manufacturing_date", nullable = false)
     private LocalDateTime manufacturingDate;
@@ -40,10 +45,12 @@ class LotEntity extends BaseEntity {
     @Column(name = "product_id", nullable = false)
     private Long productId;
 
-    private LotEntity(Long id, String lotNumber, LocalDateTime manufacturingDate,
-                      LocalDateTime expirationDate, LotStatus status, Long productId) {
+    private LotEntity(Long id, Long inboundId, String manufacturerLotNumber,
+                      LocalDateTime manufacturingDate, LocalDateTime expirationDate,
+                      LotStatus status, Long productId) {
         this.id = id;
-        this.lotNumber = lotNumber;
+        this.inboundId = inboundId;
+        this.manufacturerLotNumber = manufacturerLotNumber;
         this.manufacturingDate = manufacturingDate;
         this.expirationDate = expirationDate;
         this.status = status;
@@ -53,7 +60,8 @@ class LotEntity extends BaseEntity {
     static LotEntity fromDomain(Lot lot) {
         return new LotEntity(
                 lot.getId(),
-                lot.getLotNumber().value(),
+                lot.getInboundId(),
+                lot.getManufacturerLotNumber(),
                 lot.getPeriod().manufacturingDate(),
                 lot.getPeriod().expirationDate(),
                 lot.getStatus(),
@@ -62,6 +70,7 @@ class LotEntity extends BaseEntity {
     }
 
     Lot toDomain() {
-        return Lot.reconstitute(id, lotNumber, manufacturingDate, expirationDate, status, productId);
+        return Lot.reconstitute(id, inboundId, manufacturerLotNumber,
+                manufacturingDate, expirationDate, status, productId);
     }
 }

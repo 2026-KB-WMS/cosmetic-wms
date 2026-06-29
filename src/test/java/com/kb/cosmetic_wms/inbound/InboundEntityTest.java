@@ -4,9 +4,9 @@ import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
 import com.kb.cosmetic_wms.inbound.domain.exception.*;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
 import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
+import com.kb.cosmetic_wms.inbound.domain.model.ReceiveLineData;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +21,7 @@ class InboundEntityTest {
     private static final LocalDateTime FUTURE_DATE = LocalDateTime.now().plusDays(1);
 
     private List<InboundLine> defaultLines() {
-        return List.of(InboundLine.create(1L, 100,
-                LocalDate.now().minusDays(1), LocalDate.now().plusYears(3)));
+        return List.of(InboundLine.create(1L, 100));
     }
 
     @Test
@@ -57,24 +56,23 @@ class InboundEntityTest {
 
     @Test
     void SCHEDULED_상태에서_수령_확인하면_RECEIVED로_전환된다() {
-        Inbound inbound = Inbound.create(FUTURE_DATE, WAREHOUSE_ID, PARTNER_ID, defaultLines());
         Inbound persisted = Inbound.reconstitute(1L, InboundStatus.SCHEDULED, FUTURE_DATE,
                 WAREHOUSE_ID, PARTNER_ID,
-                List.of(InboundLine.reconstitute(1L, 1L, 100, 0,
-                        LocalDate.now().minusDays(1), LocalDate.now().plusYears(3))));
+                List.of(InboundLine.reconstitute(1L, 1L, 100, 0, null, null, null)));
 
-        persisted.receive(Map.of(1L, 95));
+        persisted.receive(Map.of(1L, new ReceiveLineData(95, "LOT0001",
+                LocalDateTime.now().minusDays(1), LocalDateTime.now().plusYears(3))));
 
         assertThat(persisted.getInboundStatus()).isEqualTo(InboundStatus.RECEIVED);
         assertThat(persisted.getInboundLines().get(0).getReceivedQuantity()).isEqualTo(95);
+        assertThat(persisted.getInboundLines().get(0).getManufacturerLotNumber()).isEqualTo("LOT0001");
     }
 
     @Test
     void 수령_확인_요청의_라인_ID가_입고_전표와_일치하지_않으면_InboundReceiveLineMismatchException이_발생한다() {
         Inbound inbound = Inbound.reconstitute(1L, InboundStatus.SCHEDULED, FUTURE_DATE,
                 WAREHOUSE_ID, PARTNER_ID,
-                List.of(InboundLine.reconstitute(1L, 1L, 100, 0,
-                        LocalDate.now().minusDays(1), LocalDate.now().plusYears(3))));
+                List.of(InboundLine.reconstitute(1L, 1L, 100, 0, null, null, null)));
 
         assertThatThrownBy(() -> inbound.receive(Map.of()))
                 .isInstanceOf(InboundReceiveLineMismatchException.class)

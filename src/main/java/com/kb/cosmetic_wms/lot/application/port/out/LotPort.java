@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LotPort {
-    boolean existsByLotNumber(String lotNumber);
+    boolean existsByInboundIdAndManufacturerLotNumber(Long inboundId, String manufacturerLotNumber);
+    Optional<Lot> findByInboundIdAndManufacturerLotNumber(Long inboundId, String manufacturerLotNumber);
     Optional<Lot> findById(Long id);
     List<Lot> findByProductId(Long productId);
     Lot save(Lot lot);

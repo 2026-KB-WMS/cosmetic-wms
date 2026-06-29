@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inbound_line")
@@ -27,23 +27,28 @@ class InboundLineEntity extends BaseEntity {
     @Column(name = "received_quantity", nullable = false)
     private int receivedQuantity;
 
-    @Column(name = "manufacture_date", nullable = false)
-    private LocalDate manufactureDate;
+    @Column(name = "manufacturer_lot_no")
+    private String manufacturerLotNumber;
 
-    @Column(name = "expiration_date", nullable = false)
-    private LocalDate expirationDate;
+    @Column(name = "manufacturing_date")
+    private LocalDateTime manufacturingDate;
+
+    @Column(name = "expiration_date")
+    private LocalDateTime expirationDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inbound_id", nullable = false)
     private InboundEntity inbound;
 
     private InboundLineEntity(Long id, Long productId, int orderedQuantity, int receivedQuantity,
-                               LocalDate manufactureDate, LocalDate expirationDate) {
+                               String manufacturerLotNumber, LocalDateTime manufacturingDate,
+                               LocalDateTime expirationDate) {
         this.id = id;
         this.productId = productId;
         this.orderedQuantity = orderedQuantity;
         this.receivedQuantity = receivedQuantity;
-        this.manufactureDate = manufactureDate;
+        this.manufacturerLotNumber = manufacturerLotNumber;
+        this.manufacturingDate = manufacturingDate;
         this.expirationDate = expirationDate;
     }
 
@@ -51,7 +56,8 @@ class InboundLineEntity extends BaseEntity {
         return new InboundLineEntity(
                 line.getId(), line.getProductId(),
                 line.getOrderedQuantity(), line.getReceivedQuantity(),
-                line.getManufactureDate(), line.getExpirationDate()
+                line.getManufacturerLotNumber(),
+                line.getManufacturingDate(), line.getExpirationDate()
         );
     }
 
@@ -62,7 +68,7 @@ class InboundLineEntity extends BaseEntity {
     InboundLine toDomain() {
         return InboundLine.reconstitute(
                 id, productId, orderedQuantity, receivedQuantity,
-                manufactureDate, expirationDate
+                manufacturerLotNumber, manufacturingDate, expirationDate
         );
     }
 }

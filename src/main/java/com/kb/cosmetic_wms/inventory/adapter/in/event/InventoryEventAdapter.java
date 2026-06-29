@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.inventory.adapter.in.event;
 
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
+import com.kb.cosmetic_wms.inventory.application.port.out.DockingSectionQueryPort;
 import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.global.event.OutboundAllocatedEvent;
 import com.kb.cosmetic_wms.global.event.OutboundShippedEvent;
@@ -19,15 +20,17 @@ public class InventoryEventAdapter {
     private final ManageInventoryStatusUseCase manageInventoryStatusUseCase;
     private final DeductInventoryForOutboundUseCase deductInventoryForOutboundUseCase;
     private final ReleaseInventoryForOutboundUseCase releaseInventoryForOutboundUseCase;
+    private final DockingSectionQueryPort dockingSectionQueryPort;
     private final AuditorAware<Long> auditorProvider;
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onInspectionCompleted(InspectionCompletedEvent event) {
         Long actorId = auditorProvider.getCurrentAuditor().orElseThrow();
+        Long sectionId = dockingSectionQueryPort.findDockingSectionId(event.warehouseId(), event.productId());
         applyInspectionResultUseCase.applyInspectionResult(new InspectionResultCommand(
                 event.productId(),
                 event.lotId(),
-                event.sectionId(),
+                sectionId,
                 event.warehouseId(),
                 event.passedQuantity(),
                 event.failedQuantity(),

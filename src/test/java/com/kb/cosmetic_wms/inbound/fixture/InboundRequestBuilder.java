@@ -3,7 +3,6 @@ package com.kb.cosmetic_wms.inbound.fixture;
 import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundCreateRequest;
 import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundReceiveRequest;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,12 +40,17 @@ public class InboundRequestBuilder {
     }
 
     public InboundCreateRequest buildCreateRequest() {
-        InboundCreateRequest.LineRequest lineRequest = new InboundCreateRequest.LineRequest(productId, orderedQuantity,
-                LocalDate.now().minusDays(10), LocalDate.now().plusYears(2));
+        InboundCreateRequest.LineRequest lineRequest =
+                new InboundCreateRequest.LineRequest(productId, orderedQuantity);
         return new InboundCreateRequest(warehouseId, partnerId, inboundDate, List.of(lineRequest));
     }
 
     public InboundReceiveRequest buildReceiveRequest(Long lineId) {
-        return new InboundReceiveRequest(List.of(new InboundReceiveRequest.LineItem(lineId, orderedQuantity)));
+        return new InboundReceiveRequest(List.of(new InboundReceiveRequest.LineItem(
+                lineId, orderedQuantity,
+                "LOT0001",
+                LocalDateTime.now().minusDays(10),
+                LocalDateTime.now().plusYears(2)
+        )));
     }
 }

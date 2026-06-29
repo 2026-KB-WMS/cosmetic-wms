@@ -22,7 +22,7 @@ public enum LotErrorCode implements ErrorCode {
     DUPLICATE_LOT_NUMBER(
             HttpStatus.CONFLICT,
             "DUPLICATE_LOT_NUMBER",
-            "이미 등록된 로트 번호입니다."
+            "해당 입고 건에 동일한 제조사 로트 번호가 이미 등록되어 있습니다."
     ),
     LOT_DATES_REQUIRED(
             HttpStatus.BAD_REQUEST,
@@ -34,15 +34,10 @@ public enum LotErrorCode implements ErrorCode {
             "INVALID_MANUFACTURE_DATE",
             "제조일자는 유통기한보다 미래일 수 없습니다."
     ),
-    LOT_NUMBER_REQUIRED(
-            HttpStatus.BAD_REQUEST,
-            "LOT_NUMBER_REQUIRED",
-            "로트 번호는 필수 입력 값입니다."
-    ),
     INVALID_LOT_NUMBER_FORMAT(
             HttpStatus.BAD_REQUEST,
             "INVALID_LOT_NUMBER_FORMAT",
-            "올바르지 않은 로트 번호 형식입니다. (규격: [카테고리3자]-[YYMMDD]-[공장2자]-[일련번호4자])"
+            "올바르지 않은 제조사 로트 번호 형식입니다. (영문 대문자·숫자·하이픈만 허용, 최대 20자)"
     ),
     LOT_PRODUCT_ID_REQUIRED(
             HttpStatus.BAD_REQUEST,

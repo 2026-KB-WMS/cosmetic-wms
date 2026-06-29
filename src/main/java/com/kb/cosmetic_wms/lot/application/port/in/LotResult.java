@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 
 public record LotResult(
         Long id,
-        String lotNumber,
+        Long inboundId,
+        String manufacturerLotNumber,
         LocalDateTime manufacturingDate,
         LocalDateTime expirationDate,
         LotStatus status,
@@ -16,7 +17,8 @@ public record LotResult(
     public static LotResult from(Lot lot) {
         return new LotResult(
                 lot.getId(),
-                lot.getLotNumber().value(),
+                lot.getInboundId(),
+                lot.getManufacturerLotNumber(),
                 lot.getPeriod().manufacturingDate(),
                 lot.getPeriod().expirationDate(),
                 lot.getStatus(),
