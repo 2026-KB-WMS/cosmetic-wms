@@ -2,7 +2,6 @@ package com.kb.cosmetic_wms.inspection.application.service;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
-import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionCommand;
 import com.kb.cosmetic_wms.inspection.application.port.in.FindInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionResult;
@@ -22,16 +21,6 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
     private final EventPublisher eventPublisher;
 
     @Override
-    @Transactional
-    public void create(CreateInspectionCommand command) {
-        Inspection inspection = Inspection.createPending(
-                command.sourceType(), command.sourceId(), command.inventoryId(),
-                command.inspectionQuantity(), command.productId(), command.lotId(),
-                command.sectionId(), command.warehouseId(), command.expiryDate());
-        inspectionPort.save(inspection);
-    }
-
-    @Override
     public InspectionResult findById(Long inspectionId) {
         return InspectionResult.from(findOrThrow(inspectionId));
     }
@@ -47,10 +36,10 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
 
     @Override
     @Transactional
-    public InspectionResult complete(Long inspectionId, int passedQty, int failedQty, String defectReason) {
+    public InspectionResult complete(Long inspectionId, int passedQty, int failedQty, String defectReason, Long sectionId) {
         Inspection inspection = inspectionPort.findByIdForUpdate(inspectionId)
                 .orElseThrow(InspectionNotFoundException::new);
-        inspection.completeInspection(passedQty, failedQty, defectReason);
+        inspection.completeInspection(passedQty, failedQty, defectReason, sectionId);
         Inspection saved = inspectionPort.save(inspection);
         eventPublisher.publish(toInspectionCompletedEvent(saved));
         return InspectionResult.from(saved);

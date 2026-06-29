@@ -36,7 +36,7 @@ class InspectionEntity extends BaseEntity {
     @Column(name = "lot_id", nullable = false)
     private Long lotId;
 
-    @Column(name = "section_id", nullable = false)
+    @Column(name = "section_id")
     private Long sectionId;
 
     @Column(name = "warehouse_id", nullable = false)

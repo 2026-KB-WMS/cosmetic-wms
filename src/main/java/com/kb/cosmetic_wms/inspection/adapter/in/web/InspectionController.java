@@ -34,6 +34,6 @@ public class InspectionController {
             @Valid @RequestBody InspectionCompleteRequest request) {
         return ResponseEntity.ok(
                 InspectionDetailResponse.from(inspectionLifecycleUseCase.complete(
-                        inspectionId, request.passedQuantity(), request.failedQuantity(), request.defectReason())));
+                        inspectionId, request.passedQuantity(), request.failedQuantity(), request.defectReason(), request.sectionId())));
     }
 }

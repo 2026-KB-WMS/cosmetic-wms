@@ -2,33 +2,34 @@ package com.kb.cosmetic_wms.inspection.adapter.in.event;
 
 import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionCommand;
-import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
+import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-@Component
+@Component("inspectionInboundCompletedEventAdapter")
 @RequiredArgsConstructor
 public class InboundCompletedEventAdapter {
 
-    private final InspectionLifecycleUseCase inspectionLifecycleUseCase;
+    private final CreateInspectionUseCase createInspectionUseCase;
 
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onInboundCompleted(InboundCompletedEvent event) {
         for (var line : event.lines()) {
             if (line.receivedQuantity() <= 0) {
                 continue;
             }
-            inspectionLifecycleUseCase.create(new CreateInspectionCommand(
+            createInspectionUseCase.create(new CreateInspectionCommand(
                     InspectionSourceType.INBOUND,
                     line.lineId(),
-                    null,
                     line.receivedQuantity(),
                     line.productId(),
-                    null,
-                    null,
+                    event.inboundId(),
+                    line.manufacturerLotNumber(),
                     event.warehouseId(),
                     line.expirationDate() != null ? line.expirationDate().toLocalDate() : null
             ));

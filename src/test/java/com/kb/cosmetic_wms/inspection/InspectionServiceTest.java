@@ -2,15 +2,12 @@ package com.kb.cosmetic_wms.inspection;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
-import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionCommand;
 import com.kb.cosmetic_wms.inspection.application.port.out.InspectionPort;
 import com.kb.cosmetic_wms.inspection.application.service.InspectionService;
-import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
-import com.kb.cosmetic_wms.inspection.domain.enums.InspectionStatus;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionCompleteNotAllowedException;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionNotFoundException;
-import com.kb.cosmetic_wms.inspection.domain.exception.InspectionSourceIdRequiredException;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionStartNotAllowedException;
+import com.kb.cosmetic_wms.inspection.domain.enums.InspectionStatus;
 import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 import com.kb.cosmetic_wms.inspection.fixture.InspectionTestBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,48 +46,13 @@ public class InspectionServiceTest {
 
     @BeforeEach
     void setUp() {
-        // sourceId = 10L, productId = 1L, lotId = 100L, sectionId = 200L, warehouseId = 300L, inspectionQuantity = 10
+        // sourceId = 10L, productId = 1L, lotId = 100L, warehouseId = 300L, inspectionQuantity = 10
         waitingInspection = new InspectionTestBuilder().buildPending();
         inProgressInspection = new InspectionTestBuilder().buildInProgress();
         completedInspection = new InspectionTestBuilder().buildCompleted();
         ReflectionTestUtils.setField(waitingInspection, "id", 1L);
         ReflectionTestUtils.setField(inProgressInspection, "id", 2L);
         ReflectionTestUtils.setField(completedInspection, "id", 3L);
-    }
-
-    @Nested
-    class 품질_검사_전표_생성 {
-
-        @Test
-        void 품질_검사_의뢰_커맨드가_들어오면_출처와_수량을_기반으로_품질_검사_전표가_대기_상태로_생성된다() {
-            // given
-            when(inspectionPort.save(any(Inspection.class))).thenReturn(waitingInspection);
-            CreateInspectionCommand command = new CreateInspectionCommand(
-                    InspectionSourceType.INBOUND, 10L, null, 10,
-                    1L, 100L, 200L, 300L, LocalDate.of(2026, 12, 31));
-
-            // when
-            inspectionService.create(command);
-
-            // then
-            ArgumentCaptor<Inspection> captor = ArgumentCaptor.forClass(Inspection.class);
-            verify(inspectionPort).save(captor.capture());
-            assertThat(captor.getValue().getStatus()).isEqualTo(InspectionStatus.WAITING);
-            assertThat(captor.getValue().getSourceId()).isEqualTo(10L);
-            assertThat(captor.getValue().getInspectorId()).isNull();
-        }
-
-        @Test
-        void 유효하지_않은_sourceId가_null이면_품질_검사_전표_생성에_실패한다() {
-            // given
-            CreateInspectionCommand command = new CreateInspectionCommand(
-                    InspectionSourceType.INBOUND, null, null, 10,
-                    1L, 100L, 200L, 300L, LocalDate.of(2026, 12, 31));
-
-            // when & then
-            assertThatThrownBy(() -> inspectionService.create(command))
-                    .isInstanceOf(InspectionSourceIdRequiredException.class);
-        }
     }
 
     @Nested
@@ -145,7 +107,7 @@ public class InspectionServiceTest {
             when(inspectionPort.save(any())).thenReturn(inProgressInspection);
 
             // when
-            inspectionService.complete(2L, 10, 0, null);
+            inspectionService.complete(2L, 10, 0, null, 200L);
 
             // then
             assertThat(inProgressInspection.getStatus()).isEqualTo(InspectionStatus.COMPLETED);
@@ -165,8 +127,8 @@ public class InspectionServiceTest {
             when(inspectionPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             // when
-            inspectionService.complete(2L, 10, 0, null);
-            inspectionService.complete(4L, 0, 10, "전량 불량");
+            inspectionService.complete(2L, 10, 0, null, 200L);
+            inspectionService.complete(4L, 0, 10, "전량 불량", 200L);
 
             // then
             verify(eventPublisher, times(2)).publish(any(InspectionCompletedEvent.class));
@@ -180,7 +142,7 @@ public class InspectionServiceTest {
             ArgumentCaptor<InspectionCompletedEvent> captor = ArgumentCaptor.forClass(InspectionCompletedEvent.class);
 
             // when
-            inspectionService.complete(2L, 7, 3, "포장 불량");
+            inspectionService.complete(2L, 7, 3, "포장 불량", 200L);
 
             // then
             verify(eventPublisher).publish(captor.capture());
@@ -205,10 +167,10 @@ public class InspectionServiceTest {
             when(inspectionPort.findByIdForUpdate(3L)).thenReturn(Optional.of(completedInspection));
 
             // then
-            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null))
+            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null, 200L))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class);
 
-            assertThatThrownBy(() -> inspectionService.complete(3L, 10, 0, null))
+            assertThatThrownBy(() -> inspectionService.complete(3L, 10, 0, null, 200L))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class);
         }
 
@@ -218,7 +180,7 @@ public class InspectionServiceTest {
             when(inspectionPort.findByIdForUpdate(1L)).thenReturn(Optional.of(waitingInspection));
 
             // when
-            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null))
+            assertThatThrownBy(() -> inspectionService.complete(1L, 10, 0, null, 200L))
                     .isInstanceOf(InspectionCompleteNotAllowedException.class);
 
             // then
@@ -231,7 +193,7 @@ public class InspectionServiceTest {
             when(inspectionPort.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
             // then
-            assertThatThrownBy(() -> inspectionService.complete(999L, 10, 0, null))
+            assertThatThrownBy(() -> inspectionService.complete(999L, 10, 0, null, 200L))
                     .isInstanceOf(InspectionNotFoundException.class);
         }
     }

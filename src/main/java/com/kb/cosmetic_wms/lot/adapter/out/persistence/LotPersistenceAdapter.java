@@ -20,6 +20,12 @@ public class LotPersistenceAdapter implements LotPort {
     }
 
     @Override
+    public Optional<Lot> findByInboundIdAndManufacturerLotNumber(Long inboundId, String manufacturerLotNumber) {
+        return lotJpaRepository.findByInboundIdAndManufacturerLotNumber(inboundId, manufacturerLotNumber)
+                .map(LotEntity::toDomain);
+    }
+
+    @Override
     public Optional<Lot> findById(Long id) {
         return lotJpaRepository.findById(id).map(LotEntity::toDomain);
     }

@@ -9,7 +9,6 @@ public class InspectionTestBuilder {
 
     private InspectionSourceType sourceType = InspectionSourceType.INBOUND;
     private Long sourceId = 10L;
-    private Long inventoryId = null;
     private Long productId = 1L;
     private Long lotId = 100L;
     private Long sectionId = 200L;
@@ -27,11 +26,6 @@ public class InspectionTestBuilder {
 
     public InspectionTestBuilder sourceId(Long sourceId) {
         this.sourceId = sourceId;
-        return this;
-    }
-
-    public InspectionTestBuilder inventoryId(Long inventoryId) {
-        this.inventoryId = inventoryId;
         return this;
     }
 
@@ -82,8 +76,8 @@ public class InspectionTestBuilder {
 
     /** WAITING 상태 전표 생성 */
     public Inspection buildPending() {
-        return Inspection.createPending(sourceType, sourceId, inventoryId, inspectionQuantity,
-                productId, lotId, sectionId, warehouseId, LocalDate.of(2026, 12, 31));
+        return Inspection.createPending(sourceType, sourceId, inspectionQuantity,
+                productId, lotId, warehouseId, LocalDate.of(2026, 12, 31));
     }
 
     /** IN_PROGRESS 상태 전표 생성 */
@@ -96,7 +90,7 @@ public class InspectionTestBuilder {
     /** COMPLETED 상태 전표 생성 */
     public Inspection buildCompleted() {
         Inspection inspection = buildInProgress();
-        inspection.completeInspection(passedQuantity, failedQuantity, defectReason);
+        inspection.completeInspection(passedQuantity, failedQuantity, defectReason, sectionId);
         return inspection;
     }
 }

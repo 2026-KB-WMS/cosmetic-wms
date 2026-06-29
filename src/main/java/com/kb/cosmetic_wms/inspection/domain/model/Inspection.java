@@ -56,12 +56,11 @@ public class Inspection {
     }
 
     public static Inspection createPending(InspectionSourceType sourceType, Long sourceId,
-                                           Long inventoryId, int inspectionQuantity,
-                                           Long productId, Long lotId, Long sectionId, Long warehouseId,
-                                           LocalDate expiryDate) {
+                                           int inspectionQuantity, Long productId, Long lotId,
+                                           Long warehouseId, LocalDate expiryDate) {
         validateInitial(sourceType, sourceId, inspectionQuantity);
-        return new Inspection(null, sourceType, sourceId, inventoryId,
-                productId, lotId, sectionId, warehouseId,
+        return new Inspection(null, sourceType, sourceId, null,
+                productId, lotId, null, warehouseId,
                 null, InspectionStatus.WAITING, inspectionQuantity, 0, 0, null, expiryDate);
     }
 
@@ -87,11 +86,12 @@ public class Inspection {
         this.status = InspectionStatus.IN_PROGRESS;
     }
 
-    public void completeInspection(int passedQty, int failedQty, String defectReason) {
+    public void completeInspection(int passedQty, int failedQty, String defectReason, Long sectionId) {
         validateCompletion(passedQty, failedQty, defectReason);
         this.passedQuantity = passedQty;
         this.failedQuantity = failedQty;
         this.defectReason = (failedQty > 0) ? defectReason.trim() : null;
+        this.sectionId = sectionId;
         this.status = InspectionStatus.COMPLETED;
     }
 

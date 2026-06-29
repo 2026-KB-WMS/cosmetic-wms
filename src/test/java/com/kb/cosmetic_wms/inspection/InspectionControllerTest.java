@@ -179,12 +179,12 @@ public class InspectionControllerTest extends RestDocsSupport {
         void 올바른_수량으로_완료_요청하면_200_OK와_완료된_전표를_반환한다() throws Exception {
             // given
             Long inspectionId = 2L;
-            InspectionCompleteRequest request = new InspectionCompleteRequest(18, 2, "포장 불량");
+            InspectionCompleteRequest request = new InspectionCompleteRequest(18, 2, "포장 불량", 200L);
             InspectionResult result = new InspectionResult(
                     inspectionId, InspectionSourceType.INBOUND, 10L, 100L,
                     14L, InspectionStatus.COMPLETED, 20, 18, 2, "포장 불량");
 
-            given(inspectionLifecycleUseCase.complete(eq(inspectionId), eq(18), eq(2), eq("포장 불량")))
+            given(inspectionLifecycleUseCase.complete(eq(inspectionId), eq(18), eq(2), eq("포장 불량"), eq(200L)))
                     .willReturn(result);
 
             // when & then
@@ -208,8 +208,8 @@ public class InspectionControllerTest extends RestDocsSupport {
         @WithMockUser
         void IN_PROGRESS가_아닌_상태에서_완료_요청하면_409_CONFLICT를_반환한다() throws Exception {
             // given
-            InspectionCompleteRequest request = new InspectionCompleteRequest(20, 0, null);
-            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any()))
+            InspectionCompleteRequest request = new InspectionCompleteRequest(20, 0, null, 200L);
+            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any(), anyLong()))
                     .willThrow(new InspectionCompleteNotAllowedException());
 
             // when & then
@@ -229,8 +229,8 @@ public class InspectionControllerTest extends RestDocsSupport {
         @WithMockUser
         void 수량_합계가_총_검사수량과_불일치하면_422_UNPROCESSABLE_ENTITY를_반환한다() throws Exception {
             // given
-            InspectionCompleteRequest request = new InspectionCompleteRequest(5, 5, null);
-            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any()))
+            InspectionCompleteRequest request = new InspectionCompleteRequest(5, 5, null, 200L);
+            given(inspectionLifecycleUseCase.complete(anyLong(), anyInt(), anyInt(), any(), anyLong()))
                     .willThrow(new InspectionQuantityMismatchException(20));
 
             // when & then
@@ -257,7 +257,8 @@ public class InspectionControllerTest extends RestDocsSupport {
         return new FieldDescriptor[]{
                 fieldWithPath("passedQuantity").description("합격 판정 수량 (0 이상)"),
                 fieldWithPath("failedQuantity").description("반려 판정 수량 (0 이상)"),
-                fieldWithPath("defectReason").description("부적합 사유 (반려 수량 > 0인 경우 필수, 그 외 생략 가능)").optional()
+                fieldWithPath("defectReason").description("부적합 사유 (반려 수량 > 0인 경우 필수, 그 외 생략 가능)").optional(),
+                fieldWithPath("sectionId").description("검사 완료 후 입고 배치할 구역 ID (필수)")
         };
     }
 
