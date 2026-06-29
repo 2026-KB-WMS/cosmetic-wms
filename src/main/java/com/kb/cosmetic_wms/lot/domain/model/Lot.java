@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.lot.domain.exception.InvalidLotStatusTransitionExcept
 import com.kb.cosmetic_wms.lot.domain.exception.LotProductIdRequiredException;
 import lombok.Getter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -24,13 +25,13 @@ public class Lot {
         this.productId = productId;
     }
 
-    public static Lot create(String lotNumber, LocalDateTime manufacturingDate,
-                             LocalDateTime expirationDate, Long productId) {
+    public static Lot create(LocalDate inboundDate, Long inboundId, String manufacturerLotNumber,
+                             LocalDateTime manufacturingDate, LocalDateTime expirationDate, Long productId) {
         if (productId == null) {
             throw new LotProductIdRequiredException();
         }
-        return new Lot(null, new LotNumber(lotNumber), new LotPeriod(manufacturingDate, expirationDate),
-                LotStatus.AVAILABLE, productId);
+        return new Lot(null, LotNumber.of(inboundDate, inboundId, manufacturerLotNumber),
+                new LotPeriod(manufacturingDate, expirationDate), LotStatus.AVAILABLE, productId);
     }
 
     public static Lot reconstitute(Long id, String lotNumber, LocalDateTime manufacturingDate,
