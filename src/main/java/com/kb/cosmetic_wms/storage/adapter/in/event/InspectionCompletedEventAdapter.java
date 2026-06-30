@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.adapter.in.event;
 
-import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
+import com.kb.cosmetic_wms.inspection.domain.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityUseCase;
 import lombok.RequiredArgsConstructor;

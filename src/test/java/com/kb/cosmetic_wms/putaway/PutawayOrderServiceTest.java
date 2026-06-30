@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.putaway;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
-import com.kb.cosmetic_wms.global.event.PutawayCompletedEvent;
+import com.kb.cosmetic_wms.putaway.domain.event.PutawayCompletedEvent;
 import com.kb.cosmetic_wms.putaway.application.port.in.CreatePutawayOrderCommand;
 import com.kb.cosmetic_wms.putaway.application.port.in.PutawayOrderResult;
 import com.kb.cosmetic_wms.putaway.application.port.out.PutawayOrderPort;

@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.global.event;
+package com.kb.cosmetic_wms.putaway.domain.event;
 
 public record PutawayCompletedEvent(
         Long putawayOrderId,

@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.putaway.adapter.in.event;
 
-import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
+import com.kb.cosmetic_wms.inspection.domain.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.putaway.application.port.in.CreatePutawayOrderCommand;
 import com.kb.cosmetic_wms.putaway.application.port.in.CreatePutawayOrderUseCase;
 import lombok.RequiredArgsConstructor;

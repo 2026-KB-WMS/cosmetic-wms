@@ -2,11 +2,11 @@ package com.kb.cosmetic_wms.inventory.adapter.in.event;
 
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.DockingSectionQueryPort;
-import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
-import com.kb.cosmetic_wms.global.event.OutboundAllocatedEvent;
-import com.kb.cosmetic_wms.global.event.OutboundShippedEvent;
-import com.kb.cosmetic_wms.global.event.OutboundStockReleaseRequestedEvent;
-import com.kb.cosmetic_wms.global.event.PutawayCompletedEvent;
+import com.kb.cosmetic_wms.inspection.domain.event.InspectionCompletedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundAllocatedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundShippedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundStockReleaseRequestedEvent;
+import com.kb.cosmetic_wms.putaway.domain.event.PutawayCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;

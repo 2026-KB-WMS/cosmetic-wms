@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.storage.adapter.in.event;
 
-import com.kb.cosmetic_wms.global.event.PutawayCompletedEvent;
+import com.kb.cosmetic_wms.putaway.domain.event.PutawayCompletedEvent;
 import com.kb.cosmetic_wms.storage.application.port.in.IncreaseSectionCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.IncreaseSectionCapacityUseCase;
 import lombok.RequiredArgsConstructor;
