@@ -79,10 +79,10 @@ public class WarehouseEntityTest {
     void 추가하려는_섹션들의_최대_수용량_합이_창고_전체_수용_한도를_초과하면_예외를_던진다() {
         Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
 
-        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-MID-R-01").maxCapacity(6000).build();
+        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").maxCapacity(6000).build();
 
         assertThatThrownBy(() ->
-                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").maxCapacity(6000).build()
+                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-02").maxCapacity(6000).build()
         )
                 .isInstanceOf(StorageExceedCapacityException.class)
                 .hasMessage(StorageErrorCode.EXCEED_WAREHOUSE_CAPACITY.getMessage());
@@ -92,10 +92,10 @@ public class WarehouseEntityTest {
     void 창고_내에_동일한_코드를_가진_섹션이_이미_존재하면_예외를_던진다() {
         Warehouse warehouse = new WarehouseTestBuilder().build();
 
-        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").build();
+        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").build();
 
         assertThatThrownBy(() ->
-                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").build()
+                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").build()
         )
                 .isInstanceOf(DuplicateSectionCodeException.class)
                 .hasMessage(StorageErrorCode.DUPLICATE_SECTION_CODE.getMessage());
@@ -107,22 +107,22 @@ public class WarehouseEntityTest {
 
         Section dockingSection = new SectionTestBuilder()
                 .warehouse(warehouse).sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING).maxCapacity(2000).build();
-        Section highRotSection = new SectionTestBuilder()
-                .warehouse(warehouse).sectionCode("WH01-HIGH-C-01").sectionType(SectionType.HIGH_ROT)
+        Section storageSection = new SectionTestBuilder()
+                .warehouse(warehouse).sectionCode("WH01-STR-C-01").sectionType(SectionType.STORAGE)
                 .temperatureType(TemperatureZone.COOL).maxCapacity(5000).build();
 
         assertThat(warehouse.getSections()).hasSize(2);
         assertThat(dockingSection.getSectionCode().value()).isEqualTo("WH01-DOCK-R-01");
-        assertThat(highRotSection.getSectionCode().value()).isEqualTo("WH01-HIGH-C-01");
+        assertThat(storageSection.getSectionCode().value()).isEqualTo("WH01-STR-C-01");
     }
 
     @Test
     void 추가하려는_섹션들의_용량_합이_창고_전체_한도와_일치하면_예외_없이_정상_등록된다() {
         Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
-        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").maxCapacity(7000).build();
+        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").maxCapacity(7000).build();
 
         assertDoesNotThrow(() ->
-                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-LOW-R-01").maxCapacity(3000).build()
+                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-02").maxCapacity(3000).build()
         );
 
         assertThat(warehouse.getSections()).hasSize(2);

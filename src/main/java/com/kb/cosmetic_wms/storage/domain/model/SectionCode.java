@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public record SectionCode(String value) {
 
     private static final Pattern PATTERN =
-            Pattern.compile("^WH\\d{2}-(DOCK|HIGH|MID|LOW|QUAR)-[RC]-\\d{2}$");
+            Pattern.compile("^WH\\d{2}-(DOCK|STR|QUAR)-[RC]-\\d{2}$");
 
     public SectionCode {
         if (value == null || value.isBlank()) {

@@ -109,7 +109,7 @@ public class Section {
                 throw new StorageValidationException(StorageErrorCode.INVALID_STORAGE_STATE);
             }
         }
-        if (type == SectionType.HIGH_ROT || type == SectionType.MID_ROT || type == SectionType.LOW_ROT) {
+        if (type == SectionType.STORAGE) {
             if (quality == SectionQualityStatus.INSPECTING || allocation == SectionAllocationStatus.NONE) {
                 throw new StorageValidationException(StorageErrorCode.INVALID_STORAGE_STATE);
             }
