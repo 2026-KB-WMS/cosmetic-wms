@@ -597,4 +597,73 @@ class InventoryServiceTest {
             assertThat(mergeTx.getBalanceQuantity()).isEqualTo(100);
         }
     }
+
+    // =========================================================
+    // 검사 결과 반영 (applyInspectionResult)
+    // =========================================================
+
+    @Nested
+    class 검사_결과_반영 {
+
+        private static final Long PRODUCT_ID = 1L;
+        private static final Long LOT_ID = 10L;
+        private static final Long SECTION_ID = 1000L;
+        private static final Long WAREHOUSE_ID = 100L;
+        private static final Long INSPECTION_ID = 55L;
+        private static final Long MEMBER_ID = 1L;
+
+        private final InventoryStatusSet passStatus = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.DOCKING
+        );
+        private final InventoryStatusSet holdStatus = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.DOCKING
+        );
+
+        @Test
+        void 합격_수량이_있으면_NORMAL_DOCKING_상태_재고가_생성되고_출고_가능_수량은_0이다() {
+            Inventory saved = new InventoryTestBuilder()
+                    .locStatus(LocStatus.DOCKING).qualityStatus(QualityStatus.NORMAL)
+                    .quantity(80).availableQuantity(0).build();
+            ReflectionTestUtils.setField(saved, "id", 20L);
+
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, passStatus, -1L))
+                    .willReturn(Optional.empty());
+            given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+
+            inventoryService.applyInspectionResult(new InspectionResultCommand(
+                    PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 80, 0, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
+
+            verify(inventoryPort).save(any(Inventory.class));
+            verify(inventoryTransactionPort).save(txCaptor.capture());
+
+            InventoryTransaction tx = txCaptor.getValue();
+            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INSPECTION_PASS);
+            assertThat(tx.getCurrStatusSet()).isEqualTo(passStatus);
+            assertThat(saved.getAvailableQuantity()).isZero();
+        }
+
+        @Test
+        void 불합격_수량이_있으면_HOLD_DOCKING_상태_재고가_생성되고_출고_가능_수량은_0이다() {
+            Inventory saved = new InventoryTestBuilder()
+                    .locStatus(LocStatus.DOCKING).qualityStatus(QualityStatus.HOLD)
+                    .quantity(20).availableQuantity(0).build();
+            ReflectionTestUtils.setField(saved, "id", 21L);
+
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, holdStatus, -1L))
+                    .willReturn(Optional.empty());
+            given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+
+            inventoryService.applyInspectionResult(new InspectionResultCommand(
+                    PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 0, 20, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
+
+            verify(inventoryTransactionPort).save(txCaptor.capture());
+            InventoryTransaction tx = txCaptor.getValue();
+            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INSPECTION_FAIL);
+            assertThat(tx.getCurrStatusSet()).isEqualTo(holdStatus);
+        }
+    }
 }

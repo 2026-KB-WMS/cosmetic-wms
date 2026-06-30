@@ -110,6 +110,10 @@ public class Inventory {
             throw new InventoryStateTransitionException(InventoryErrorCode.ALREADY_MOVING);
         }
 
+        if (this.statusSet.locStatus() == LocStatus.DOCKING) {
+            throw new InventoryStateTransitionException(InventoryErrorCode.DOCKING_CANNOT_MOVE);
+        }
+
         InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
                 this.statusSet.allocStatus(), this.statusSet.qualityStatus(), LocStatus.MOVING
         );
@@ -224,6 +228,11 @@ public class Inventory {
                     InventoryErrorCode.INVALID_AVAILABLE_FOR_QUALITY,
                     String.format("품질 상태가 %s(%s)일 경우 출고 가능 수량은 0이어야 합니다.",
                             statusSet.qualityStatus().name(), statusSet.qualityStatus().getDescription())
+            );
+        }
+        if (statusSet.locStatus() == LocStatus.DOCKING && availableQuantity > 0) {
+            throw new InvalidInventoryQuantityException(
+                    InventoryErrorCode.INVALID_AVAILABLE_FOR_DOCKING
             );
         }
     }
