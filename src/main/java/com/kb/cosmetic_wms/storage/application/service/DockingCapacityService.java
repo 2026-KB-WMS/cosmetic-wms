@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.storage.application.service;
 
+import com.kb.cosmetic_wms.storage.application.port.in.IncreaseSectionCapacityCommand;
+import com.kb.cosmetic_wms.storage.application.port.in.IncreaseSectionCapacityUseCase;
 import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityUseCase;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityCommand;
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class DockingCapacityService implements UpdateDockingCapacityUseCase, ReduceDockingCapacityUseCase {
+public class DockingCapacityService implements UpdateDockingCapacityUseCase, ReduceDockingCapacityUseCase, IncreaseSectionCapacityUseCase {
 
     private final StoragePort storagePort;
     private final ProductTemperatureQueryPort productTemperatureQueryPort;
@@ -78,6 +80,14 @@ public class DockingCapacityService implements UpdateDockingCapacityUseCase, Red
         Warehouse warehouse = storagePort.findByIdForUpdate(command.warehouseId())
                 .orElseThrow(WarehouseNotFoundException::new);
         warehouse.releaseFromDocking(releasedByZone);
+        storagePort.save(warehouse);
+    }
+
+    @Override
+    public void increaseSectionCapacity(IncreaseSectionCapacityCommand command) {
+        Warehouse warehouse = storagePort.findByIdForUpdate(command.warehouseId())
+                .orElseThrow(WarehouseNotFoundException::new);
+        warehouse.increaseToTargetSection(command.sectionId(), command.quantity());
         storagePort.save(warehouse);
     }
 }

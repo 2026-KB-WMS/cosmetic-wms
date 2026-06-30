@@ -25,6 +25,8 @@ public enum TransactionType {
 
     DISCARD("실물 폐기 처리", false),
 
+    DOCKING_PUTAWAY("도킹 구역 → 보관 구역 적재 완료", true),
+
     SPLIT_DEDUCT("재고 분할 — 원본 수량 차감", false);
 
     private final String description;

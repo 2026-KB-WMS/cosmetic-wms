@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.inventory.adapter.out.persistence;
 import com.kb.cosmetic_wms.inventory.application.port.in.FefoInventorySlice;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
+import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
 import com.kb.cosmetic_wms.inventory.domain.model.Inventory;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryStatusSet;
@@ -50,6 +51,12 @@ public class InventoryPersistenceAdapter implements InventoryPort, InventoryTran
                 statusSet.allocStatus(), statusSet.qualityStatus(), statusSet.locStatus(),
                 excludeId
         ).map(InventoryEntity::toDomain);
+    }
+
+    @Override
+    public Optional<Inventory> findDockingInventoryForUpdate(Long lotId, Long sectionId, QualityStatus qualityStatus) {
+        return inventoryJpaRepository.findDockingInventoryForUpdate(lotId, sectionId, qualityStatus)
+                .map(InventoryEntity::toDomain);
     }
 
     @Override

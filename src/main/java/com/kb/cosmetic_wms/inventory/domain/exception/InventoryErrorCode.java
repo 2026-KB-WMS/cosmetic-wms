@@ -127,6 +127,11 @@ public enum InventoryErrorCode implements ErrorCode {
             "INVENTORY_DOCKING_WITH_ALLOCATED",
             "도킹 구역 대기 중인 재고는 할당 대상이 아닙니다."
     ),
+    NOT_DOCKING(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "INVENTORY_NOT_DOCKING",
+            "도킹 구역 대기(DOCKING) 상태의 재고만 적재 완료 처리가 가능합니다."
+    ),
     DOCKING_CANNOT_MOVE(
             HttpStatus.UNPROCESSABLE_ENTITY,
             "INVENTORY_DOCKING_CANNOT_MOVE",

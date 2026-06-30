@@ -39,6 +39,20 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT i FROM InventoryEntity i
+            WHERE i.lotId = :lotId
+              AND i.sectionId = :sectionId
+              AND i.qualityStatus = :qualityStatus
+              AND i.locStatus = 'DOCKING'
+            """)
+    Optional<InventoryEntity> findDockingInventoryForUpdate(
+            @Param("lotId") Long lotId,
+            @Param("sectionId") Long sectionId,
+            @Param("qualityStatus") QualityStatus qualityStatus
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT i FROM InventoryEntity i
             WHERE i.productId = :productId
               AND i.lotId = :lotId
               AND i.sectionId = :sectionId

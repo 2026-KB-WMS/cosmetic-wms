@@ -14,11 +14,19 @@ class PutawayOrderEntityTest {
 
     @Test
     void 정상_수량으로_생성하면_PENDING_상태의_적재_지시서가_생성된다() {
-        PutawayOrder order = new PutawayOrderTestBuilder().quantity(50).build();
+        PutawayOrder order = new PutawayOrderTestBuilder().quantity(50).normalQuality(true).build();
 
         assertThat(order.getStatus()).isEqualTo(PutawayStatus.PENDING);
         assertThat(order.getQuantity()).isEqualTo(50);
+        assertThat(order.isNormalQuality()).isTrue();
         assertThat(order.getId()).isNull();
+    }
+
+    @Test
+    void 불합격_품질로_생성하면_normalQuality가_false인_적재_지시서가_생성된다() {
+        PutawayOrder order = new PutawayOrderTestBuilder().normalQuality(false).build();
+
+        assertThat(order.isNormalQuality()).isFalse();
     }
 
     @Test

@@ -11,6 +11,7 @@ public class PutawayOrderTestBuilder {
     private Long sourceSectionId = 5L;
     private Long targetSectionId = 10L;
     private int quantity = 50;
+    private boolean normalQuality = true;
 
     public PutawayOrderTestBuilder inspectionId(Long inspectionId) {
         this.inspectionId = inspectionId;
@@ -27,9 +28,14 @@ public class PutawayOrderTestBuilder {
         return this;
     }
 
+    public PutawayOrderTestBuilder normalQuality(boolean normalQuality) {
+        this.normalQuality = normalQuality;
+        return this;
+    }
+
     public PutawayOrder build() {
         return PutawayOrder.create(inspectionId, lotId, productId, warehouseId,
-                sourceSectionId, targetSectionId, quantity);
+                sourceSectionId, targetSectionId, quantity, normalQuality);
     }
 
     public PutawayOrder buildCompleted() {

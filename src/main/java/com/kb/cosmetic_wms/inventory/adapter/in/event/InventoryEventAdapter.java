@@ -6,6 +6,7 @@ import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.global.event.OutboundAllocatedEvent;
 import com.kb.cosmetic_wms.global.event.OutboundShippedEvent;
 import com.kb.cosmetic_wms.global.event.OutboundStockReleaseRequestedEvent;
+import com.kb.cosmetic_wms.global.event.PutawayCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class InventoryEventAdapter {
 
     private final ApplyInspectionResultUseCase applyInspectionResultUseCase;
+    private final CompletePutawayInventoryUseCase completePutawayInventoryUseCase;
     private final ManageInventoryStatusUseCase manageInventoryStatusUseCase;
     private final DeductInventoryForOutboundUseCase deductInventoryForOutboundUseCase;
     private final ReleaseInventoryForOutboundUseCase releaseInventoryForOutboundUseCase;
@@ -37,6 +39,19 @@ public class InventoryEventAdapter {
                 event.inspectionId(),
                 actorId,
                 event.expiryDate()
+        ));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void onPutawayCompleted(PutawayCompletedEvent event) {
+        completePutawayInventoryUseCase.completePutaway(new CompletePutawayInventoryCommand(
+                event.putawayOrderId(),
+                event.lotId(),
+                event.warehouseId(),
+                event.sourceSectionId(),
+                event.targetSectionId(),
+                event.normalQuality(),
+                event.memberId()
         ));
     }
 

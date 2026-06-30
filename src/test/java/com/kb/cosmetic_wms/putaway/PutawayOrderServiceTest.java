@@ -1,11 +1,14 @@
 package com.kb.cosmetic_wms.putaway;
 
+import com.kb.cosmetic_wms.global.event.EventPublisher;
+import com.kb.cosmetic_wms.global.event.PutawayCompletedEvent;
 import com.kb.cosmetic_wms.putaway.application.port.in.CreatePutawayOrderCommand;
 import com.kb.cosmetic_wms.putaway.application.port.in.PutawayOrderResult;
 import com.kb.cosmetic_wms.putaway.application.port.out.PutawayOrderPort;
 import com.kb.cosmetic_wms.putaway.application.port.out.StorageSectionQueryPort;
 import com.kb.cosmetic_wms.putaway.application.service.PutawayOrderService;
 import com.kb.cosmetic_wms.putaway.domain.enums.PutawayStatus;
+import com.kb.cosmetic_wms.putaway.domain.exception.PutawayAlreadyCompletedException;
 import com.kb.cosmetic_wms.putaway.domain.exception.PutawayOrderNotFoundException;
 import com.kb.cosmetic_wms.putaway.domain.exception.PutawayTargetSectionNotFoundException;
 import com.kb.cosmetic_wms.putaway.domain.model.PutawayOrder;
@@ -17,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -39,6 +43,12 @@ class PutawayOrderServiceTest {
 
     @Mock
     private StorageSectionQueryPort storageSectionQueryPort;
+
+    @Mock
+    private EventPublisher eventPublisher;
+
+    @Mock
+    private AuditorAware<Long> auditorProvider;
 
     // =========================================================
     // 적재 지시서 생성
@@ -133,6 +143,54 @@ class PutawayOrderServiceTest {
                     new CreatePutawayOrderCommand(1L, 10L, 100L, 1L, 0, 0));
 
             assertThat(results).isEmpty();
+        }
+    }
+
+    // =========================================================
+    // 적재 완료 처리
+    // =========================================================
+
+    @Nested
+    class 적재_완료_처리 {
+
+        @Test
+        void PENDING_상태_지시서를_완료_처리하면_COMPLETED_상태와_이벤트를_발행한다() {
+            PutawayOrder pending = new PutawayOrderTestBuilder().quantity(50).normalQuality(true).build();
+            ReflectionTestUtils.setField(pending, "id", 1L);
+            given(auditorProvider.getCurrentAuditor()).willReturn(Optional.of(99L));
+            given(putawayOrderPort.findByIdForUpdate(1L)).willReturn(Optional.of(pending));
+            given(putawayOrderPort.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+            PutawayOrderResult result = putawayOrderService.complete(1L);
+
+            assertThat(result.status()).isEqualTo(PutawayStatus.COMPLETED);
+
+            ArgumentCaptor<PutawayCompletedEvent> eventCaptor = ArgumentCaptor.forClass(PutawayCompletedEvent.class);
+            verify(eventPublisher).publish(eventCaptor.capture());
+            PutawayCompletedEvent event = eventCaptor.getValue();
+            assertThat(event.quantity()).isEqualTo(50);
+            assertThat(event.normalQuality()).isTrue();
+            assertThat(event.memberId()).isEqualTo(99L);
+        }
+
+        @Test
+        void 존재하지_않는_지시서_완료_시_PutawayOrderNotFoundException이_발생한다() {
+            given(auditorProvider.getCurrentAuditor()).willReturn(Optional.of(99L));
+            given(putawayOrderPort.findByIdForUpdate(999L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> putawayOrderService.complete(999L))
+                    .isInstanceOf(PutawayOrderNotFoundException.class);
+        }
+
+        @Test
+        void 이미_완료된_지시서를_재완료하면_PutawayAlreadyCompletedException이_발생한다() {
+            PutawayOrder completed = new PutawayOrderTestBuilder().buildCompleted();
+            ReflectionTestUtils.setField(completed, "id", 1L);
+            given(auditorProvider.getCurrentAuditor()).willReturn(Optional.of(99L));
+            given(putawayOrderPort.findByIdForUpdate(1L)).willReturn(Optional.of(completed));
+
+            assertThatThrownBy(() -> putawayOrderService.complete(1L))
+                    .isInstanceOf(PutawayAlreadyCompletedException.class);
         }
     }
 

@@ -205,4 +205,26 @@ public class WarehouseEntityTest {
         assertThatThrownBy(() -> warehouse.releaseFromDocking(Map.of(TemperatureZone.ROOM, 200)))
                 .isInstanceOf(SectionCapacityUnderflowException.class);
     }
+
+    @Test
+    void STORAGE_섹션에_적재_완료하면_currentCapacity가_증가한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        Section storage = new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-STR-R-01").sectionType(SectionType.STORAGE)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        org.springframework.test.util.ReflectionTestUtils.setField(storage, "sectionId", 1L);
+
+        warehouse.increaseToTargetSection(1L, 100);
+
+        assertThat(storage.getCurrentCapacity()).isEqualTo(100);
+    }
+
+    @Test
+    void 존재하지_않는_섹션_ID로_increaseToTargetSection_호출하면_StorageValidationException이_발생한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+
+        assertThatThrownBy(() -> warehouse.increaseToTargetSection(999L, 100))
+                .isInstanceOf(StorageValidationException.class)
+                .hasMessage(StorageErrorCode.STORAGE_NOT_FOUND.getMessage());
+    }
 }

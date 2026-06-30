@@ -38,13 +38,16 @@ class PutawayOrderEntity extends BaseEntity {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
+    @Column(name = "normal_quality", nullable = false)
+    private boolean normalQuality;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private PutawayStatus status;
 
     private PutawayOrderEntity(Long id, Long inspectionId, Long lotId, Long productId,
                                Long warehouseId, Long sourceSectionId, Long targetSectionId,
-                               int quantity, PutawayStatus status) {
+                               int quantity, boolean normalQuality, PutawayStatus status) {
         this.id = id;
         this.inspectionId = inspectionId;
         this.lotId = lotId;
@@ -53,6 +56,7 @@ class PutawayOrderEntity extends BaseEntity {
         this.sourceSectionId = sourceSectionId;
         this.targetSectionId = targetSectionId;
         this.quantity = quantity;
+        this.normalQuality = normalQuality;
         this.status = status;
     }
 
@@ -66,12 +70,13 @@ class PutawayOrderEntity extends BaseEntity {
                 domain.getSourceSectionId(),
                 domain.getTargetSectionId(),
                 domain.getQuantity(),
+                domain.isNormalQuality(),
                 domain.getStatus()
         );
     }
 
     PutawayOrder toDomain() {
         return PutawayOrder.reconstitute(id, inspectionId, lotId, productId,
-                warehouseId, sourceSectionId, targetSectionId, quantity, status);
+                warehouseId, sourceSectionId, targetSectionId, quantity, normalQuality, status);
     }
 }

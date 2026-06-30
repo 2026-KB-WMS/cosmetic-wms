@@ -138,6 +138,14 @@ public class Warehouse {
         }
     }
 
+    public void increaseToTargetSection(Long sectionId, int quantity) {
+        sections.stream()
+                .filter(s -> sectionId.equals(s.getSectionId()))
+                .findFirst()
+                .orElseThrow(() -> new StorageValidationException(StorageErrorCode.STORAGE_NOT_FOUND))
+                .plusCapacity(quantity);
+    }
+
     public boolean canAccommodateDocking(Map<TemperatureZone, Integer> requiredByZone) {
         Map<TemperatureZone, Integer> availableByZone = sections.stream()
                 .filter(s -> s.getSectionType() == SectionType.DOCKING)

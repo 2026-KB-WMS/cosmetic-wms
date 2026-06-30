@@ -17,11 +17,12 @@ public class PutawayOrder {
     private final Long sourceSectionId;
     private final Long targetSectionId;
     private final int quantity;
+    private final boolean normalQuality;
     private PutawayStatus status;
 
     private PutawayOrder(Long id, Long inspectionId, Long lotId, Long productId,
                          Long warehouseId, Long sourceSectionId, Long targetSectionId,
-                         int quantity, PutawayStatus status) {
+                         int quantity, boolean normalQuality, PutawayStatus status) {
         this.id = id;
         this.inspectionId = inspectionId;
         this.lotId = lotId;
@@ -30,24 +31,25 @@ public class PutawayOrder {
         this.sourceSectionId = sourceSectionId;
         this.targetSectionId = targetSectionId;
         this.quantity = quantity;
+        this.normalQuality = normalQuality;
         this.status = status;
     }
 
     public static PutawayOrder create(Long inspectionId, Long lotId, Long productId,
                                       Long warehouseId, Long sourceSectionId, Long targetSectionId,
-                                      int quantity) {
+                                      int quantity, boolean normalQuality) {
         if (quantity <= 0) {
             throw new BusinessException(PutawayErrorCode.INVALID_QUANTITY);
         }
         return new PutawayOrder(null, inspectionId, lotId, productId,
-                warehouseId, sourceSectionId, targetSectionId, quantity, PutawayStatus.PENDING);
+                warehouseId, sourceSectionId, targetSectionId, quantity, normalQuality, PutawayStatus.PENDING);
     }
 
     public static PutawayOrder reconstitute(Long id, Long inspectionId, Long lotId, Long productId,
                                             Long warehouseId, Long sourceSectionId, Long targetSectionId,
-                                            int quantity, PutawayStatus status) {
+                                            int quantity, boolean normalQuality, PutawayStatus status) {
         return new PutawayOrder(id, inspectionId, lotId, productId,
-                warehouseId, sourceSectionId, targetSectionId, quantity, status);
+                warehouseId, sourceSectionId, targetSectionId, quantity, normalQuality, status);
     }
 
     public void complete() {

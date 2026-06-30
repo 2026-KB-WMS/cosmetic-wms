@@ -1,0 +1,2 @@
+ALTER TABLE putaway_order
+    ADD COLUMN normal_quality BOOLEAN NOT NULL DEFAULT TRUE;

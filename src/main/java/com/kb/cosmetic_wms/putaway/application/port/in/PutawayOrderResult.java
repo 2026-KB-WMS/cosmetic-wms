@@ -12,6 +12,7 @@ public record PutawayOrderResult(
         Long sourceSectionId,
         Long targetSectionId,
         int quantity,
+        boolean normalQuality,
         PutawayStatus status
 ) {
     public static PutawayOrderResult from(PutawayOrder order) {
@@ -24,6 +25,7 @@ public record PutawayOrderResult(
                 order.getSourceSectionId(),
                 order.getTargetSectionId(),
                 order.getQuantity(),
+                order.isNormalQuality(),
                 order.getStatus()
         );
     }

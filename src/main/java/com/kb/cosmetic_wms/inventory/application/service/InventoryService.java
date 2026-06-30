@@ -29,6 +29,7 @@ public class InventoryService implements
         ManageInventoryStatusUseCase,
         CreateInventoryFromInboundUseCase,
         ApplyInspectionResultUseCase,
+        CompletePutawayInventoryUseCase,
         DeductInventoryForOutboundUseCase,
         ReleaseInventoryForOutboundUseCase,
         FindFefoInventoryUseCase {
@@ -175,6 +176,38 @@ public class InventoryService implements
             unallocate(alloc.getInventoryId(),
                     new InventoryStatusChangeCommand(alloc.getTransactionQuantity(), outboundId, memberId));
         }
+    }
+
+    @Override
+    @Transactional
+    public void completePutaway(CompletePutawayInventoryCommand command) {
+        QualityStatus quality = command.normalQuality() ? QualityStatus.NORMAL : QualityStatus.HOLD;
+        Inventory inventory = inventoryPort
+                .findDockingInventoryForUpdate(command.lotId(), command.sourceSectionId(), quality)
+                .orElseThrow(InventoryNotFoundException::new);
+
+        InventoryStatusSet prevStatus = inventory.getStatusSet();
+        int quantity = inventory.getQuantity();
+        inventory.completePutaway(command.targetSectionId());
+
+        Optional<Inventory> mergeTarget = inventoryPort.findMergeTargetForUpdate(
+                inventory.getProductId(), inventory.getLotId(), command.targetSectionId(),
+                inventory.getStatusSet(), inventory.getId()
+        );
+
+        Inventory result;
+        if (mergeTarget.isPresent()) {
+            mergeTarget.get().mergeFrom(inventory);
+            inventoryPort.delete(inventory);
+            result = mergeTarget.get();
+        } else {
+            result = inventoryPort.save(inventory);
+        }
+
+        inventoryTransactionPort.save(InventoryTransaction.create(
+                result.getId(), TransactionType.DOCKING_PUTAWAY, quantity, result.getQuantity(),
+                command.putawayOrderId(), prevStatus, result.getStatusSet(), command.memberId(), null
+        ));
     }
 
     @Override

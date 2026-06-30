@@ -18,7 +18,7 @@ public class Inventory {
     private Long id;
     private final Long productId;
     private final Long lotId;
-    private final Long sectionId;
+    private Long sectionId;
     private final Long warehouseId;
     private InventoryQuantity quantities;
     private InventoryStatusSet statusSet;
@@ -205,6 +205,19 @@ public class Inventory {
                 null, this.productId, this.lotId, this.sectionId, this.warehouseId,
                 InventoryQuantity.of(targetQuantity, nextAvailableQuantity), nextStatusSet, this.expiryDate
         ));
+    }
+
+    public void completePutaway(Long targetSectionId) {
+        if (this.statusSet.locStatus() != LocStatus.DOCKING) {
+            throw new InventoryStateTransitionException(InventoryErrorCode.NOT_DOCKING);
+        }
+        this.sectionId = targetSectionId;
+        InventoryStatusSet nextStatusSet = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, this.statusSet.qualityStatus(), LocStatus.STORED
+        );
+        int newAvailable = this.statusSet.qualityStatus().isNormal() ? this.quantities.total() : 0;
+        this.statusSet = nextStatusSet;
+        this.quantities = InventoryQuantity.of(this.quantities.total(), newAvailable);
     }
 
     public void mergeFrom(Inventory other) {
