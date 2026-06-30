@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.storage.application.service;
 
+import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityCommand;
+import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityUseCase;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityUseCase;
 import com.kb.cosmetic_wms.storage.application.port.out.ProductTemperatureQueryPort;
@@ -18,7 +20,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class DockingCapacityService implements UpdateDockingCapacityUseCase {
+public class DockingCapacityService implements UpdateDockingCapacityUseCase, ReduceDockingCapacityUseCase {
 
     private final StoragePort storagePort;
     private final ProductTemperatureQueryPort productTemperatureQueryPort;
@@ -48,6 +50,34 @@ public class DockingCapacityService implements UpdateDockingCapacityUseCase {
         Warehouse warehouse = storagePort.findByIdForUpdate(command.warehouseId())
                 .orElseThrow(WarehouseNotFoundException::new);
         warehouse.receiveToDocking(receivedByZone);
+        storagePort.save(warehouse);
+    }
+
+    @Override
+    public void reduceDockingCapacity(ReduceDockingCapacityCommand command) {
+        List<Long> productIds = command.lines().stream()
+                .filter(l -> l.quantity() > 0)
+                .map(ReduceDockingCapacityCommand.LineItem::productId)
+                .distinct()
+                .toList();
+
+        if (productIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, TemperatureZone> zoneByProductId =
+                productTemperatureQueryPort.findTemperatureZonesByIds(productIds);
+
+        Map<TemperatureZone, Integer> releasedByZone = command.lines().stream()
+                .filter(l -> l.quantity() > 0)
+                .collect(Collectors.groupingBy(
+                        l -> zoneByProductId.get(l.productId()),
+                        Collectors.summingInt(ReduceDockingCapacityCommand.LineItem::quantity)
+                ));
+
+        Warehouse warehouse = storagePort.findByIdForUpdate(command.warehouseId())
+                .orElseThrow(WarehouseNotFoundException::new);
+        warehouse.releaseFromDocking(releasedByZone);
         storagePort.save(warehouse);
     }
 }

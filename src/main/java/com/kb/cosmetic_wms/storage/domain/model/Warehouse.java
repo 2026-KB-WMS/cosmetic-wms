@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.storage.domain.model;
 
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
+import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityUnderflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageValidationException;
@@ -120,6 +121,21 @@ public class Warehouse {
         return sections.stream()
                 .filter(s -> s.getSectionType() == SectionType.DOCKING && s.getTemperatureType() == zone)
                 .toList();
+    }
+
+    public void releaseFromDocking(Map<TemperatureZone, Integer> releasedByZone) {
+        for (Map.Entry<TemperatureZone, Integer> entry : releasedByZone.entrySet()) {
+            int remaining = entry.getValue();
+            for (Section section : getDockingSectionsByZone(entry.getKey())) {
+                if (remaining <= 0) break;
+                int toRelease = Math.min(remaining, section.getCurrentCapacity());
+                section.minusCapacity(toRelease);
+                remaining -= toRelease;
+            }
+            if (remaining > 0) {
+                throw new SectionCapacityUnderflowException();
+            }
+        }
     }
 
     public boolean canAccommodateDocking(Map<TemperatureZone, Integer> requiredByZone) {

@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.storage.fixture.WarehouseTestBuilder;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
+import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityUnderflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageValidationException;
@@ -178,5 +179,30 @@ public class WarehouseEntityTest {
 
         assertThatThrownBy(() -> warehouse.receiveToDocking(Map.of(TemperatureZone.COOL, 100)))
                 .isInstanceOf(SectionCapacityOverflowException.class);
+    }
+
+    @Test
+    void DOCKING_섹션에서_검사_완료_수량을_차감하면_currentCapacity가_감소한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 500));
+
+        warehouse.releaseFromDocking(Map.of(TemperatureZone.ROOM, 300));
+
+        assertThat(warehouse.getSections().get(0).getCurrentCapacity()).isEqualTo(200);
+    }
+
+    @Test
+    void DOCKING_섹션의_현재_수량보다_많은_수량을_차감하려고_하면_SectionCapacityUnderflowException이_발생한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 100));
+
+        assertThatThrownBy(() -> warehouse.releaseFromDocking(Map.of(TemperatureZone.ROOM, 200)))
+                .isInstanceOf(SectionCapacityUnderflowException.class);
     }
 }

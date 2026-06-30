@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.storage;
 
+import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.out.ProductTemperatureQueryPort;
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
@@ -88,5 +89,42 @@ class DockingCapacityServiceTest {
 
         assertThatThrownBy(() -> dockingCapacityService.updateDockingCapacity(command))
                 .isInstanceOf(WarehouseNotFoundException.class);
+    }
+
+    @Test
+    void 검사_완료_품목의_온도대별_수량이_DOCKING_섹션에서_차감된다() {
+        Long warehouseId = 1L;
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(warehouseId).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 500));
+
+        given(storagePort.findByIdForUpdate(warehouseId)).willReturn(Optional.of(warehouse));
+        given(storagePort.save(any(Warehouse.class))).willAnswer(inv -> inv.getArgument(0));
+        given(productTemperatureQueryPort.findTemperatureZonesByIds(any()))
+                .willReturn(Map.of(1L, TemperatureZone.ROOM));
+
+        ReduceDockingCapacityCommand command = new ReduceDockingCapacityCommand(
+                warehouseId,
+                List.of(new ReduceDockingCapacityCommand.LineItem(1L, 300))
+        );
+
+        dockingCapacityService.reduceDockingCapacity(command);
+
+        verify(storagePort).save(warehouse);
+        assertThat(warehouse.getSections().get(0).getCurrentCapacity()).isEqualTo(200);
+    }
+
+    @Test
+    void 차감_수량이_0인_항목만_있으면_창고_조회를_하지_않고_즉시_반환한다() {
+        ReduceDockingCapacityCommand command = new ReduceDockingCapacityCommand(
+                1L,
+                List.of(new ReduceDockingCapacityCommand.LineItem(1L, 0))
+        );
+
+        dockingCapacityService.reduceDockingCapacity(command);
+
+        verify(storagePort, org.mockito.Mockito.never()).findByIdForUpdate(any());
     }
 }
