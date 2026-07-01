@@ -7,12 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TransactionType {
 
-    INBOUND_PUTAWAY("입고 실물 적재", true),
-    INBOUND_CANCEL("입고 적재 취소", true),
-
     ALLOCATE("출고 가용재고 할당", true),
     UNALLOCATE("출고 할당 취소", true),
-    PICKING("출고 실물 피킹", true),
     SHIP("최종 출고 완료(소멸)", true),
 
     LOCATION_MOVE("창고 내 위치 이동", false),

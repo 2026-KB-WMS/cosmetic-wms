@@ -122,6 +122,21 @@ public enum InventoryErrorCode implements ErrorCode {
             "INVENTORY_MOVING_WITH_NON_NORMAL_QUALITY",
             "결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다."
     ),
+    DOCKING_WITH_ALLOCATED(
+            HttpStatus.BAD_REQUEST,
+            "INVENTORY_DOCKING_WITH_ALLOCATED",
+            "도킹 구역 대기 중인 재고는 할당 대상이 아닙니다."
+    ),
+    DOCKING_CANNOT_MOVE(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "INVENTORY_DOCKING_CANNOT_MOVE",
+            "도킹 구역 대기 중인 재고는 이동(MOVING) 상태로 전환할 수 없습니다."
+    ),
+    INVALID_AVAILABLE_FOR_DOCKING(
+            HttpStatus.BAD_REQUEST,
+            "INVENTORY_INVALID_AVAILABLE_FOR_DOCKING",
+            "도킹 구역 대기 중인 재고의 출고 가능 수량은 0이어야 합니다."
+    ),
 
     // --- 재고 이력 검증 (InventoryTransaction) ---
     TRANSACTION_INVENTORY_ID_REQUIRED(

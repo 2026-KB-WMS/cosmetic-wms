@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.storage.fixture.SectionTestBuilder;
 import com.kb.cosmetic_wms.storage.fixture.WarehouseTestBuilder;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateSectionCodeException;
 import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityOverflowException;
+import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityUnderflowException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageValidationException;
@@ -79,10 +80,10 @@ public class WarehouseEntityTest {
     void 추가하려는_섹션들의_최대_수용량_합이_창고_전체_수용_한도를_초과하면_예외를_던진다() {
         Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
 
-        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-MID-R-01").maxCapacity(6000).build();
+        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").maxCapacity(6000).build();
 
         assertThatThrownBy(() ->
-                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").maxCapacity(6000).build()
+                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-02").maxCapacity(6000).build()
         )
                 .isInstanceOf(StorageExceedCapacityException.class)
                 .hasMessage(StorageErrorCode.EXCEED_WAREHOUSE_CAPACITY.getMessage());
@@ -92,10 +93,10 @@ public class WarehouseEntityTest {
     void 창고_내에_동일한_코드를_가진_섹션이_이미_존재하면_예외를_던진다() {
         Warehouse warehouse = new WarehouseTestBuilder().build();
 
-        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").build();
+        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").build();
 
         assertThatThrownBy(() ->
-                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").build()
+                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").build()
         )
                 .isInstanceOf(DuplicateSectionCodeException.class)
                 .hasMessage(StorageErrorCode.DUPLICATE_SECTION_CODE.getMessage());
@@ -107,22 +108,22 @@ public class WarehouseEntityTest {
 
         Section dockingSection = new SectionTestBuilder()
                 .warehouse(warehouse).sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING).maxCapacity(2000).build();
-        Section highRotSection = new SectionTestBuilder()
-                .warehouse(warehouse).sectionCode("WH01-HIGH-C-01").sectionType(SectionType.HIGH_ROT)
+        Section storageSection = new SectionTestBuilder()
+                .warehouse(warehouse).sectionCode("WH01-STR-C-01").sectionType(SectionType.STORAGE)
                 .temperatureType(TemperatureZone.COOL).maxCapacity(5000).build();
 
         assertThat(warehouse.getSections()).hasSize(2);
         assertThat(dockingSection.getSectionCode().value()).isEqualTo("WH01-DOCK-R-01");
-        assertThat(highRotSection.getSectionCode().value()).isEqualTo("WH01-HIGH-C-01");
+        assertThat(storageSection.getSectionCode().value()).isEqualTo("WH01-STR-C-01");
     }
 
     @Test
     void 추가하려는_섹션들의_용량_합이_창고_전체_한도와_일치하면_예외_없이_정상_등록된다() {
         Warehouse warehouse = new WarehouseTestBuilder().capacity(10000).build();
-        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-HIGH-R-01").maxCapacity(7000).build();
+        new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-01").maxCapacity(7000).build();
 
         assertDoesNotThrow(() ->
-                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-LOW-R-01").maxCapacity(3000).build()
+                new SectionTestBuilder().warehouse(warehouse).sectionCode("WH01-STR-R-02").maxCapacity(3000).build()
         );
 
         assertThat(warehouse.getSections()).hasSize(2);
@@ -178,5 +179,52 @@ public class WarehouseEntityTest {
 
         assertThatThrownBy(() -> warehouse.receiveToDocking(Map.of(TemperatureZone.COOL, 100)))
                 .isInstanceOf(SectionCapacityOverflowException.class);
+    }
+
+    @Test
+    void DOCKING_섹션에서_검사_완료_수량을_차감하면_currentCapacity가_감소한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 500));
+
+        warehouse.releaseFromDocking(Map.of(TemperatureZone.ROOM, 300));
+
+        assertThat(warehouse.getSections().get(0).getCurrentCapacity()).isEqualTo(200);
+    }
+
+    @Test
+    void DOCKING_섹션의_현재_수량보다_많은_수량을_차감하려고_하면_SectionCapacityUnderflowException이_발생한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 100));
+
+        assertThatThrownBy(() -> warehouse.releaseFromDocking(Map.of(TemperatureZone.ROOM, 200)))
+                .isInstanceOf(SectionCapacityUnderflowException.class);
+    }
+
+    @Test
+    void STORAGE_섹션에_selectStorageSectionAndIncrease_호출하면_온도대_일치_섹션_currentCapacity가_증가한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+        Section storage = new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-STR-R-01").sectionType(SectionType.STORAGE)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        org.springframework.test.util.ReflectionTestUtils.setField(storage, "sectionId", 1L);
+
+        warehouse.selectStorageSectionAndIncrease(TemperatureZone.ROOM, 100);
+
+        assertThat(storage.getCurrentCapacity()).isEqualTo(100);
+    }
+
+    @Test
+    void 온도대에_맞는_STORAGE_섹션이_없으면_selectStorageSectionAndIncrease_호출_시_StorageValidationException이_발생한다() {
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(1L).capacity(10000).build();
+
+        assertThatThrownBy(() -> warehouse.selectStorageSectionAndIncrease(TemperatureZone.ROOM, 100))
+                .isInstanceOf(StorageValidationException.class)
+                .hasMessage(StorageErrorCode.STORAGE_NOT_FOUND.getMessage());
     }
 }

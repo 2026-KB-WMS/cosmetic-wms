@@ -9,9 +9,9 @@ import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
 public class SectionTestBuilder {
 
     private Warehouse warehouse = new WarehouseTestBuilder().build();
-    private String sectionCode = "WH01-HIGH-R-01";
-    private String sectionName = "인천 제1 센터 상온 고회전 1구역";
-    private SectionType sectionType = SectionType.HIGH_ROT;
+    private String sectionCode = "WH01-STR-R-01";
+    private String sectionName = "인천 제1 센터 상온 보관 1구역";
+    private SectionType sectionType = SectionType.STORAGE;
     private TemperatureZone temperatureType = TemperatureZone.ROOM;
     private int maxCapacity = 5000;
 

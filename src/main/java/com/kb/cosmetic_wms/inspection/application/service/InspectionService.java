@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inspection.application.service;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
-import com.kb.cosmetic_wms.global.event.InspectionCompletedEvent;
+import com.kb.cosmetic_wms.inspection.domain.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.inspection.application.port.in.FindInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionResult;

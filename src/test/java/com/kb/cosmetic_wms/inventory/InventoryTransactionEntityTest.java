@@ -63,7 +63,7 @@ public class InventoryTransactionEntityTest {
 
     @ParameterizedTest
     @EnumSource(value = TransactionType.class, names = {
-            "INBOUND_PUTAWAY", "INBOUND_CANCEL", "ALLOCATE", "UNALLOCATE", "PICKING", "SHIP"
+            "ALLOCATE", "UNALLOCATE", "SHIP"
     })
     void 상위_전표가_필수인_타입으로_이력_생성_시_전표_ID가_누락되면_예외를_던진다(TransactionType transactionType) {
         String expectedMessage = transactionType.getDescription() + " 행위는 원인 전표 ID가 필수입니다.";
