@@ -1,12 +1,11 @@
 package com.kb.cosmetic_wms.inventory.adapter.in.event;
 
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
-import com.kb.cosmetic_wms.inventory.application.port.out.DockingSectionQueryPort;
+import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inspection.domain.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.outbound.domain.event.OutboundAllocatedEvent;
 import com.kb.cosmetic_wms.outbound.domain.event.OutboundShippedEvent;
 import com.kb.cosmetic_wms.outbound.domain.event.OutboundStockReleaseRequestedEvent;
-import com.kb.cosmetic_wms.putaway.domain.event.PutawayCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
@@ -18,40 +17,28 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class InventoryEventAdapter {
 
     private final ApplyInspectionResultUseCase applyInspectionResultUseCase;
-    private final CompletePutawayInventoryUseCase completePutawayInventoryUseCase;
     private final ManageInventoryStatusUseCase manageInventoryStatusUseCase;
     private final DeductInventoryForOutboundUseCase deductInventoryForOutboundUseCase;
     private final ReleaseInventoryForOutboundUseCase releaseInventoryForOutboundUseCase;
-    private final DockingSectionQueryPort dockingSectionQueryPort;
+    private final SectionAssignmentPort sectionAssignmentPort;
     private final AuditorAware<Long> auditorProvider;
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onInspectionCompleted(InspectionCompletedEvent event) {
         Long actorId = auditorProvider.getCurrentAuditor().orElseThrow();
-        Long sectionId = dockingSectionQueryPort.findDockingSectionId(event.warehouseId(), event.productId());
+        SectionAssignmentPort.SectionAssignment assignment = sectionAssignmentPort.assignSectionsForInspection(
+                event.warehouseId(), event.productId(), event.passedQuantity(), event.failedQuantity());
         applyInspectionResultUseCase.applyInspectionResult(new InspectionResultCommand(
                 event.productId(),
                 event.lotId(),
-                sectionId,
+                assignment.storageSectionId(),
+                assignment.quarantineSectionId(),
                 event.warehouseId(),
                 event.passedQuantity(),
                 event.failedQuantity(),
                 event.inspectionId(),
                 actorId,
                 event.expiryDate()
-        ));
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    public void onPutawayCompleted(PutawayCompletedEvent event) {
-        completePutawayInventoryUseCase.completePutaway(new CompletePutawayInventoryCommand(
-                event.putawayOrderId(),
-                event.lotId(),
-                event.warehouseId(),
-                event.sourceSectionId(),
-                event.targetSectionId(),
-                event.normalQuality(),
-                event.memberId()
         ));
     }
 

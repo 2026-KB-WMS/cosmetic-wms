@@ -138,12 +138,24 @@ public class Warehouse {
         }
     }
 
-    public void increaseToTargetSection(Long sectionId, int quantity) {
-        sections.stream()
-                .filter(s -> sectionId.equals(s.getSectionId()))
+    public Long selectStorageSectionAndIncrease(TemperatureZone zone, int quantity) {
+        Section target = sections.stream()
+                .filter(s -> s.getSectionType() == SectionType.STORAGE && s.getTemperatureType() == zone)
+                .filter(s -> s.getCurrentCapacity() < s.getMaxCapacity())
                 .findFirst()
-                .orElseThrow(() -> new StorageValidationException(StorageErrorCode.STORAGE_NOT_FOUND))
-                .plusCapacity(quantity);
+                .orElseThrow(() -> new StorageValidationException(StorageErrorCode.STORAGE_NOT_FOUND));
+        target.plusCapacity(quantity);
+        return target.getSectionId();
+    }
+
+    public Long selectQuarantineSectionAndIncrease(int quantity) {
+        Section target = sections.stream()
+                .filter(s -> s.getSectionType() == SectionType.QUARANTINE)
+                .filter(s -> s.getCurrentCapacity() < s.getMaxCapacity())
+                .findFirst()
+                .orElseThrow(() -> new StorageValidationException(StorageErrorCode.STORAGE_NOT_FOUND));
+        target.plusCapacity(quantity);
+        return target.getSectionId();
     }
 
     public boolean canAccommodateDocking(Map<TemperatureZone, Integer> requiredByZone) {

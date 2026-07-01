@@ -29,13 +29,13 @@ public class InventoryService implements
         ManageInventoryStatusUseCase,
         CreateInventoryFromInboundUseCase,
         ApplyInspectionResultUseCase,
-        CompletePutawayInventoryUseCase,
         DeductInventoryForOutboundUseCase,
         ReleaseInventoryForOutboundUseCase,
         FindFefoInventoryUseCase {
 
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
+
 
     @Override
     public InventoryResult findById(Long inventoryId) {
@@ -138,15 +138,15 @@ public class InventoryService implements
     public void applyInspectionResult(InspectionResultCommand command) {
         if (command.passedQuantity() > 0) {
             InventoryStatusSet normalStatus = InventoryStatusSet.of(
-                    AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.DOCKING);
-            createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                    AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED);
+            createOrMerge(command.productId(), command.lotId(), command.storageSectionId(), command.warehouseId(),
                     command.passedQuantity(), normalStatus, TransactionType.INSPECTION_PASS,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }
         if (command.failedQuantity() > 0) {
             InventoryStatusSet holdStatus = InventoryStatusSet.of(
-                    AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.DOCKING);
-            createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+                    AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.STORED);
+            createOrMerge(command.productId(), command.lotId(), command.quarantineSectionId(), command.warehouseId(),
                     command.failedQuantity(), holdStatus, TransactionType.INSPECTION_FAIL,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }
@@ -176,38 +176,6 @@ public class InventoryService implements
             unallocate(alloc.getInventoryId(),
                     new InventoryStatusChangeCommand(alloc.getTransactionQuantity(), outboundId, memberId));
         }
-    }
-
-    @Override
-    @Transactional
-    public void completePutaway(CompletePutawayInventoryCommand command) {
-        QualityStatus quality = command.normalQuality() ? QualityStatus.NORMAL : QualityStatus.HOLD;
-        Inventory inventory = inventoryPort
-                .findDockingInventoryForUpdate(command.lotId(), command.sourceSectionId(), quality)
-                .orElseThrow(InventoryNotFoundException::new);
-
-        InventoryStatusSet prevStatus = inventory.getStatusSet();
-        int quantity = inventory.getQuantity();
-        inventory.completePutaway(command.targetSectionId());
-
-        Optional<Inventory> mergeTarget = inventoryPort.findMergeTargetForUpdate(
-                inventory.getProductId(), inventory.getLotId(), command.targetSectionId(),
-                inventory.getStatusSet(), inventory.getId()
-        );
-
-        Inventory result;
-        if (mergeTarget.isPresent()) {
-            mergeTarget.get().mergeFrom(inventory);
-            inventoryPort.delete(inventory);
-            result = mergeTarget.get();
-        } else {
-            result = inventoryPort.save(inventory);
-        }
-
-        inventoryTransactionPort.save(InventoryTransaction.create(
-                result.getId(), TransactionType.DOCKING_PUTAWAY, quantity, result.getQuantity(),
-                command.putawayOrderId(), prevStatus, result.getStatusSet(), command.memberId(), null
-        ));
     }
 
     @Override

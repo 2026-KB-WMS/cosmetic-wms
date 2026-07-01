@@ -1,9 +1,8 @@
 package com.kb.cosmetic_wms.storage.application.service;
 
-import com.kb.cosmetic_wms.storage.application.port.in.IncreaseSectionCapacityCommand;
-import com.kb.cosmetic_wms.storage.application.port.in.IncreaseSectionCapacityUseCase;
-import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityCommand;
-import com.kb.cosmetic_wms.storage.application.port.in.ReduceDockingCapacityUseCase;
+import com.kb.cosmetic_wms.storage.application.port.in.ApplyInspectionCapacityCommand;
+import com.kb.cosmetic_wms.storage.application.port.in.ApplyInspectionCapacityUseCase;
+import com.kb.cosmetic_wms.storage.application.port.in.SectionAssignmentResult;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityUseCase;
 import com.kb.cosmetic_wms.storage.application.port.out.ProductTemperatureQueryPort;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class DockingCapacityService implements UpdateDockingCapacityUseCase, ReduceDockingCapacityUseCase, IncreaseSectionCapacityUseCase {
+public class DockingCapacityService implements UpdateDockingCapacityUseCase, ApplyInspectionCapacityUseCase {
 
     private final StoragePort storagePort;
     private final ProductTemperatureQueryPort productTemperatureQueryPort;
@@ -56,38 +55,32 @@ public class DockingCapacityService implements UpdateDockingCapacityUseCase, Red
     }
 
     @Override
-    public void reduceDockingCapacity(ReduceDockingCapacityCommand command) {
-        List<Long> productIds = command.lines().stream()
-                .filter(l -> l.quantity() > 0)
-                .map(ReduceDockingCapacityCommand.LineItem::productId)
-                .distinct()
-                .toList();
-
-        if (productIds.isEmpty()) {
-            return;
+    public SectionAssignmentResult applyInspectionCapacity(ApplyInspectionCapacityCommand command) {
+        int totalQty = command.passedQuantity() + command.failedQuantity();
+        if (totalQty <= 0) {
+            return new SectionAssignmentResult(null, null);
         }
 
-        Map<Long, TemperatureZone> zoneByProductId =
-                productTemperatureQueryPort.findTemperatureZonesByIds(productIds);
-
-        Map<TemperatureZone, Integer> releasedByZone = command.lines().stream()
-                .filter(l -> l.quantity() > 0)
-                .collect(Collectors.groupingBy(
-                        l -> zoneByProductId.get(l.productId()),
-                        Collectors.summingInt(ReduceDockingCapacityCommand.LineItem::quantity)
-                ));
+        TemperatureZone zone = productTemperatureQueryPort
+                .findTemperatureZonesByIds(List.of(command.productId()))
+                .get(command.productId());
 
         Warehouse warehouse = storagePort.findByIdForUpdate(command.warehouseId())
                 .orElseThrow(WarehouseNotFoundException::new);
-        warehouse.releaseFromDocking(releasedByZone);
-        storagePort.save(warehouse);
-    }
 
-    @Override
-    public void increaseSectionCapacity(IncreaseSectionCapacityCommand command) {
-        Warehouse warehouse = storagePort.findByIdForUpdate(command.warehouseId())
-                .orElseThrow(WarehouseNotFoundException::new);
-        warehouse.increaseToTargetSection(command.sectionId(), command.quantity());
+        warehouse.releaseFromDocking(Map.of(zone, totalQty));
+
+        Long storageSectionId = null;
+        Long quarantineSectionId = null;
+
+        if (command.passedQuantity() > 0) {
+            storageSectionId = warehouse.selectStorageSectionAndIncrease(zone, command.passedQuantity());
+        }
+        if (command.failedQuantity() > 0) {
+            quarantineSectionId = warehouse.selectQuarantineSectionAndIncrease(command.failedQuantity());
+        }
+
         storagePort.save(warehouse);
+        return new SectionAssignmentResult(storageSectionId, quarantineSectionId);
     }
 }
