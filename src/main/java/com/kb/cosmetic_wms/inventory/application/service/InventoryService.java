@@ -27,7 +27,6 @@ import java.util.function.Function;
 public class InventoryService implements
         FindInventoryUseCase,
         ManageInventoryStatusUseCase,
-        CreateInventoryFromInboundUseCase,
         ApplyInspectionResultUseCase,
         DeductInventoryForOutboundUseCase,
         ReleaseInventoryForOutboundUseCase,
@@ -120,17 +119,6 @@ public class InventoryService implements
         Inventory inventory = findOrThrow(inventoryId);
         return applyAndRecord(inventory, inv -> inv.scheduleForDiscard(command.quantity()),
                 TransactionType.DISCARD, command.quantity(), null, command.memberId());
-    }
-
-    @Override
-    @Transactional
-    public void createFromInbound(InboundPutawayCommand command) {
-        InventoryStatusSet statusSet = InventoryStatusSet.of(
-                AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
-        );
-        createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
-                command.quantity(), statusSet, TransactionType.INBOUND_PUTAWAY,
-                command.inboundId(), command.memberId(), command.expiryDate());
     }
 
     @Override

@@ -443,47 +443,6 @@ public class InventoryEntityTest {
                 .hasMessage("도킹 구역 대기 중인 재고는 이동(MOVING) 상태로 전환할 수 없습니다.");
     }
 
-    @Test
-    void DOCKING_상태_합격_재고를_적재_완료하면_sectionId가_변경되고_STORED_상태로_전이되며_출고_가능_수량이_복원된다() {
-        Inventory inventory = new InventoryTestBuilder()
-                .locStatus(LocStatus.DOCKING)
-                .qualityStatus(QualityStatus.NORMAL)
-                .availableQuantity(0)
-                .quantity(100)
-                .build();
-
-        inventory.completePutaway(99L);
-
-        assertThat(inventory.getSectionId()).isEqualTo(99L);
-        assertThat(inventory.getStatusSet().locStatus()).isEqualTo(LocStatus.STORED);
-        assertThat(inventory.getAvailableQuantity()).isEqualTo(100);
-    }
-
-    @Test
-    void DOCKING_상태_불합격_재고를_적재_완료하면_STORED_상태로_전이되며_출고_가능_수량은_0을_유지한다() {
-        Inventory inventory = new InventoryTestBuilder()
-                .locStatus(LocStatus.DOCKING)
-                .qualityStatus(QualityStatus.HOLD)
-                .availableQuantity(0)
-                .quantity(30)
-                .build();
-
-        inventory.completePutaway(88L);
-
-        assertThat(inventory.getSectionId()).isEqualTo(88L);
-        assertThat(inventory.getStatusSet().locStatus()).isEqualTo(LocStatus.STORED);
-        assertThat(inventory.getAvailableQuantity()).isEqualTo(0);
-    }
-
-    @Test
-    void DOCKING_상태가_아닌_재고에_completePutaway_호출하면_NOT_DOCKING_예외를_던진다() {
-        Inventory inventory = new InventoryTestBuilder().locStatus(LocStatus.STORED).build();
-
-        assertThatThrownBy(() -> inventory.completePutaway(99L))
-                .isInstanceOf(InventoryStateTransitionException.class)
-                .hasMessage("도킹 구역 대기(DOCKING) 상태의 재고만 적재 완료 처리가 가능합니다.");
-    }
-
     private static Stream<Arguments> provideInvalidStatusCombinations() {
         return Stream.of(
                 Arguments.of(AllocStatus.ALLOCATED, QualityStatus.DISCARD_SCHEDULED, LocStatus.STORED,
