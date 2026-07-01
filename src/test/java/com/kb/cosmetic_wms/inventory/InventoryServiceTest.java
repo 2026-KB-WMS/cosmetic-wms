@@ -502,99 +502,72 @@ class InventoryServiceTest {
     }
 
     // =========================================================
-    // 입고 반영 (createFromInbound)
+    // 검사 결과 반영 (applyInspectionResult)
     // =========================================================
 
     @Nested
-    class 입고_반영 {
+    class 검사_결과_반영 {
 
         private static final Long PRODUCT_ID = 1L;
         private static final Long LOT_ID = 10L;
-        private static final Long SECTION_ID = 1000L;
+        private static final Long STORAGE_SECTION_ID = 1001L;
+        private static final Long QUARANTINE_SECTION_ID = 1002L;
         private static final Long WAREHOUSE_ID = 100L;
-        private static final Long INBOUND_ID = 99L;
+        private static final Long INSPECTION_ID = 55L;
         private static final Long MEMBER_ID = 1L;
 
-        private final InventoryStatusSet putawayStatus = InventoryStatusSet.of(
+        private final InventoryStatusSet passStatus = InventoryStatusSet.of(
                 AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
+        );
+        private final InventoryStatusSet holdStatus = InventoryStatusSet.of(
+                AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.STORED
         );
 
         @Test
-        void 동일_복합키_재고가_없으면_새_재고가_생성되고_INBOUND_PUTAWAY_이력이_기록된다() {
-            Inventory saved = new InventoryTestBuilder().quantity(50).availableQuantity(50).build();
-            ReflectionTestUtils.setField(saved, "id", 10L);
+        void 합격_수량이_있으면_NORMAL_STORED_상태_재고가_생성되고_출고_가능_수량은_합격_수량과_동일하다() {
+            Inventory saved = new InventoryTestBuilder()
+                    .locStatus(LocStatus.STORED).qualityStatus(QualityStatus.NORMAL)
+                    .quantity(80).availableQuantity(80).build();
+            ReflectionTestUtils.setField(saved, "id", 20L);
 
-            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, putawayStatus, -1L))
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, passStatus, -1L))
                     .willReturn(Optional.empty());
             given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
-            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 50, INBOUND_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
+            inventoryService.applyInspectionResult(new InspectionResultCommand(
+                    PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, null, WAREHOUSE_ID, 80, 0, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
 
             verify(inventoryPort).save(any(Inventory.class));
             verify(inventoryTransactionPort).save(txCaptor.capture());
 
             InventoryTransaction tx = txCaptor.getValue();
-            assertThat(tx.getInventoryId()).isEqualTo(10L);
-            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INBOUND_PUTAWAY);
-            assertThat(tx.getTransactionQuantity()).isEqualTo(50);
-            assertThat(tx.getBalanceQuantity()).isEqualTo(50);
-            assertThat(tx.getReferenceId()).isEqualTo(INBOUND_ID);
-            assertThat(tx.getPrevStatusSet()).isNull();
-            assertThat(tx.getCurrStatusSet()).isEqualTo(putawayStatus);
+            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INSPECTION_PASS);
+            assertThat(tx.getCurrStatusSet()).isEqualTo(passStatus);
+            assertThat(saved.getAvailableQuantity()).isEqualTo(80);
         }
 
         @Test
-        void 동일_복합키_재고가_이미_존재하면_수량이_합산되고_새_재고는_생성되지_않는다() {
-            Inventory existing = new InventoryTestBuilder().quantity(100).availableQuantity(100).build();
-            ReflectionTestUtils.setField(existing, "id", 5L);
+        void 불합격_수량이_있으면_HOLD_STORED_상태_재고가_생성되고_출고_가능_수량은_0이다() {
+            Inventory saved = new InventoryTestBuilder()
+                    .locStatus(LocStatus.STORED).qualityStatus(QualityStatus.HOLD)
+                    .quantity(20).availableQuantity(0).build();
+            ReflectionTestUtils.setField(saved, "id", 21L);
 
-            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, putawayStatus, -1L))
-                    .willReturn(Optional.of(existing));
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, QUARANTINE_SECTION_ID, holdStatus, -1L))
+                    .willReturn(Optional.empty());
+            given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
-            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 50, INBOUND_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
-
-            verify(inventoryPort, never()).save(any(Inventory.class));
-            assertThat(existing.getQuantity()).isEqualTo(150);
-            assertThat(existing.getAvailableQuantity()).isEqualTo(150);
+            inventoryService.applyInspectionResult(new InspectionResultCommand(
+                    PRODUCT_ID, LOT_ID, null, QUARANTINE_SECTION_ID, WAREHOUSE_ID, 0, 20, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
 
             verify(inventoryTransactionPort).save(txCaptor.capture());
             InventoryTransaction tx = txCaptor.getValue();
-            assertThat(tx.getInventoryId()).isEqualTo(5L);
-            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INBOUND_PUTAWAY);
-            assertThat(tx.getTransactionQuantity()).isEqualTo(50);
-            assertThat(tx.getBalanceQuantity()).isEqualTo(150);
-            assertThat(tx.getReferenceId()).isEqualTo(INBOUND_ID);
-            assertThat(tx.getPrevStatusSet()).isEqualTo(putawayStatus);
-            assertThat(tx.getCurrStatusSet()).isEqualTo(putawayStatus);
-        }
-
-        @Test
-        void 같은_입고_내_동일_복합키_품목이_두_건이면_두_번째_호출에서_수량이_합산된다() {
-            Inventory firstSaved = new InventoryTestBuilder().quantity(60).availableQuantity(60).build();
-            ReflectionTestUtils.setField(firstSaved, "id", 7L);
-            given(inventoryPort.save(any(Inventory.class))).willReturn(firstSaved);
-
-            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, SECTION_ID, putawayStatus, -1L))
-                    .willReturn(Optional.empty())
-                    .willReturn(Optional.of(firstSaved));
-
-            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 60, INBOUND_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
-            inventoryService.createFromInbound(new InboundPutawayCommand(PRODUCT_ID, LOT_ID, SECTION_ID, WAREHOUSE_ID, 40, INBOUND_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
-
-            verify(inventoryPort, times(1)).save(any(Inventory.class));
-            assertThat(firstSaved.getQuantity()).isEqualTo(100);
-            assertThat(firstSaved.getAvailableQuantity()).isEqualTo(100);
-
-            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
-            verify(inventoryTransactionPort, times(2)).save(txCaptor.capture());
-
-            InventoryTransaction mergeTx = txCaptor.getAllValues().get(1);
-            assertThat(mergeTx.getTransactionQuantity()).isEqualTo(40);
-            assertThat(mergeTx.getBalanceQuantity()).isEqualTo(100);
+            assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INSPECTION_FAIL);
+            assertThat(tx.getCurrStatusSet()).isEqualTo(holdStatus);
         }
     }
 }

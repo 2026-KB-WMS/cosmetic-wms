@@ -10,7 +10,7 @@ import com.kb.cosmetic_wms.outbound.domain.enums.OutboundType;
 import com.kb.cosmetic_wms.outbound.domain.exception.OutboundInsufficientStockException;
 import com.kb.cosmetic_wms.outbound.domain.model.Outbound;
 import com.kb.cosmetic_wms.outbound.domain.model.OutboundLine;
-import com.kb.cosmetic_wms.global.event.OrderConfirmedEvent;
+import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;

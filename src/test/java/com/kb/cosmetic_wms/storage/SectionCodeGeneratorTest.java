@@ -17,18 +17,18 @@ public class SectionCodeGeneratorTest {
     void 창고코드와_구역타입_온도타입_순번을_조합하여_올바른_섹션코드를_생성한다() {
         SectionCodeGenerator generator = new SectionCodeGenerator();
 
-        SectionCode result = generator.generate("WH01", SectionType.HIGH_ROT, TemperatureZone.COOL, 3);
+        SectionCode result = generator.generate("WH01", SectionType.STORAGE, TemperatureZone.COOL, 3);
 
-        assertThat(result.value()).isEqualTo("WH01-HIGH-C-03");
+        assertThat(result.value()).isEqualTo("WH01-STR-C-03");
     }
 
     @Test
     void 순번이_두_자리수_이상이어도_포맷에_맞게_섹션코드를_생성한다() {
         SectionCodeGenerator generator = new SectionCodeGenerator();
 
-        SectionCode result = generator.generate("WH01", SectionType.MID_ROT, TemperatureZone.ROOM, 12);
+        SectionCode result = generator.generate("WH01", SectionType.STORAGE, TemperatureZone.ROOM, 12);
 
-        assertThat(result.value()).isEqualTo("WH01-MID-R-12");
+        assertThat(result.value()).isEqualTo("WH01-STR-R-12");
     }
 
     @Test
@@ -36,7 +36,7 @@ public class SectionCodeGeneratorTest {
         SectionCodeGenerator generator = new SectionCodeGenerator();
 
         assertThatThrownBy(() ->
-                generator.generate("WH01", SectionType.HIGH_ROT, TemperatureZone.ROOM, 0)
+                generator.generate("WH01", SectionType.STORAGE, TemperatureZone.ROOM, 0)
         )
                 .isInstanceOf(StorageValidationException.class)
                 .hasMessage(StorageErrorCode.INVALID_SECTION_SEQUENCE.getMessage());

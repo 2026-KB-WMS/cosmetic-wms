@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.order.application.service;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
-import com.kb.cosmetic_wms.global.event.OrderConfirmedEvent;
+import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
 import com.kb.cosmetic_wms.order.application.port.in.CreateOrderCommand;
 import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
 import com.kb.cosmetic_wms.order.application.port.in.OrderResult;

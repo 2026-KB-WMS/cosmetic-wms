@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.global.event;
+package com.kb.cosmetic_wms.order.domain.event;
 
 import java.util.List;
 

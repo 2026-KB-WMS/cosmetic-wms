@@ -5,9 +5,7 @@ import lombok.Getter;
 @Getter
 public enum SectionType {
     DOCKING("DOCK", "반입/반출(검수) 구역"),
-    HIGH_ROT("HIGH", "고회전 보관 구역"),
-    MID_ROT("MID", "중회전 보관 구역"),
-    LOW_ROT("LOW", "저회전 보관 구역"),
+    STORAGE("STR", "일반 보관 구역"),
     QUARANTINE("QUAR", "격리/폐기 구역");
 
     private final String shortCode;

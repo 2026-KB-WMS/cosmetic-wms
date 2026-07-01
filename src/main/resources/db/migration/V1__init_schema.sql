@@ -233,13 +233,31 @@ CREATE TABLE quality_inspection (
     PRIMARY KEY (inspection_id)
 );
 
+CREATE TABLE failed_inspection_event (
+    failed_event_id         BIGINT       NOT NULL AUTO_INCREMENT,
+    inbound_id              BIGINT       NOT NULL,
+    line_id                 BIGINT       NOT NULL,
+    product_id              BIGINT       NOT NULL,
+    warehouse_id            BIGINT       NOT NULL,
+    received_quantity       INT          NOT NULL,
+    manufacturer_lot_number VARCHAR(100),
+    expiration_date         DATE,
+    error_message           TEXT,
+    failed_at               DATETIME(6)  NOT NULL,
+    created_by              BIGINT       NOT NULL,
+    created_at              DATETIME(6)  NOT NULL,
+    updated_by              BIGINT,
+    updated_at              DATETIME(6),
+    PRIMARY KEY (failed_event_id)
+);
+
 CREATE TABLE orders (
-    orders_id    BIGINT       NOT NULL AUTO_INCREMENT,
-    order_status VARCHAR(50)  NOT NULL,
-    store_id     BIGINT       NOT NULL,
-    warehouse_id BIGINT       NOT NULL,
-    created_by   BIGINT       NOT NULL,
-    created_at   DATETIME(6)  NOT NULL,
+    orders_id    BIGINT      NOT NULL AUTO_INCREMENT,
+    order_status VARCHAR(50) NOT NULL,
+    store_id     BIGINT      NOT NULL,
+    warehouse_id BIGINT      NOT NULL,
+    created_by   BIGINT      NOT NULL,
+    created_at   DATETIME(6) NOT NULL,
     updated_by   BIGINT,
     updated_at   DATETIME(6),
     PRIMARY KEY (orders_id)

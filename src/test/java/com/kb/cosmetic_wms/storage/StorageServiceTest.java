@@ -68,13 +68,13 @@ public class StorageServiceTest {
     void 특정_창고에_하위_섹션을_추가할_때_전체_섹션_용량_합이_창고_허용_용량을_초과하면_ExceedCapacityException을_던진다() {
         Long warehouseId = 1L;
         Warehouse warehouse = new WarehouseTestBuilder().warehouseId(warehouseId).capacity(5000).build();
-        warehouse.addStorageSection(new SectionCode("WH01-HIGH-R-01"), "기존 구역",
-                SectionType.HIGH_ROT, TemperatureZone.ROOM, 4000);
+        warehouse.addStorageSection(new SectionCode("WH01-STR-R-01"), "기존 구역",
+                SectionType.STORAGE, TemperatureZone.ROOM, 4000);
 
         given(storagePort.findByIdForUpdate(warehouseId)).willReturn(Optional.of(warehouse));
 
         AddSectionCommand overflowCommand = new AddSectionCommand(
-                SectionType.MID_ROT, "초과 구역", TemperatureZone.ROOM, 2000
+                SectionType.STORAGE, "초과 구역", TemperatureZone.ROOM, 2000
         );
 
         assertThatThrownBy(() -> storageService.addSection(warehouseId, overflowCommand))

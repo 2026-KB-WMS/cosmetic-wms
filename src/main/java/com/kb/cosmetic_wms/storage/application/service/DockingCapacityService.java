@@ -1,5 +1,8 @@
 package com.kb.cosmetic_wms.storage.application.service;
 
+import com.kb.cosmetic_wms.storage.application.port.in.ApplyInspectionCapacityCommand;
+import com.kb.cosmetic_wms.storage.application.port.in.ApplyInspectionCapacityUseCase;
+import com.kb.cosmetic_wms.storage.application.port.in.SectionAssignmentResult;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityUseCase;
 import com.kb.cosmetic_wms.storage.application.port.out.ProductTemperatureQueryPort;
@@ -18,7 +21,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class DockingCapacityService implements UpdateDockingCapacityUseCase {
+public class DockingCapacityService implements UpdateDockingCapacityUseCase, ApplyInspectionCapacityUseCase {
 
     private final StoragePort storagePort;
     private final ProductTemperatureQueryPort productTemperatureQueryPort;
@@ -49,5 +52,35 @@ public class DockingCapacityService implements UpdateDockingCapacityUseCase {
                 .orElseThrow(WarehouseNotFoundException::new);
         warehouse.receiveToDocking(receivedByZone);
         storagePort.save(warehouse);
+    }
+
+    @Override
+    public SectionAssignmentResult applyInspectionCapacity(ApplyInspectionCapacityCommand command) {
+        int totalQty = command.passedQuantity() + command.failedQuantity();
+        if (totalQty <= 0) {
+            return new SectionAssignmentResult(null, null);
+        }
+
+        TemperatureZone zone = productTemperatureQueryPort
+                .findTemperatureZonesByIds(List.of(command.productId()))
+                .get(command.productId());
+
+        Warehouse warehouse = storagePort.findByIdForUpdate(command.warehouseId())
+                .orElseThrow(WarehouseNotFoundException::new);
+
+        warehouse.releaseFromDocking(Map.of(zone, totalQty));
+
+        Long storageSectionId = null;
+        Long quarantineSectionId = null;
+
+        if (command.passedQuantity() > 0) {
+            storageSectionId = warehouse.selectStorageSectionAndIncrease(zone, command.passedQuantity());
+        }
+        if (command.failedQuantity() > 0) {
+            quarantineSectionId = warehouse.selectQuarantineSectionAndIncrease(command.failedQuantity());
+        }
+
+        storagePort.save(warehouse);
+        return new SectionAssignmentResult(storageSectionId, quarantineSectionId);
     }
 }

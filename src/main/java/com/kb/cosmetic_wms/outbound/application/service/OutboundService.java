@@ -1,10 +1,10 @@
 package com.kb.cosmetic_wms.outbound.application.service;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
-import com.kb.cosmetic_wms.global.event.OutboundAllocatedEvent;
-import com.kb.cosmetic_wms.global.event.OutboundCanceledEvent;
-import com.kb.cosmetic_wms.global.event.OutboundShippedEvent;
-import com.kb.cosmetic_wms.global.event.OutboundStockReleaseRequestedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundAllocatedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundCanceledEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundShippedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundStockReleaseRequestedEvent;
 import com.kb.cosmetic_wms.outbound.application.port.in.CreateOutboundCommand;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundLifecycleUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundResult;
