@@ -17,14 +17,23 @@ import com.kb.cosmetic_wms.lot.application.port.in.LotResult;
 import com.kb.cosmetic_wms.storage.application.port.in.*;
 import com.kb.cosmetic_wms.storage.domain.model.SectionType;
 import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,18 +58,28 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest
 class InboundToInventoryIntegrationTest {
 
-    @Autowired private RegisterWarehouseUseCase registerWarehouseUseCase;
-    @Autowired private AddSectionUseCase addSectionUseCase;
+    @Autowired
+    private RegisterWarehouseUseCase registerWarehouseUseCase;
+    @Autowired
+    private AddSectionUseCase addSectionUseCase;
 
-    @Autowired private InboundLifecycleUseCase inboundLifecycleUseCase;
-    @Autowired private FindInboundUseCase findInboundUseCase;
-    @Autowired private FindLotUseCase findLotUseCase;
-    @Autowired private FindWarehouseUseCase findWarehouseUseCase;
-    @Autowired private InspectionLifecycleUseCase inspectionLifecycleUseCase;
-    @Autowired private FindInspectionUseCase findInspectionUseCase;
-    @Autowired private FindInventoryUseCase findInventoryUseCase;
+    @Autowired
+    private InboundLifecycleUseCase inboundLifecycleUseCase;
+    @Autowired
+    private FindInboundUseCase findInboundUseCase;
+    @Autowired
+    private FindLotUseCase findLotUseCase;
+    @Autowired
+    private FindWarehouseUseCase findWarehouseUseCase;
+    @Autowired
+    private InspectionLifecycleUseCase inspectionLifecycleUseCase;
+    @Autowired
+    private FindInspectionUseCase findInspectionUseCase;
+    @Autowired
+    private FindInventoryUseCase findInventoryUseCase;
 
-    @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private Long warehouseId;
     private Long partnerId;
@@ -77,11 +96,9 @@ class InboundToInventoryIntegrationTest {
          */
         jdbcTemplate.update(
                 "INSERT IGNORE INTO member (member_id, login_id, password, role, member_name, email, phone_number, created_by, created_at)" +
-                " VALUES (1, 'testadmin', 'no_password', 'ADMIN', '테스트관리자', 'admin@wms-test.com', '010-0000-0000', 1, ?)",
+                        " VALUES (1, 'testadmin', 'no_password', 'ADMIN', '테스트관리자', 'admin@wms-test.com', '010-0000-0000', 1, ?)",
                 now);
 
-        // Category 직접 삽입 (ProductService의 2-phase SKU 할당이 H2 NOT NULL 제약과 충돌하므로
-        // Category/ProductType/Partner/Product는 JdbcTemplate으로 직접 삽입)
         jdbcTemplate.update(
                 "INSERT INTO category (category_code, category_name, created_by, created_at) VALUES (?, ?, ?, ?)",
                 "SKC", "스킨케어", 1L, now);
@@ -99,8 +116,8 @@ class InboundToInventoryIntegrationTest {
 
         jdbcTemplate.update(
                 "INSERT INTO product (sku_code, brand_name, product_name, product_price, temperature_type," +
-                " category_id, type_id, skin_type, volume, unit, created_by, created_at)" +
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        " category_id, type_id, skin_type, volume, unit, created_by, created_at)" +
+                        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 "P-TEST-001", "테스트브랜드", "테스트토너", 15000, "ROOM",
                 categoryId, productTypeId, "ALL", 150, "ml", 1L, now);
         productId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
@@ -393,6 +410,148 @@ class InboundToInventoryIntegrationTest {
         assertThat(getSectionByType(finalWarehouse, SectionType.DOCKING).currentCapacity()).isEqualTo(0);
         assertThat(getSectionByType(finalWarehouse, SectionType.STORAGE).currentCapacity()).isEqualTo(190);
         assertThat(getSectionByType(finalWarehouse, SectionType.QUARANTINE).currentCapacity()).isEqualTo(10);
+    }
+
+    // =========================================================
+    // 동시성 스트레스 테스트
+    // =========================================================
+
+    @Nested
+    class 동시성_스트레스_테스트 {
+
+        private static final int THREAD_COUNT = 50;
+
+        @Test
+        void 동시_50건_입고_수령이_DOCKING_용량_내에서_모두_성공한다() throws InterruptedException {
+            // GIVEN: 50개 Inbound 사전 등록 (10 units × 50 = 500 ≤ DOCKING 1000)
+            int quantityPerThread = 10;
+            List<InboundResult> inbounds = new ArrayList<>();
+            for (int i = 0; i < THREAD_COUNT; i++) {
+                inbounds.add(registerInbound(quantityPerThread));
+            }
+
+            AtomicInteger successCount = new AtomicInteger(0);
+            AtomicInteger failCount = new AtomicInteger(0);
+            ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+            CountDownLatch readyLatch = new CountDownLatch(THREAD_COUNT);
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch doneLatch = new CountDownLatch(THREAD_COUNT);
+
+            for (int i = 0; i < THREAD_COUNT; i++) {
+                final int idx = i;
+                final Long inboundId = inbounds.get(i).id();
+                final Long lineId = inbounds.get(i).lines().get(0).id();
+                executor.submit(() -> {
+                    try {
+                        readyLatch.countDown();
+                        startLatch.await();
+                        inboundLifecycleUseCase.receive(inboundId,
+                                new ReceiveInboundCommand(List.of(
+                                        new ReceiveInboundCommand.LineItem(lineId, quantityPerThread,
+                                                "STRESS-A-" + idx,
+                                                LocalDateTime.of(2025, 1, 1, 0, 0),
+                                                LocalDateTime.of(2027, 1, 1, 0, 0)))));
+                        successCount.incrementAndGet();
+                    } catch (Exception e) {
+                        failCount.incrementAndGet();
+                    } finally {
+                        doneLatch.countDown();
+                    }
+                });
+            }
+
+            readyLatch.await();
+            startLatch.countDown();
+            assertThat(doneLatch.await(30, TimeUnit.SECONDS)).isTrue();
+            executor.shutdown();
+
+            // 비동기 검사 전표 생성 완료 대기 (AFTER_COMMIT + @Async)
+            int expectedInspections = successCount.get();
+            await().atMost(Duration.ofSeconds(15))
+                    .pollInterval(Duration.ofMillis(500))
+                    .until(() -> {
+                        Integer cnt = jdbcTemplate.queryForObject(
+                                "SELECT COUNT(*) FROM quality_inspection", Integer.class);
+                        return cnt != null && cnt >= expectedInspections;
+                    });
+
+            // THEN: 50건 모두 성공, DOCKING 점유량 = 500
+            assertThat(successCount.get()).isEqualTo(THREAD_COUNT);
+            assertThat(failCount.get()).isEqualTo(0);
+
+            int dockingCapacity = jdbcTemplate.queryForObject(
+                    "SELECT current_capacity FROM section WHERE warehouse_id = ? AND section_type = 'DOCKING'",
+                    Integer.class, warehouseId);
+            assertThat(dockingCapacity).isEqualTo(THREAD_COUNT * quantityPerThread);
+        }
+
+        @Test
+        void 동시_50건_입고_수령이_DOCKING_용량_초과_시_초과분은_거절되고_정합성이_보장된다()
+                throws InterruptedException {
+            // GIVEN: 50개 Inbound 사전 등록 (25 units × 50 = 1250 > DOCKING 1000)
+            // pessimistic lock + Section.plusCapacity() overflow check로 정합성 보장
+            // TOCTOU로 인해 canAccommodate() 통과 후 plusCapacity()에서 실패할 수 있음
+            int quantityPerThread = 25;
+            List<InboundResult> inbounds = new ArrayList<>();
+            for (int i = 0; i < THREAD_COUNT; i++) {
+                inbounds.add(registerInbound(quantityPerThread));
+            }
+
+            AtomicInteger successCount = new AtomicInteger(0);
+            AtomicInteger failCount = new AtomicInteger(0);
+            ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+            CountDownLatch readyLatch = new CountDownLatch(THREAD_COUNT);
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch doneLatch = new CountDownLatch(THREAD_COUNT);
+
+            for (int i = 0; i < THREAD_COUNT; i++) {
+                final int idx = i;
+                final Long inboundId = inbounds.get(i).id();
+                final Long lineId = inbounds.get(i).lines().get(0).id();
+                executor.submit(() -> {
+                    try {
+                        readyLatch.countDown();
+                        startLatch.await();
+                        inboundLifecycleUseCase.receive(inboundId,
+                                new ReceiveInboundCommand(List.of(
+                                        new ReceiveInboundCommand.LineItem(lineId, quantityPerThread,
+                                                "STRESS-B-" + idx,
+                                                LocalDateTime.of(2025, 1, 1, 0, 0),
+                                                LocalDateTime.of(2027, 1, 1, 0, 0)))));
+                        successCount.incrementAndGet();
+                    } catch (Exception e) {
+                        failCount.incrementAndGet();
+                    } finally {
+                        doneLatch.countDown();
+                    }
+                });
+            }
+
+            readyLatch.await();
+            startLatch.countDown();
+            assertThat(doneLatch.await(30, TimeUnit.SECONDS)).isTrue();
+            executor.shutdown();
+
+            // 비동기 검사 전표 생성 완료 대기
+            int expectedInspections = successCount.get();
+            await().atMost(Duration.ofSeconds(15))
+                    .pollInterval(Duration.ofMillis(500))
+                    .until(() -> {
+                        Integer cnt = jdbcTemplate.queryForObject(
+                                "SELECT COUNT(*) FROM quality_inspection", Integer.class);
+                        return cnt != null && cnt >= expectedInspections;
+                    });
+
+            // THEN: DOCKING은 maxCapacity(1000)를 절대 초과하지 않는다
+            int dockingCapacity = jdbcTemplate.queryForObject(
+                    "SELECT current_capacity FROM section WHERE warehouse_id = ? AND section_type = 'DOCKING'",
+                    Integer.class, warehouseId);
+
+            assertThat(failCount.get()).isGreaterThan(0);
+            assertThat(dockingCapacity).isLessThanOrEqualTo(1000);
+            // 원자성 보장: 성공한 수령 건수 × 단위 수량 = 실제 DOCKING 점유량
+            assertThat(successCount.get() * quantityPerThread).isEqualTo(dockingCapacity);
+        }
     }
 
     // =========================================================
