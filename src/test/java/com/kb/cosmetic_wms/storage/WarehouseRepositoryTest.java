@@ -25,7 +25,7 @@ public class WarehouseRepositoryTest {
     void 창고와_하위_보관_섹션을_함께_저장하면_Cascade가_작동하여_한_번에_영속화된다() {
         Warehouse warehouse = new WarehouseTestBuilder().build();
 
-        warehouse.addStorageSection(new SectionCode("WH01-HIGH-R-01"), "A동 상단 랙", SectionType.HIGH_ROT, TemperatureZone.ROOM, 3000);
+        warehouse.addStorageSection(new SectionCode("WH01-STR-R-01"), "A동 상단 랙", SectionType.STORAGE, TemperatureZone.ROOM, 3000);
         warehouse.addDockingSection(new SectionCode("WH01-DOCK-C-01"), "1번 검수장 도크", TemperatureZone.COOL, 2000);
 
         Warehouse saved = storagePersistenceAdapter.save(warehouse);

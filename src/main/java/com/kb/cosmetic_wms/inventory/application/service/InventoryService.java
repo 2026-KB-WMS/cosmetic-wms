@@ -27,7 +27,6 @@ import java.util.function.Function;
 public class InventoryService implements
         FindInventoryUseCase,
         ManageInventoryStatusUseCase,
-        CreateInventoryFromInboundUseCase,
         ApplyInspectionResultUseCase,
         DeductInventoryForOutboundUseCase,
         ReleaseInventoryForOutboundUseCase,
@@ -35,6 +34,7 @@ public class InventoryService implements
 
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
+
 
     @Override
     public InventoryResult findById(Long inventoryId) {
@@ -123,29 +123,18 @@ public class InventoryService implements
 
     @Override
     @Transactional
-    public void createFromInbound(InboundPutawayCommand command) {
-        InventoryStatusSet statusSet = InventoryStatusSet.of(
-                AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
-        );
-        createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
-                command.quantity(), statusSet, TransactionType.INBOUND_PUTAWAY,
-                command.inboundId(), command.memberId(), command.expiryDate());
-    }
-
-    @Override
-    @Transactional
     public void applyInspectionResult(InspectionResultCommand command) {
         if (command.passedQuantity() > 0) {
             InventoryStatusSet normalStatus = InventoryStatusSet.of(
                     AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED);
-            createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+            createOrMerge(command.productId(), command.lotId(), command.storageSectionId(), command.warehouseId(),
                     command.passedQuantity(), normalStatus, TransactionType.INSPECTION_PASS,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }
         if (command.failedQuantity() > 0) {
             InventoryStatusSet holdStatus = InventoryStatusSet.of(
                     AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.STORED);
-            createOrMerge(command.productId(), command.lotId(), command.sectionId(), command.warehouseId(),
+            createOrMerge(command.productId(), command.lotId(), command.quarantineSectionId(), command.warehouseId(),
                     command.failedQuantity(), holdStatus, TransactionType.INSPECTION_FAIL,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }
@@ -247,7 +236,7 @@ public class InventoryService implements
     private void createOrMerge(Long productId, Long lotId, Long sectionId, Long warehouseId,
                                int quantity, InventoryStatusSet statusSet,
                                TransactionType type, Long referenceId, Long memberId, LocalDate expiryDate) {
-        int availableQty = statusSet.qualityStatus().isNormal() ? quantity : 0;
+        int availableQty = (statusSet.qualityStatus().isNormal() && statusSet.locStatus() != LocStatus.DOCKING) ? quantity : 0;
 
         long NO_EXCLUDE_ID = -1L;
         Optional<Inventory> mergeTarget = inventoryPort.findMergeTargetForUpdate(

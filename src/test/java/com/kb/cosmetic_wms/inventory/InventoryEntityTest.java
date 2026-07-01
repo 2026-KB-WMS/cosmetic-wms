@@ -419,6 +419,30 @@ public class InventoryEntityTest {
                 .hasMessage("재고 수량은 음수일 수 없습니다.");
     }
 
+    @Test
+    void 도킹_구역_대기_재고를_생성할_때_출고_가능_수량이_0보다_크면_예외를_던진다() {
+        assertThatThrownBy(() ->
+                new InventoryTestBuilder()
+                        .locStatus(LocStatus.DOCKING)
+                        .availableQuantity(10)
+                        .build()
+        )
+                .isInstanceOf(InvalidInventoryQuantityException.class)
+                .hasMessage("도킹 구역 대기 중인 재고의 출고 가능 수량은 0이어야 합니다.");
+    }
+
+    @Test
+    void 도킹_구역_대기_재고를_이동_시작하려고_하면_예외를_던진다() {
+        Inventory inventory = new InventoryTestBuilder()
+                .locStatus(LocStatus.DOCKING)
+                .availableQuantity(0)
+                .build();
+
+        assertThatThrownBy(() -> inventory.startMoving(10))
+                .isInstanceOf(InventoryStateTransitionException.class)
+                .hasMessage("도킹 구역 대기 중인 재고는 이동(MOVING) 상태로 전환할 수 없습니다.");
+    }
+
     private static Stream<Arguments> provideInvalidStatusCombinations() {
         return Stream.of(
                 Arguments.of(AllocStatus.ALLOCATED, QualityStatus.DISCARD_SCHEDULED, LocStatus.STORED,
@@ -434,7 +458,12 @@ public class InventoryEntityTest {
                 Arguments.of(AllocStatus.UNALLOCATED, QualityStatus.INSPECTING, LocStatus.MOVING,
                         "품질 상태가 검수 대기/중인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다."),
                 Arguments.of(AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.MOVING,
-                        "품질 상태가 출고 금지인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다.")
+                        "품질 상태가 출고 금지인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다."),
+
+                Arguments.of(AllocStatus.ALLOCATED, QualityStatus.NORMAL, LocStatus.DOCKING,
+                        "도킹 구역 대기 중인 재고는 할당 대상이 아닙니다."),
+                Arguments.of(AllocStatus.SHIPPED, QualityStatus.NORMAL, LocStatus.DOCKING,
+                        "도킹 구역 대기 중인 재고는 할당 대상이 아닙니다.")
         );
     }
 }

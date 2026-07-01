@@ -5,12 +5,12 @@ import java.time.LocalDate;
 public record InspectionResultCommand(
         Long productId,
         Long lotId,
-        Long sectionId,
+        Long storageSectionId,
+        Long quarantineSectionId,
         Long warehouseId,
         int passedQuantity,
         int failedQuantity,
         Long inspectionId,
         Long memberId,
         LocalDate expiryDate
-) {
-}
+) {}

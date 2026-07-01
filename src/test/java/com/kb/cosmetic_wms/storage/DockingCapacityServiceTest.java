@@ -1,6 +1,9 @@
 package com.kb.cosmetic_wms.storage;
 
+import com.kb.cosmetic_wms.storage.application.port.in.ApplyInspectionCapacityCommand;
+import com.kb.cosmetic_wms.storage.application.port.in.SectionAssignmentResult;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityCommand;
+import com.kb.cosmetic_wms.storage.domain.model.Section;
 import com.kb.cosmetic_wms.storage.application.port.out.ProductTemperatureQueryPort;
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
 import com.kb.cosmetic_wms.storage.application.service.DockingCapacityService;
@@ -88,5 +91,55 @@ class DockingCapacityServiceTest {
 
         assertThatThrownBy(() -> dockingCapacityService.updateDockingCapacity(command))
                 .isInstanceOf(WarehouseNotFoundException.class);
+    }
+
+    @Test
+    void 검사_완료_후_합격_수량은_STORAGE_섹션에_불합격_수량은_QUARANTINE_섹션에_배정된다() {
+        Long warehouseId = 1L;
+        Long productId = 1L;
+        Warehouse warehouse = new WarehouseTestBuilder().warehouseId(warehouseId).capacity(10000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-DOCK-R-01").sectionType(SectionType.DOCKING)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(3000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-STR-R-01").sectionType(SectionType.STORAGE)
+                .temperatureType(TemperatureZone.ROOM).maxCapacity(5000).build();
+        new SectionTestBuilder().warehouse(warehouse)
+                .sectionCode("WH01-QUAR-R-01").sectionType(SectionType.QUARANTINE)
+                .maxCapacity(1000).build();
+        warehouse.receiveToDocking(Map.of(TemperatureZone.ROOM, 300));
+
+        given(storagePort.findByIdForUpdate(warehouseId)).willReturn(Optional.of(warehouse));
+        given(storagePort.save(any(Warehouse.class))).willAnswer(inv -> inv.getArgument(0));
+        given(productTemperatureQueryPort.findTemperatureZonesByIds(List.of(productId)))
+                .willReturn(Map.of(productId, TemperatureZone.ROOM));
+
+        ApplyInspectionCapacityCommand command = new ApplyInspectionCapacityCommand(warehouseId, productId, 80, 20);
+
+        dockingCapacityService.applyInspectionCapacity(command);
+
+        verify(storagePort).save(warehouse);
+
+        Section docking = warehouse.getSections().stream()
+                .filter(s -> s.getSectionType() == SectionType.DOCKING).findFirst().orElseThrow();
+        Section storage = warehouse.getSections().stream()
+                .filter(s -> s.getSectionType() == SectionType.STORAGE).findFirst().orElseThrow();
+        Section quarantine = warehouse.getSections().stream()
+                .filter(s -> s.getSectionType() == SectionType.QUARANTINE).findFirst().orElseThrow();
+
+        assertThat(docking.getCurrentCapacity()).isEqualTo(200);
+        assertThat(storage.getCurrentCapacity()).isEqualTo(80);
+        assertThat(quarantine.getCurrentCapacity()).isEqualTo(20);
+    }
+
+    @Test
+    void 합격_불합격_수량이_모두_0이면_창고_조회_없이_빈_결과를_반환한다() {
+        ApplyInspectionCapacityCommand command = new ApplyInspectionCapacityCommand(1L, 1L, 0, 0);
+
+        SectionAssignmentResult result = dockingCapacityService.applyInspectionCapacity(command);
+
+        assertThat(result.storageSectionId()).isNull();
+        assertThat(result.quarantineSectionId()).isNull();
+        verify(storagePort, org.mockito.Mockito.never()).findByIdForUpdate(any());
     }
 }

@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.order.adapter.in.event;
 
-import com.kb.cosmetic_wms.global.event.OutboundAllocatedEvent;
-import com.kb.cosmetic_wms.global.event.OutboundShippedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundAllocatedEvent;
+import com.kb.cosmetic_wms.outbound.domain.event.OutboundShippedEvent;
 import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

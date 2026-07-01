@@ -39,5 +39,9 @@ public record InventoryStatusSet(
                     String.format("품질 상태가 %s인 결함/검수 재고는 창고 간 이동(MOVING)이 불가능합니다.", qualityStatus.getDescription())
             );
         }
+
+        if (locStatus == LocStatus.DOCKING && allocStatus != AllocStatus.UNALLOCATED) {
+            throw new InvalidInventoryStatusCombinationException(InventoryErrorCode.DOCKING_WITH_ALLOCATED);
+        }
     }
 }

@@ -62,7 +62,7 @@ public class SectionEntityTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"WH01-HIGH-R", "WH01-HIGH-01", "HIGH-R-01", "창고01-HIGH-R-01", "WH01-INVALID-R-01"})
+    @ValueSource(strings = {"WH01-STR-R", "WH01-STR-01", "STR-R-01", "창고01-STR-R-01", "WH01-INVALID-R-01"})
     void 섹션_코드_포맷이_정해진_규격과_다를_경우_예외를_던진다(String invalidCode) {
         assertThatThrownBy(() ->
                 new SectionTestBuilder().sectionCode(invalidCode).build()
@@ -83,7 +83,7 @@ public class SectionEntityTest {
     }
 
     @ParameterizedTest(name = "{0} 구역을 생성하면 품질은 NORMAL, 할당은 AVAILABLE로 자동 세팅된다")
-    @EnumSource(value = SectionType.class, names = {"HIGH_ROT", "MID_ROT", "LOW_ROT"})
+    @EnumSource(value = SectionType.class, names = {"STORAGE"})
     void 보관_구역을_생성하면_품질은_NORMAL_할당은_AVAILABLE로_자동_세팅된다(SectionType sectionType) {
         Section section = new SectionTestBuilder().sectionType(sectionType).build();
 
