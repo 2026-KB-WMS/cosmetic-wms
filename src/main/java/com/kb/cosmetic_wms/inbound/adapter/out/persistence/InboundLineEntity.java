@@ -61,8 +61,19 @@ class InboundLineEntity extends BaseEntity {
         );
     }
 
+    Long getId() {
+        return id;
+    }
+
     void setInbound(InboundEntity inbound) {
         this.inbound = inbound;
+    }
+
+    void updateFrom(InboundLine domain) {
+        this.receivedQuantity = domain.getReceivedQuantity();
+        this.manufacturerLotNumber = domain.getManufacturerLotNumber();
+        this.manufacturingDate = domain.getManufacturingDate();
+        this.expirationDate = domain.getExpirationDate();
     }
 
     InboundLine toDomain() {
