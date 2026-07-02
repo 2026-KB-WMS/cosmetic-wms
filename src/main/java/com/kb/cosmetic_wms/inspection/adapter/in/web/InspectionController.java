@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.inspection.adapter.in.web;
 
 import com.kb.cosmetic_wms.inspection.application.port.in.FindInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
+import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,16 @@ public class InspectionController {
     @GetMapping("/{inspectionId}")
     public ResponseEntity<InspectionDetailResponse> getInspection(@PathVariable Long inspectionId) {
         return ResponseEntity.ok(InspectionDetailResponse.from(findInspectionUseCase.findById(inspectionId)));
+    }
+
+    @GetMapping
+    public ResponseEntity<InspectionDetailResponse> getInspectionBySource(
+            @RequestParam InspectionSourceType sourceType,
+            @RequestParam Long sourceId) {
+        return findInspectionUseCase.findBySource(sourceType, sourceId)
+                .map(InspectionDetailResponse::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{inspectionId}/start")

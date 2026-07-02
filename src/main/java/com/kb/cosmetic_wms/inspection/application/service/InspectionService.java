@@ -6,11 +6,14 @@ import com.kb.cosmetic_wms.inspection.application.port.in.FindInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionLifecycleUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.InspectionResult;
 import com.kb.cosmetic_wms.inspection.application.port.out.InspectionPort;
+import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionNotFoundException;
 import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,12 @@ public class InspectionService implements InspectionLifecycleUseCase, FindInspec
     @Override
     public InspectionResult findById(Long inspectionId) {
         return InspectionResult.from(findOrThrow(inspectionId));
+    }
+
+    @Override
+    public Optional<InspectionResult> findBySource(InspectionSourceType sourceType, Long sourceId) {
+        return inspectionPort.findBySourceTypeAndSourceId(sourceType, sourceId)
+                .map(InspectionResult::from);
     }
 
     @Override
