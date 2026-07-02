@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.inspection.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.inspection.application.port.out.InspectionPort;
+import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,12 @@ public class InspectionPersistenceAdapter implements InspectionPort {
     @Override
     public Optional<Inspection> findByIdForUpdate(Long id) {
         return inspectionJpaRepository.findByIdForUpdate(id).map(InspectionEntity::toDomain);
+    }
+
+    @Override
+    public Optional<Inspection> findBySourceTypeAndSourceId(InspectionSourceType sourceType, Long sourceId) {
+        return inspectionJpaRepository.findBySourceTypeAndSourceId(sourceType, sourceId)
+                .map(InspectionEntity::toDomain);
     }
 
     @Override
