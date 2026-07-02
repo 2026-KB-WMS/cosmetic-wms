@@ -70,7 +70,7 @@ public class StorageControllerTest extends RestDocsSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.warehouseId").value(1L))
                 .andDo(document("warehouse-create-success",
                         buildParams(STORAGE, "창고 등록", WAREHOUSE_CREATE_REQUEST, WAREHOUSE_RESPONSE),
                         createRequestFields(getWarehouseCreateRequestFields()),
@@ -208,7 +208,7 @@ public class StorageControllerTest extends RestDocsSupport {
 
     private static FieldDescriptor[] getWarehouseFieldDescriptors() {
         return new FieldDescriptor[]{
-                fieldWithPath("id").description("창고 고유 식별 번호 (PK)"),
+                fieldWithPath("warehouseId").description("창고 고유 식별 번호 (PK)"),
                 fieldWithPath("warehouseName").description("창고 명칭"),
                 fieldWithPath("address").description("창고 주소"),
                 fieldWithPath("targetTemp").description("창고 타겟 온도"),

@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.inbound.adapter.out.persistence;
 import com.kb.cosmetic_wms.global.common.BaseEntity;
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
 import com.kb.cosmetic_wms.inbound.domain.model.Inbound;
+import com.kb.cosmetic_wms.inbound.domain.model.InboundLine;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "inbound")
@@ -57,6 +61,18 @@ class InboundEntity extends BaseEntity {
             entity.inboundLines.add(lineEntity);
         });
         return entity;
+    }
+
+    void updateFrom(Inbound domain) {
+        this.inboundStatus = domain.getInboundStatus();
+        Map<Long, InboundLine> domainLinesById = domain.getInboundLines().stream()
+                .collect(Collectors.toMap(InboundLine::getId, Function.identity()));
+        inboundLines.forEach(lineEntity -> {
+            InboundLine domainLine = domainLinesById.get(lineEntity.getId());
+            if (domainLine != null) {
+                lineEntity.updateFrom(domainLine);
+            }
+        });
     }
 
     Inbound toDomain() {
