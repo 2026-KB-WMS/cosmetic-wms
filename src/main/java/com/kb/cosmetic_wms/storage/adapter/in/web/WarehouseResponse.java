@@ -5,7 +5,7 @@ import com.kb.cosmetic_wms.storage.application.port.in.WarehouseResult;
 import java.util.List;
 
 public record WarehouseResponse(
-        Long id,
+        Long warehouseId,
         String warehouseName,
         String address,
         String targetTemp,

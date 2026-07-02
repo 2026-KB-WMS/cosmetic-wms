@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.inspection.adapter.out.persistence;
 
+import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -13,4 +14,6 @@ interface InspectionJpaRepository extends JpaRepository<InspectionEntity, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT q FROM InspectionEntity q WHERE q.id = :id")
     Optional<InspectionEntity> findByIdForUpdate(@Param("id") Long id);
+
+    Optional<InspectionEntity> findBySourceTypeAndSourceId(InspectionSourceType sourceType, Long sourceId);
 }
