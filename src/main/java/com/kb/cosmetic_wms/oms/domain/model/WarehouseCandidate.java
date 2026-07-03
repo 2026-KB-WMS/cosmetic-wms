@@ -7,10 +7,6 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * 창고 배정 알고리즘의 평가 대상 후보.
- * 타 컨텍스트 엔티티를 참조하지 않고 배정에 필요한 데이터만 스냅샷으로 보유한다.
- */
 @Getter
 public class WarehouseCandidate {
 

@@ -37,3 +37,7 @@ geocoding:
   kakao:
     base-url: https://dapi.kakao.com
     api-key: ${KAKAO_REST_API_KEY:}
+
+routing:
+  kakao:
+    base-url: https://apis-navi.kakaomobility.com
