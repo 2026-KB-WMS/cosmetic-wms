@@ -14,7 +14,7 @@ public class Order {
     private Long id;
     private OrderStatus orderStatus;
     private final Long storeId;
-    private final Long warehouseId;
+    private Long warehouseId;
     private final List<OrderItem> orderItems;
 
     private Order(Long id, OrderStatus orderStatus, Long storeId, Long warehouseId, List<OrderItem> items) {
@@ -25,12 +25,11 @@ public class Order {
         this.orderItems = new ArrayList<>(items);
     }
 
-    public static Order create(Long storeId, Long warehouseId, List<OrderLine> lines) {
+    public static Order create(Long storeId, List<OrderLine> lines) {
         if (storeId == null) throw new OrderStoreRequiredException();
-        if (warehouseId == null) throw new OrderWarehouseRequiredException();
         if (lines == null || lines.isEmpty()) throw new OrderItemsRequiredException();
 
-        Order order = new Order(null, OrderStatus.PENDING, storeId, warehouseId, List.of());
+        Order order = new Order(null, OrderStatus.PENDING, storeId, null, List.of());
         lines.forEach(order::addOrderItem);
         return order;
     }
@@ -51,6 +50,14 @@ public class Order {
     public void confirm() {
         if (this.orderStatus != OrderStatus.PENDING) throw new OrderConfirmNotAllowedException();
         this.orderStatus = OrderStatus.CONFIRMED;
+    }
+
+    public void assignWarehouse(Long warehouseId) {
+        if (warehouseId == null) throw new OrderWarehouseRequiredException();
+        if (this.orderStatus != OrderStatus.CONFIRMED || this.warehouseId != null) {
+            throw new OrderWarehouseAssignNotAllowedException();
+        }
+        this.warehouseId = warehouseId;
     }
 
     public void startPreparation() {

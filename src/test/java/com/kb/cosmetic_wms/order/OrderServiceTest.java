@@ -44,10 +44,10 @@ public class OrderServiceTest {
     class 발주_신청 {
 
         @Test
-        void 올바른_발주_정보가_주어지면_발주_신청_상태로_전표가_성공적으로_생성된다() {
+        void 올바른_발주_정보가_주어지면_창고_미배정_상태의_발주_신청_전표가_성공적으로_생성된다() {
             // given
             CreateOrderCommand command = new CreateOrderCommand(
-                    1L, 10L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
+                    1L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
             );
             Order savedOrder = new OrderTestBuilder().build();
             ReflectionTestUtils.setField(savedOrder, "id", 1L);
@@ -59,13 +59,13 @@ public class OrderServiceTest {
             // then
             assertThat(response.orderStatus()).isEqualTo(OrderStatus.PENDING);
             assertThat(response.storeId()).isEqualTo(1L);
-            assertThat(response.warehouseId()).isEqualTo(10L);
+            assertThat(response.warehouseId()).isNull();
         }
 
         @Test
         void 발주_신청_시_가맹점_정보가_누락되면_예외가_발생한다() {
             CreateOrderCommand command = new CreateOrderCommand(
-                    null, 10L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
+                    null, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
             );
 
             assertThatThrownBy(() -> orderService.createOrder(command))
@@ -73,18 +73,8 @@ public class OrderServiceTest {
         }
 
         @Test
-        void 발주_신청_시_물류창고_정보가_누락되면_예외가_발생한다() {
-            CreateOrderCommand command = new CreateOrderCommand(
-                    1L, null, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
-            );
-
-            assertThatThrownBy(() -> orderService.createOrder(command))
-                    .isInstanceOf(OrderWarehouseRequiredException.class);
-        }
-
-        @Test
         void 발주_신청_시_발주_품목_목록이_비어있으면_예외가_발생한다() {
-            CreateOrderCommand command = new CreateOrderCommand(1L, 10L, List.of());
+            CreateOrderCommand command = new CreateOrderCommand(1L, List.of());
 
             assertThatThrownBy(() -> orderService.createOrder(command))
                     .isInstanceOf(OrderItemsRequiredException.class);

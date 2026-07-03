@@ -29,7 +29,7 @@ public class OrderService implements OrderLifecycleUseCase {
         List<OrderLine> lines = command.lines().stream()
                 .map(l -> new OrderLine(l.productId(), l.quantity()))
                 .toList();
-        Order order = Order.create(command.storeId(), command.warehouseId(), lines);
+        Order order = Order.create(command.storeId(), lines);
         return OrderResult.from(orderPort.save(order));
     }
 

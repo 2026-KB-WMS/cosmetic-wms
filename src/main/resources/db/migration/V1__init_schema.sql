@@ -259,7 +259,7 @@ CREATE TABLE orders (
     orders_id    BIGINT      NOT NULL AUTO_INCREMENT,
     order_status VARCHAR(50) NOT NULL,
     store_id     BIGINT      NOT NULL,
-    warehouse_id BIGINT      NOT NULL,
+    warehouse_id BIGINT,
     created_by   BIGINT      NOT NULL,
     created_at   DATETIME(6) NOT NULL,
     updated_by   BIGINT,
