@@ -17,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.FieldDescriptor;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -54,7 +55,7 @@ public class OrderControllerTest extends RestDocsSupport {
         void 올바른_발주_정보가_주어지면_201_CREATED와_신청된_전표를_반환한다() throws Exception {
             // given
             CreateOrderRequest request = new CreateOrderRequest(
-                    1L, 10L,
+                    1L,
                     List.of(new CreateOrderRequest.OrderItemRequest(1L, 10))
             );
             OrderResult response = pendingOrderResponse(1L);
@@ -80,7 +81,7 @@ public class OrderControllerTest extends RestDocsSupport {
         void 가맹점_ID가_없으면_400_BAD_REQUEST를_반환한다() throws Exception {
             // given
             CreateOrderRequest request = new CreateOrderRequest(
-                    null, 10L,
+                    null,
                     List.of(new CreateOrderRequest.OrderItemRequest(1L, 10))
             );
 
@@ -99,31 +100,9 @@ public class OrderControllerTest extends RestDocsSupport {
 
         @Test
         @WithMockUser
-        void 창고_ID가_없으면_400_BAD_REQUEST를_반환한다() throws Exception {
-            // given
-            CreateOrderRequest request = new CreateOrderRequest(
-                    1L, null,
-                    List.of(new CreateOrderRequest.OrderItemRequest(1L, 10))
-            );
-
-            // when & then
-            mockMvc.perform(post("/api/v1/orders")
-                            .with(csrf())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"))
-                    .andDo(document("order-create-fail-no-warehouse",
-                            buildErrorParams(ORDER, "발주 신청"),
-                            globalErrorResponseFields()
-                    ));
-        }
-
-        @Test
-        @WithMockUser
         void 발주_품목이_비어있으면_400_BAD_REQUEST와_ORDER_ITEMS_REQUIRED를_반환한다() throws Exception {
             // given
-            CreateOrderRequest request = new CreateOrderRequest(1L, 10L, List.of());
+            CreateOrderRequest request = new CreateOrderRequest(1L, List.of());
             given(orderLifecycleUseCase.createOrder(any())).willThrow(new OrderItemsRequiredException());
 
             // when & then
@@ -377,7 +356,10 @@ public class OrderControllerTest extends RestDocsSupport {
     // ── Fixtures ──
 
     private static OrderResult pendingOrderResponse(Long id) {
-        return orderResponse(id, OrderStatus.PENDING);
+        return new OrderResult(
+                id, 1L, null, OrderStatus.PENDING,
+                List.of(new OrderResult.OrderItemResult(1L, 1L, 10))
+        );
     }
 
     private static OrderResult orderResponse(Long id, OrderStatus status) {
@@ -392,7 +374,6 @@ public class OrderControllerTest extends RestDocsSupport {
     private static FieldDescriptor[] getCreateOrderRequestFields() {
         return new FieldDescriptor[]{
                 fieldWithPath("storeId").description("발주 요청 가맹점 ID (필수)"),
-                fieldWithPath("warehouseId").description("배정 물류창고 ID (필수)"),
                 fieldWithPath("items").description("발주 품목 목록 (최소 1개)"),
                 fieldWithPath("items[].productId").description("발주 품목의 상품 ID"),
                 fieldWithPath("items[].quantity").description("발주 수량")
@@ -403,7 +384,8 @@ public class OrderControllerTest extends RestDocsSupport {
         return new FieldDescriptor[]{
                 fieldWithPath("id").description("발주 전표 ID"),
                 fieldWithPath("storeId").description("가맹점 ID"),
-                fieldWithPath("warehouseId").description("배정 물류창고 ID"),
+                fieldWithPath("warehouseId").type(JsonFieldType.NUMBER).optional()
+                        .description("배정 물류창고 ID (자동 배정 전에는 null)"),
                 fieldWithPath("orderStatus").description("발주 상태 (PENDING / CONFIRMED / PREPARING / SHIPPED / DELIVERED / CANCELED)"),
                 fieldWithPath("items").description("발주 품목 목록"),
                 fieldWithPath("items[].id").description("발주 품목 ID"),

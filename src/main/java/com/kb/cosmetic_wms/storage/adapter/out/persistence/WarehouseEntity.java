@@ -1,12 +1,14 @@
 package com.kb.cosmetic_wms.storage.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.global.common.BaseEntity;
+import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.storage.domain.model.Section;
 import com.kb.cosmetic_wms.storage.domain.model.Warehouse;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +28,12 @@ class WarehouseEntity extends BaseEntity {
     @Column(name = "address", nullable = false, length = 255)
     private String address;
 
+    @Column(name = "latitude", nullable = false, precision = 10, scale = 7)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", nullable = false, precision = 10, scale = 7)
+    private BigDecimal longitude;
+
     @Column(name = "target_temp", nullable = false, length = 20)
     private String targetTemp;
 
@@ -35,10 +43,13 @@ class WarehouseEntity extends BaseEntity {
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<SectionEntity> sections = new ArrayList<>();
 
-    private WarehouseEntity(Long id, String warehouseName, String address, String targetTemp, int capacity) {
+    private WarehouseEntity(Long id, String warehouseName, String address,
+                            BigDecimal latitude, BigDecimal longitude, String targetTemp, int capacity) {
         this.id = id;
         this.warehouseName = warehouseName;
         this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.targetTemp = targetTemp;
         this.capacity = capacity;
     }
@@ -48,6 +59,8 @@ class WarehouseEntity extends BaseEntity {
                 domain.getWarehouseId(),
                 domain.getWarehouseName(),
                 domain.getAddress(),
+                domain.getCoordinate().latitude(),
+                domain.getCoordinate().longitude(),
                 domain.getTargetTempValue(),
                 domain.getCapacity()
         );
@@ -61,6 +74,7 @@ class WarehouseEntity extends BaseEntity {
         List<Section> domainSections = sections.stream()
                 .map(SectionEntity::toDomain)
                 .toList();
-        return Warehouse.reconstitute(id, warehouseName, address, targetTemp, capacity, domainSections);
+        return Warehouse.reconstitute(id, warehouseName, address, new GeoCoordinate(latitude, longitude),
+                targetTemp, capacity, domainSections);
     }
 }

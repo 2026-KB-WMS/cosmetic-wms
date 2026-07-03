@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.inventory.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.inventory.application.port.in.FefoInventorySlice;
+import com.kb.cosmetic_wms.inventory.application.port.in.ProductAvailabilitySlice;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
@@ -10,6 +11,9 @@ import com.kb.cosmetic_wms.inventory.domain.model.InventoryTransaction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +64,25 @@ public class InventoryPersistenceAdapter implements InventoryPort, InventoryTran
                         ((Number) row[1]).intValue()
                 ))
                 .toList();
+    }
+
+    @Override
+    public List<ProductAvailabilitySlice> findAvailabilityByProducts(Collection<Long> productIds) {
+        return inventoryJpaRepository.findAvailabilityByProducts(productIds).stream()
+                .map(row -> new ProductAvailabilitySlice(
+                        ((Number) row[0]).longValue(),
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).intValue(),
+                        toLocalDate(row[3])
+                ))
+                .toList();
+    }
+
+    private LocalDate toLocalDate(Object value) {
+        if (value instanceof Date date) {
+            return date.toLocalDate();
+        }
+        return (LocalDate) value;
     }
 
     @Override

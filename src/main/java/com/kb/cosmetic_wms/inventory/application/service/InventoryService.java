@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -30,7 +31,8 @@ public class InventoryService implements
         ApplyInspectionResultUseCase,
         DeductInventoryForOutboundUseCase,
         ReleaseInventoryForOutboundUseCase,
-        FindFefoInventoryUseCase {
+        FindFefoInventoryUseCase,
+        FindProductAvailabilityUseCase {
 
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
@@ -169,6 +171,14 @@ public class InventoryService implements
     @Override
     public List<FefoInventorySlice> findAvailableForFefo(Long productId, Long warehouseId) {
         return inventoryPort.findAvailableForFefo(productId, warehouseId);
+    }
+
+    @Override
+    public List<ProductAvailabilitySlice> findAvailabilityByProducts(Collection<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+        return inventoryPort.findAvailabilityByProducts(productIds);
     }
 
     private Inventory findOrThrow(Long inventoryId) {

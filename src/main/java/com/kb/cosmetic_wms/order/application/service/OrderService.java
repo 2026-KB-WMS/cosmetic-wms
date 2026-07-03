@@ -29,7 +29,7 @@ public class OrderService implements OrderLifecycleUseCase {
         List<OrderLine> lines = command.lines().stream()
                 .map(l -> new OrderLine(l.productId(), l.quantity()))
                 .toList();
-        Order order = Order.create(command.storeId(), command.warehouseId(), lines);
+        Order order = Order.create(command.storeId(), lines);
         return OrderResult.from(orderPort.save(order));
     }
 
@@ -41,6 +41,14 @@ public class OrderService implements OrderLifecycleUseCase {
         Order saved = orderPort.save(order);
         eventPublisher.publish(toOrderConfirmedEvent(saved));
         return OrderResult.from(saved);
+    }
+
+    @Override
+    @Transactional
+    public OrderResult assignWarehouse(Long orderId, Long warehouseId) {
+        Order order = findByIdForUpdateOrThrow(orderId);
+        order.assignWarehouse(warehouseId);
+        return OrderResult.from(orderPort.save(order));
     }
 
     @Override
@@ -87,6 +95,6 @@ public class OrderService implements OrderLifecycleUseCase {
         var snapshots = order.getOrderItems().stream()
                 .map(item -> new OrderConfirmedEvent.ItemSnapshot(item.getId(), item.getProductId(), item.getQuantity()))
                 .toList();
-        return new OrderConfirmedEvent(order.getId(), order.getWarehouseId(), snapshots);
+        return new OrderConfirmedEvent(order.getId(), order.getStoreId(), snapshots);
     }
 }
