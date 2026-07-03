@@ -30,11 +30,13 @@ CREATE TABLE partner (
 );
 
 CREATE TABLE store (
-    store_id   BIGINT       NOT NULL AUTO_INCREMENT,
-    store_name VARCHAR(100) NOT NULL,
-    address    VARCHAR(100) NOT NULL,
-    created_by BIGINT       NOT NULL,
-    created_at DATETIME(6)  NOT NULL,
+    store_id   BIGINT        NOT NULL AUTO_INCREMENT,
+    store_name VARCHAR(100)  NOT NULL,
+    address    VARCHAR(100)  NOT NULL,
+    latitude   DECIMAL(10,7) NOT NULL,
+    longitude  DECIMAL(10,7) NOT NULL,
+    created_by BIGINT        NOT NULL,
+    created_at DATETIME(6)   NOT NULL,
     updated_by BIGINT,
     updated_at DATETIME(6),
     PRIMARY KEY (store_id),
@@ -42,13 +44,15 @@ CREATE TABLE store (
 );
 
 CREATE TABLE warehouse (
-    warehouse_id   BIGINT       NOT NULL AUTO_INCREMENT,
-    warehouse_name VARCHAR(100) NOT NULL,
-    address        VARCHAR(255) NOT NULL,
-    target_temp    VARCHAR(20)  NOT NULL,
-    capacity       INT          NOT NULL,
-    created_by     BIGINT       NOT NULL,
-    created_at     DATETIME(6)  NOT NULL,
+    warehouse_id   BIGINT        NOT NULL AUTO_INCREMENT,
+    warehouse_name VARCHAR(100)  NOT NULL,
+    address        VARCHAR(255)  NOT NULL,
+    latitude       DECIMAL(10,7) NOT NULL,
+    longitude      DECIMAL(10,7) NOT NULL,
+    target_temp    VARCHAR(20)   NOT NULL,
+    capacity       INT           NOT NULL,
+    created_by     BIGINT        NOT NULL,
+    created_at     DATETIME(6)   NOT NULL,
     updated_by     BIGINT,
     updated_at     DATETIME(6),
     PRIMARY KEY (warehouse_id)
@@ -251,11 +255,24 @@ CREATE TABLE failed_inspection_event (
     PRIMARY KEY (failed_event_id)
 );
 
+CREATE TABLE failed_assignment_event (
+    failed_event_id BIGINT      NOT NULL AUTO_INCREMENT,
+    orders_id       BIGINT      NOT NULL,
+    store_id        BIGINT      NOT NULL,
+    error_message   TEXT,
+    failed_at       DATETIME(6) NOT NULL,
+    created_by      BIGINT      NOT NULL,
+    created_at      DATETIME(6) NOT NULL,
+    updated_by      BIGINT,
+    updated_at      DATETIME(6),
+    PRIMARY KEY (failed_event_id)
+);
+
 CREATE TABLE orders (
     orders_id    BIGINT      NOT NULL AUTO_INCREMENT,
     order_status VARCHAR(50) NOT NULL,
     store_id     BIGINT      NOT NULL,
-    warehouse_id BIGINT      NOT NULL,
+    warehouse_id BIGINT,
     created_by   BIGINT      NOT NULL,
     created_at   DATETIME(6) NOT NULL,
     updated_by   BIGINT,

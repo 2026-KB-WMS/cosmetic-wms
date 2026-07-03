@@ -9,7 +9,6 @@ import java.util.List;
 public class OrderTestBuilder {
 
     private Long storeId = 1L;
-    private Long warehouseId = 10L;
     private List<OrderLine> orderLines = new ArrayList<>();
 
     public OrderTestBuilder() {
@@ -18,11 +17,6 @@ public class OrderTestBuilder {
 
     public OrderTestBuilder storeId(Long storeId) {
         this.storeId = storeId;
-        return this;
-    }
-
-    public OrderTestBuilder warehouseId(Long warehouseId) {
-        this.warehouseId = warehouseId;
         return this;
     }
 
@@ -42,6 +36,6 @@ public class OrderTestBuilder {
     }
 
     public Order build() {
-        return Order.create(this.storeId, this.warehouseId, this.orderLines);
+        return Order.create(this.storeId, this.orderLines);
     }
 }

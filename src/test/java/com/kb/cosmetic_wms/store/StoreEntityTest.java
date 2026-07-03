@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.store;
 
+import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.store.domain.exception.StoreValidationException;
 import com.kb.cosmetic_wms.store.domain.model.Store;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class StoreEntityTest {
 
+    private static final GeoCoordinate COORDINATE = GeoCoordinate.of(53.4308, -2.9608);
+
     @Test
     void 올바른_데이터를_통한_가맹점_객체를_생성할_수_있다() {
         // given
@@ -19,11 +22,12 @@ public class StoreEntityTest {
         String address = "Anfield Road, Liverpool, L4 0TH, United Kingdom";
 
         // when
-        Store store = Store.create(storeName, address);
+        Store store = Store.create(storeName, address, COORDINATE);
 
         // then
         assertThat(store.getStoreName()).isEqualTo("리버풀점");
         assertThat(store.getAddress()).isEqualTo("Anfield Road, Liverpool, L4 0TH, United Kingdom");
+        assertThat(store.getCoordinate()).isEqualTo(COORDINATE);
     }
 
     @ParameterizedTest
@@ -34,7 +38,7 @@ public class StoreEntityTest {
         String address = "Anfield Road, Liverpool, L4 0TH, United Kingdom";
 
         // when & then
-        assertThatThrownBy(() -> Store.create(invalidStoreName, address))
+        assertThatThrownBy(() -> Store.create(invalidStoreName, address, COORDINATE))
                 .isInstanceOf(StoreValidationException.class);
     }
 
@@ -46,7 +50,13 @@ public class StoreEntityTest {
         String storeName = "리버풀점";
 
         // when & then
-        assertThatThrownBy(() -> Store.create(storeName, invalidAddress))
+        assertThatThrownBy(() -> Store.create(storeName, invalidAddress, COORDINATE))
+                .isInstanceOf(StoreValidationException.class);
+    }
+
+    @Test
+    void 좌표가_null이면_예외를_던진다() {
+        assertThatThrownBy(() -> Store.create("리버풀점", "Anfield Road", null))
                 .isInstanceOf(StoreValidationException.class);
     }
 }

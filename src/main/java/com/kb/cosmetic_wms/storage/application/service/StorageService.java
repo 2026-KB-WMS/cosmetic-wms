@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.storage.application.service;
 
+import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
+import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
 import com.kb.cosmetic_wms.storage.application.port.in.*;
 import com.kb.cosmetic_wms.storage.application.port.out.StoragePort;
 import com.kb.cosmetic_wms.storage.domain.exception.DuplicateWarehouseException;
@@ -17,6 +19,7 @@ import java.util.List;
 public class StorageService implements RegisterWarehouseUseCase, AddSectionUseCase, FindWarehouseUseCase {
 
     private final StoragePort storagePort;
+    private final GeocodingPort geocodingPort;
 
     @Override
     @Transactional
@@ -24,9 +27,11 @@ public class StorageService implements RegisterWarehouseUseCase, AddSectionUseCa
         if (storagePort.existsByNameAndAddress(command.warehouseName(), command.address())) {
             throw new DuplicateWarehouseException();
         }
+        GeoCoordinate coordinate = geocodingPort.geocode(command.address());
         Warehouse warehouse = Warehouse.create(
                 command.warehouseName(),
                 command.address(),
+                coordinate,
                 command.targetTemp(),
                 command.capacity()
         );

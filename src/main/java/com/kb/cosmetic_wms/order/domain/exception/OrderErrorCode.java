@@ -23,7 +23,12 @@ public enum OrderErrorCode implements ErrorCode {
     ORDER_WAREHOUSE_REQUIRED(
             HttpStatus.BAD_REQUEST,
             "ORDER_WAREHOUSE_REQUIRED",
-            "발주 시 창고 정보는 필수입니다."
+            "배정할 창고 정보는 필수입니다."
+    ),
+    ORDER_WAREHOUSE_ASSIGN_NOT_ALLOWED(
+            HttpStatus.CONFLICT,
+            "ORDER_WAREHOUSE_ASSIGN_NOT_ALLOWED",
+            "창고 배정은 발주 확정(CONFIRMED) 상태에서 최초 1회만 가능합니다."
     ),
     ORDER_ITEMS_REQUIRED(
             HttpStatus.BAD_REQUEST,
