@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.integration;
 
+import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
+import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundCapacityExceededException;
 import com.kb.cosmetic_wms.inbound.application.port.in.*;
 import com.kb.cosmetic_wms.inbound.domain.enums.InboundStatus;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -36,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
@@ -57,6 +62,9 @@ import static org.awaitility.Awaitility.await;
  */
 @SpringBootTest
 class InboundToInventoryIntegrationTest {
+
+    @MockitoBean
+    private GeocodingPort geocodingPort;
 
     @Autowired
     private RegisterWarehouseUseCase registerWarehouseUseCase;
@@ -123,6 +131,7 @@ class InboundToInventoryIntegrationTest {
         productId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 
         // Warehouse + Section은 UseCase로 생성 (SectionCode 자동 생성 로직 포함)
+        given(geocodingPort.geocode(anyString())).willReturn(GeoCoordinate.of(37.4979, 127.0276));
         warehouseId = registerWarehouseUseCase
                 .register(new RegisterWarehouseCommand("테스트창고", "서울시 강남구", "15~25도", 10000))
                 .warehouseId();

@@ -42,13 +42,15 @@ CREATE TABLE store (
 );
 
 CREATE TABLE warehouse (
-    warehouse_id   BIGINT       NOT NULL AUTO_INCREMENT,
-    warehouse_name VARCHAR(100) NOT NULL,
-    address        VARCHAR(255) NOT NULL,
-    target_temp    VARCHAR(20)  NOT NULL,
-    capacity       INT          NOT NULL,
-    created_by     BIGINT       NOT NULL,
-    created_at     DATETIME(6)  NOT NULL,
+    warehouse_id   BIGINT        NOT NULL AUTO_INCREMENT,
+    warehouse_name VARCHAR(100)  NOT NULL,
+    address        VARCHAR(255)  NOT NULL,
+    latitude       DECIMAL(10,7) NOT NULL,
+    longitude      DECIMAL(10,7) NOT NULL,
+    target_temp    VARCHAR(20)   NOT NULL,
+    capacity       INT           NOT NULL,
+    created_by     BIGINT        NOT NULL,
+    created_at     DATETIME(6)   NOT NULL,
     updated_by     BIGINT,
     updated_at     DATETIME(6),
     PRIMARY KEY (warehouse_id)

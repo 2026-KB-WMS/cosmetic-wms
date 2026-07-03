@@ -6,6 +6,7 @@ import com.kb.cosmetic_wms.storage.domain.exception.SectionCapacityUnderflowExce
 import com.kb.cosmetic_wms.storage.domain.exception.StorageErrorCode;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageExceedCapacityException;
 import com.kb.cosmetic_wms.storage.domain.exception.StorageValidationException;
+import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.storage.domain.service.SectionCodeGenerator;
 import lombok.Getter;
 
@@ -20,30 +21,36 @@ public class Warehouse {
     private final Long warehouseId;
     private final String warehouseName;
     private final String address;
+    private final GeoCoordinate coordinate;
     private final TargetTemp targetTemp;
     private final int capacity;
     private final List<Section> sections;
 
-    private Warehouse(Long warehouseId, String warehouseName, String address,
+    private Warehouse(Long warehouseId, String warehouseName, String address, GeoCoordinate coordinate,
                       TargetTemp targetTemp, int capacity, List<Section> sections) {
         this.warehouseId = warehouseId;
         this.warehouseName = warehouseName;
         this.address = address;
+        this.coordinate = coordinate;
         this.targetTemp = targetTemp;
         this.capacity = capacity;
         this.sections = sections;
     }
 
-    public static Warehouse create(String warehouseName, String address, String targetTemp, int capacity) {
+    public static Warehouse create(String warehouseName, String address, GeoCoordinate coordinate,
+                                   String targetTemp, int capacity) {
         validateWarehouseName(warehouseName);
         validateAddress(address);
+        validateCoordinate(coordinate);
         validateCapacity(capacity);
-        return new Warehouse(null, warehouseName, address, new TargetTemp(targetTemp), capacity, new ArrayList<>());
+        return new Warehouse(null, warehouseName, address, coordinate,
+                new TargetTemp(targetTemp), capacity, new ArrayList<>());
     }
 
     public static Warehouse reconstitute(Long warehouseId, String warehouseName, String address,
-                                         String targetTemp, int capacity, List<Section> sections) {
-        return new Warehouse(warehouseId, warehouseName, address,
+                                         GeoCoordinate coordinate, String targetTemp, int capacity,
+                                         List<Section> sections) {
+        return new Warehouse(warehouseId, warehouseName, address, coordinate,
                 new TargetTemp(targetTemp), capacity, new ArrayList<>(sections));
     }
 
@@ -193,6 +200,12 @@ public class Warehouse {
     private static void validateAddress(String address) {
         if (address == null || address.isBlank()) {
             throw new StorageValidationException(StorageErrorCode.INVALID_ADDRESS);
+        }
+    }
+
+    private static void validateCoordinate(GeoCoordinate coordinate) {
+        if (coordinate == null) {
+            throw new StorageValidationException(StorageErrorCode.INVALID_COORDINATE);
         }
     }
 
