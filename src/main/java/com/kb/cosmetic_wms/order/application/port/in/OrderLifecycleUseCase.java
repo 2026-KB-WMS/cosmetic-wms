@@ -6,6 +6,8 @@ public interface OrderLifecycleUseCase {
 
     OrderResult confirmOrder(Long orderId);
 
+    OrderResult assignWarehouse(Long orderId, Long warehouseId);
+
     OrderResult startPreparation(Long orderId);
 
     OrderResult ship(Long orderId);

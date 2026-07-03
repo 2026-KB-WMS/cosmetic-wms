@@ -45,6 +45,14 @@ public class OrderService implements OrderLifecycleUseCase {
 
     @Override
     @Transactional
+    public OrderResult assignWarehouse(Long orderId, Long warehouseId) {
+        Order order = findByIdForUpdateOrThrow(orderId);
+        order.assignWarehouse(warehouseId);
+        return OrderResult.from(orderPort.save(order));
+    }
+
+    @Override
+    @Transactional
     public OrderResult startPreparation(Long orderId) {
         Order order = findByIdForUpdateOrThrow(orderId);
         order.startPreparation();

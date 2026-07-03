@@ -164,6 +164,39 @@ public class OrderServiceTest {
     }
 
     @Nested
+    class 창고_배정 {
+
+        @Test
+        void 발주_확정_상태의_전표에_창고를_배정하면_창고_ID가_반영된다() {
+            // given
+            Long orderId = 1L;
+            Order order = new OrderTestBuilder().build();
+            order.confirm();
+            given(orderPort.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
+            given(orderPort.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+            // when
+            OrderResult response = orderService.assignWarehouse(orderId, 10L);
+
+            // then
+            assertThat(response.warehouseId()).isEqualTo(10L);
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        }
+
+        @Test
+        void 발주_확정_이외의_상태에서_창고를_배정하면_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Order order = new OrderTestBuilder().build(); // PENDING 상태
+            given(orderPort.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.assignWarehouse(orderId, 10L))
+                    .isInstanceOf(OrderWarehouseAssignNotAllowedException.class);
+        }
+    }
+
+    @Nested
     class 배송_준비_시작 {
 
         @Test
