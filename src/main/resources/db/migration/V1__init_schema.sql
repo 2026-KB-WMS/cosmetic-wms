@@ -255,6 +255,19 @@ CREATE TABLE failed_inspection_event (
     PRIMARY KEY (failed_event_id)
 );
 
+CREATE TABLE failed_assignment_event (
+    failed_event_id BIGINT      NOT NULL AUTO_INCREMENT,
+    orders_id       BIGINT      NOT NULL,
+    store_id        BIGINT      NOT NULL,
+    error_message   TEXT,
+    failed_at       DATETIME(6) NOT NULL,
+    created_by      BIGINT      NOT NULL,
+    created_at      DATETIME(6) NOT NULL,
+    updated_by      BIGINT,
+    updated_at      DATETIME(6),
+    PRIMARY KEY (failed_event_id)
+);
+
 CREATE TABLE orders (
     orders_id    BIGINT      NOT NULL AUTO_INCREMENT,
     order_status VARCHAR(50) NOT NULL,
