@@ -1,6 +1,8 @@
 package com.kb.cosmetic_wms.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.math.BigDecimal;
 import com.kb.cosmetic_wms.global.config.SecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
@@ -54,7 +56,8 @@ public class StoreControllerTest extends RestDocsSupport {
     void 올바른_가맹점_정보를_입력하면_가맹점_등록에_성공하고_API_문서가_생성된다() throws Exception {
         // given
         RegisterStoreRequest request = new RegisterStoreRequest("서울 성수점", "서울시 성동구 성수동");
-        StoreResult result = new StoreResult(1L, "서울 성수점", "서울시 성동구 성수동");
+        StoreResult result = new StoreResult(1L, "서울 성수점", "서울시 성동구 성수동",
+                new BigDecimal("37.5445000"), new BigDecimal("127.0560000"));
 
         given(registerStoreUseCase.register(any(RegisterStoreCommand.class))).willReturn(result);
 
@@ -78,7 +81,8 @@ public class StoreControllerTest extends RestDocsSupport {
     void 존재하는_가맹점_ID로_조회하면_200_OK와_함께_정보를_반환하고_API_문서가_생성된다() throws Exception {
         // given
         Long storeId = 1L;
-        StoreResult result = new StoreResult(storeId, "서울 성수점", "서울시 성동구 성수동");
+        StoreResult result = new StoreResult(storeId, "서울 성수점", "서울시 성동구 성수동",
+                new BigDecimal("37.5445000"), new BigDecimal("127.0560000"));
 
         given(findStoreUseCase.findById(storeId)).willReturn(result);
 
@@ -126,7 +130,9 @@ public class StoreControllerTest extends RestDocsSupport {
         return new FieldDescriptor[]{
                 fieldWithPath("id").description("가맹점 고유 식별 번호 (PK)"),
                 fieldWithPath("storeName").description("가맹점 점포 명칭"),
-                fieldWithPath("address").description("가맹점 주소")
+                fieldWithPath("address").description("가맹점 주소"),
+                fieldWithPath("latitude").description("가맹점 위도 (주소 지오코딩 결과)"),
+                fieldWithPath("longitude").description("가맹점 경도 (주소 지오코딩 결과)")
         };
     }
 }
