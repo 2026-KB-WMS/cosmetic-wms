@@ -61,6 +61,6 @@ class RetryableWarehouseAssignerTest {
         retryableWarehouseAssigner.recover(cause, event);
 
         // then
-        verify(assignmentFailurePort).save(event, "Routing API timeout");
+        verify(assignmentFailurePort).save(1L, 10L, "Routing API timeout");
     }
 }

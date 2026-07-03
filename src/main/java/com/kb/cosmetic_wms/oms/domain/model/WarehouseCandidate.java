@@ -1,6 +1,8 @@
 package com.kb.cosmetic_wms.oms.domain.model;
 
 import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
+import com.kb.cosmetic_wms.oms.domain.exception.OmsErrorCode;
+import com.kb.cosmetic_wms.oms.domain.exception.OmsValidationException;
 import lombok.Getter;
 
 import java.time.LocalDate;
@@ -23,11 +25,8 @@ public class WarehouseCandidate {
 
     public static WarehouseCandidate of(Long warehouseId, GeoCoordinate coordinate,
                                         Map<Long, ProductStock> stocksByProductId) {
-        if (warehouseId == null) {
-            throw new IllegalArgumentException("창고 ID는 필수입니다.");
-        }
-        if (coordinate == null) {
-            throw new IllegalArgumentException("창고 좌표는 필수입니다.");
+        if (warehouseId == null || coordinate == null) {
+            throw new OmsValidationException(OmsErrorCode.INVALID_WAREHOUSE_CANDIDATE);
         }
         return new WarehouseCandidate(warehouseId, coordinate,
                 stocksByProductId == null ? Collections.emptyMap() : stocksByProductId);

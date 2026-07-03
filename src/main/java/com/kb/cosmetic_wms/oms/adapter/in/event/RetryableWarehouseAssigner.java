@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseCommand;
 import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseUseCase;
 import com.kb.cosmetic_wms.oms.application.port.out.AssignmentFailurePort;
 import com.kb.cosmetic_wms.oms.domain.exception.NoAssignableWarehouseException;
+import com.kb.cosmetic_wms.oms.domain.exception.OmsValidationException;
 import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.annotation.Backoff;
@@ -20,7 +21,7 @@ public class RetryableWarehouseAssigner {
 
     @Retryable(
             retryFor = Exception.class,
-            noRetryFor = NoAssignableWarehouseException.class,
+            noRetryFor = {NoAssignableWarehouseException.class, OmsValidationException.class},
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
@@ -37,6 +38,6 @@ public class RetryableWarehouseAssigner {
 
     @Recover
     public void recover(Exception ex, OrderConfirmedEvent event) {
-        assignmentFailurePort.save(event, ex.getMessage());
+        assignmentFailurePort.save(event.orderId(), event.storeId(), ex.getMessage());
     }
 }

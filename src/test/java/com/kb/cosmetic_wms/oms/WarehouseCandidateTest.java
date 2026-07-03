@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.oms;
 
 import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
+import com.kb.cosmetic_wms.oms.domain.exception.OmsValidationException;
 import com.kb.cosmetic_wms.oms.domain.model.ProductStock;
 import com.kb.cosmetic_wms.oms.domain.model.WarehouseCandidate;
 import org.junit.jupiter.api.Test;
@@ -45,14 +46,14 @@ class WarehouseCandidateTest {
     @Test
     void 창고_ID나_좌표가_없으면_예외를_던진다() {
         assertThatThrownBy(() -> WarehouseCandidate.of(null, COORDINATE, Map.of()))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(OmsValidationException.class);
         assertThatThrownBy(() -> WarehouseCandidate.of(1L, null, Map.of()))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(OmsValidationException.class);
     }
 
     @Test
     void 가용_재고가_있는데_유통기한이_없는_재고_요약은_생성할_수_없다() {
         assertThatThrownBy(() -> new ProductStock(10, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(OmsValidationException.class);
     }
 }

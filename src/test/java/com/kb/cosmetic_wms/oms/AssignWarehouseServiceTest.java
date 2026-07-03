@@ -14,7 +14,7 @@ import com.kb.cosmetic_wms.oms.domain.model.ProductStock;
 import com.kb.cosmetic_wms.oms.domain.model.WarehouseCandidate;
 import com.kb.cosmetic_wms.oms.domain.service.HaversineDistanceCalculator;
 import com.kb.cosmetic_wms.oms.domain.service.WeightBasedAssignmentPolicy;
-import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
+import com.kb.cosmetic_wms.oms.application.port.out.AssignOrderWarehousePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,7 +54,7 @@ class AssignWarehouseServiceTest {
     private RoutingPort routingPort;
 
     @Mock
-    private OrderLifecycleUseCase orderLifecycleUseCase;
+    private AssignOrderWarehousePort assignOrderWarehousePort;
 
     @Mock
     private EventPublisher eventPublisher;
@@ -65,7 +65,7 @@ class AssignWarehouseServiceTest {
     void setUp() {
         assignWarehouseService = new AssignWarehouseService(
                 loadStoreLocationPort, loadWarehouseCandidatesPort, routingPort,
-                WeightBasedAssignmentPolicy.withDefaults(), orderLifecycleUseCase, eventPublisher);
+                WeightBasedAssignmentPolicy.withDefaults(), assignOrderWarehousePort, eventPublisher);
 
         lenient().when(routingPort.drivingDistanceMeters(any(), any()))
                 .thenAnswer(inv -> Math.round(HaversineDistanceCalculator.distanceMeters(
@@ -89,7 +89,7 @@ class AssignWarehouseServiceTest {
         // then — 가까운 창고(1L) 선정, 발주 확정 및 이벤트 발행
         assertThat(result.orderId()).isEqualTo(1L);
         assertThat(result.warehouseId()).isEqualTo(1L);
-        verify(orderLifecycleUseCase).assignWarehouse(1L, 1L);
+        verify(assignOrderWarehousePort).assignWarehouse(1L, 1L);
 
         ArgumentCaptor<WarehouseAssignedEvent> captor = ArgumentCaptor.forClass(WarehouseAssignedEvent.class);
         verify(eventPublisher).publish(captor.capture());
@@ -116,7 +116,7 @@ class AssignWarehouseServiceTest {
         assertThatThrownBy(() -> assignWarehouseService.assign(command))
                 .isInstanceOf(NoAssignableWarehouseException.class);
 
-        verify(orderLifecycleUseCase, never()).assignWarehouse(anyLong(), anyLong());
+        verify(assignOrderWarehousePort, never()).assignWarehouse(anyLong(), anyLong());
         verify(eventPublisher, never()).publish(any());
     }
 }

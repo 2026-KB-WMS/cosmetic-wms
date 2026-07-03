@@ -2,6 +2,8 @@ package com.kb.cosmetic_wms.oms.domain.service;
 
 import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.oms.domain.exception.NoAssignableWarehouseException;
+import com.kb.cosmetic_wms.oms.domain.exception.OmsErrorCode;
+import com.kb.cosmetic_wms.oms.domain.exception.OmsValidationException;
 import com.kb.cosmetic_wms.oms.domain.model.DemandLine;
 import com.kb.cosmetic_wms.oms.domain.model.WarehouseCandidate;
 
@@ -41,12 +43,10 @@ public class WeightBasedAssignmentPolicy {
 
     public WeightBasedAssignmentPolicy(int shortlistSize, double distanceWeight,
                                        double fefoWeight, double stockDepthWeight) {
-        if (shortlistSize <= 0) {
-            throw new IllegalArgumentException("1차 필터 후보 수는 0보다 커야 합니다: " + shortlistSize);
-        }
-        if (distanceWeight < 0 || fefoWeight < 0 || stockDepthWeight < 0
+        if (shortlistSize <= 0
+                || distanceWeight < 0 || fefoWeight < 0 || stockDepthWeight < 0
                 || distanceWeight + fefoWeight + stockDepthWeight <= 0) {
-            throw new IllegalArgumentException("가중치는 음수일 수 없고 합은 0보다 커야 합니다.");
+            throw new OmsValidationException(OmsErrorCode.INVALID_ASSIGNMENT_POLICY);
         }
         this.shortlistSize = shortlistSize;
         this.distanceWeight = distanceWeight;
@@ -64,11 +64,9 @@ public class WeightBasedAssignmentPolicy {
                                      List<DemandLine> demands,
                                      LocalDate referenceDate,
                                      DrivingDistanceProvider drivingDistanceProvider) {
-        if (destination == null || referenceDate == null || drivingDistanceProvider == null) {
-            throw new IllegalArgumentException("배송지 좌표, 기준일, 주행거리 산정 함수는 필수입니다.");
-        }
-        if (demands == null || demands.isEmpty()) {
-            throw new IllegalArgumentException("발주 품목은 최소 1개 이상이어야 합니다.");
+        if (destination == null || referenceDate == null || drivingDistanceProvider == null
+                || demands == null || demands.isEmpty()) {
+            throw new OmsValidationException(OmsErrorCode.INVALID_ASSIGNMENT_INPUT);
         }
 
         List<WarehouseCandidate> fulfillable = filterFulfillable(candidates, demands);

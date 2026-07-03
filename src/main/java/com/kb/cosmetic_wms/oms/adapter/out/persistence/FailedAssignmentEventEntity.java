@@ -1,7 +1,6 @@
 package com.kb.cosmetic_wms.oms.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.global.common.BaseEntity;
-import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -37,7 +36,7 @@ class FailedAssignmentEventEntity extends BaseEntity {
         this.failedAt = LocalDateTime.now();
     }
 
-    static FailedAssignmentEventEntity from(OrderConfirmedEvent event, String errorMessage) {
-        return new FailedAssignmentEventEntity(event.orderId(), event.storeId(), errorMessage);
+    static FailedAssignmentEventEntity of(Long orderId, Long storeId, String errorMessage) {
+        return new FailedAssignmentEventEntity(orderId, storeId, errorMessage);
     }
 }

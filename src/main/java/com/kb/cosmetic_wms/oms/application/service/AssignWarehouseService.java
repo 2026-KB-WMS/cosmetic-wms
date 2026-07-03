@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseCommand;
 import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseUseCase;
 import com.kb.cosmetic_wms.oms.application.port.in.WarehouseAssignmentResult;
+import com.kb.cosmetic_wms.oms.application.port.out.AssignOrderWarehousePort;
 import com.kb.cosmetic_wms.oms.application.port.out.LoadStoreLocationPort;
 import com.kb.cosmetic_wms.oms.application.port.out.LoadWarehouseCandidatesPort;
 import com.kb.cosmetic_wms.oms.application.port.out.RoutingPort;
@@ -12,7 +13,6 @@ import com.kb.cosmetic_wms.oms.domain.event.WarehouseAssignedEvent;
 import com.kb.cosmetic_wms.oms.domain.model.DemandLine;
 import com.kb.cosmetic_wms.oms.domain.model.WarehouseCandidate;
 import com.kb.cosmetic_wms.oms.domain.service.WeightBasedAssignmentPolicy;
-import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +28,12 @@ public class AssignWarehouseService implements AssignWarehouseUseCase {
     private final LoadWarehouseCandidatesPort loadWarehouseCandidatesPort;
     private final RoutingPort routingPort;
     private final WeightBasedAssignmentPolicy assignmentPolicy;
-    private final OrderLifecycleUseCase orderLifecycleUseCase;
+    private final AssignOrderWarehousePort assignOrderWarehousePort;
     private final EventPublisher eventPublisher;
 
     /**
      * 창고 확정(order) → WarehouseAssignedEvent 발행 → 출고 전표 생성·재고 할당(outbound, BEFORE_COMMIT 구독)이
-     * 모두 이 트랜잭션 안에서 처리된다. 어느 단계든 실패하면 배정 자체가 롤백되어 정합성이 유지된다.
+     * 모두 이 트랜잭션 안에서 처리된다. 어느 단계든 실패하면 배정 자체가 롤백되어 정합성 유지
      */
     @Override
     @Transactional
@@ -48,7 +48,7 @@ public class AssignWarehouseService implements AssignWarehouseUseCase {
         WarehouseCandidate selected = assignmentPolicy.assign(
                 destination, candidates, demands, LocalDate.now(), routingPort::drivingDistanceMeters);
 
-        orderLifecycleUseCase.assignWarehouse(command.orderId(), selected.getWarehouseId());
+        assignOrderWarehousePort.assignWarehouse(command.orderId(), selected.getWarehouseId());
         eventPublisher.publish(toWarehouseAssignedEvent(command, selected.getWarehouseId()));
 
         return new WarehouseAssignmentResult(command.orderId(), selected.getWarehouseId());
