@@ -26,6 +26,7 @@ import org.springframework.restdocs.payload.ResponseFieldsSnippet;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
@@ -45,6 +46,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
 public class StorageControllerTest extends RestDocsSupport {
 
+    private static final BigDecimal LAT = new BigDecimal("37.2410000");
+    private static final BigDecimal LNG = new BigDecimal("127.1775000");
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -61,7 +65,7 @@ public class StorageControllerTest extends RestDocsSupport {
     @WithMockUser
     void 올바른_창고_정보를_입력하면_등록에_성공하고_API_문서가_생성된다() throws Exception {
         WarehouseCreateRequest request = new WarehouseCreateRequest("용인 신선 센터", "경기도 용인시", "0~5도", 30000);
-        WarehouseResult result = new WarehouseResult(1L, "용인 신선 센터", "경기도 용인시", "0~5도", 30000, List.of());
+        WarehouseResult result = new WarehouseResult(1L, "용인 신선 센터", "경기도 용인시", LAT, LNG, "0~5도", 30000, List.of());
 
         given(registerWarehouseUseCase.register(any(RegisterWarehouseCommand.class))).willReturn(result);
 
@@ -109,7 +113,7 @@ public class StorageControllerTest extends RestDocsSupport {
                 SectionType.STORAGE, SectionQualityStatus.NORMAL, SectionAllocationStatus.AVAILABLE,
                 TemperatureZone.ROOM, 5000, 0);
         WarehouseResult warehouseResult = new WarehouseResult(
-                warehouseId, "용인 신선 센터", "경기도 용인시", "0~5도", 30000, List.of(sectionResult));
+                warehouseId, "용인 신선 센터", "경기도 용인시", LAT, LNG, "0~5도", 30000, List.of(sectionResult));
 
         given(addSectionUseCase.addSection(eq(warehouseId), any(AddSectionCommand.class))).willReturn(warehouseResult);
 
@@ -150,8 +154,8 @@ public class StorageControllerTest extends RestDocsSupport {
     @Test
     @WithMockUser
     void 창고_전체_목록_조회_성공_시_200_OK와_함께_스니펫_문서가_추출된다() throws Exception {
-        WarehouseResult wh1 = new WarehouseResult(1L, "평택 센터", "경기도 평택시", "10~20도", 50000, List.of());
-        WarehouseResult wh2 = new WarehouseResult(2L, "인천 센터", "인천광역시 중구", "0~5도", 30000, List.of());
+        WarehouseResult wh1 = new WarehouseResult(1L, "평택 센터", "경기도 평택시", LAT, LNG, "10~20도", 50000, List.of());
+        WarehouseResult wh2 = new WarehouseResult(2L, "인천 센터", "인천광역시 중구", LAT, LNG, "0~5도", 30000, List.of());
         given(findWarehouseUseCase.findAll()).willReturn(List.of(wh1, wh2));
 
         mockMvc.perform(get("/api/v1/storages/warehouses")
@@ -211,6 +215,8 @@ public class StorageControllerTest extends RestDocsSupport {
                 fieldWithPath("warehouseId").description("창고 고유 식별 번호 (PK)"),
                 fieldWithPath("warehouseName").description("창고 명칭"),
                 fieldWithPath("address").description("창고 주소"),
+                fieldWithPath("latitude").description("창고 위도 (주소 지오코딩 결과)"),
+                fieldWithPath("longitude").description("창고 경도 (주소 지오코딩 결과)"),
                 fieldWithPath("targetTemp").description("창고 타겟 온도"),
                 fieldWithPath("capacity").description("창고 총 허용 캐파 수치"),
 

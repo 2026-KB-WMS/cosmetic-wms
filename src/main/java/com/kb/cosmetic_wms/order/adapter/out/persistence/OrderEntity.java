@@ -28,7 +28,7 @@ class OrderEntity extends BaseEntity {
     @Column(name = "store_id", nullable = false)
     private Long storeId;
 
-    @Column(name = "warehouse_id", nullable = false)
+    @Column(name = "warehouse_id")
     private Long warehouseId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -39,6 +39,11 @@ public enum StorageErrorCode implements ErrorCode {
             "INVALID_ADDRESS",
             "창고 주소는 필수 입력 항목입니다."
     ),
+    INVALID_COORDINATE(
+            HttpStatus.BAD_REQUEST,
+            "INVALID_COORDINATE",
+            "창고 좌표는 필수 입력 항목입니다."
+    ),
     INVALID_TARGET_TEMP(
             HttpStatus.BAD_REQUEST,
             "INVALID_TARGET_TEMP",

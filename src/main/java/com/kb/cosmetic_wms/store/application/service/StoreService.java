@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.store.application.service;
 
+import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
+import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
 import com.kb.cosmetic_wms.store.application.port.in.FindStoreUseCase;
 import com.kb.cosmetic_wms.store.application.port.in.RegisterStoreCommand;
 import com.kb.cosmetic_wms.store.application.port.in.RegisterStoreUseCase;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class StoreService implements RegisterStoreUseCase, FindStoreUseCase {
 
     private final StorePort storePort;
+    private final GeocodingPort geocodingPort;
 
     @Override
     @Transactional
@@ -25,7 +28,8 @@ public class StoreService implements RegisterStoreUseCase, FindStoreUseCase {
         if (storePort.existsByStoreNameAndAddress(command.storeName(), command.address())) {
             throw new DuplicateStoreException();
         }
-        Store store = Store.create(command.storeName(), command.address());
+        GeoCoordinate coordinate = geocodingPort.geocode(command.address());
+        Store store = Store.create(command.storeName(), command.address(), coordinate);
         return StoreResult.from(storePort.save(store));
     }
 

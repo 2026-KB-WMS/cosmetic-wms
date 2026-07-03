@@ -4,13 +4,13 @@ import com.kb.cosmetic_wms.inventory.application.port.in.FefoInventorySlice;
 import com.kb.cosmetic_wms.inventory.application.port.in.FindFefoInventoryUseCase;
 import com.kb.cosmetic_wms.inventory.application.port.in.InventoryStatusChangeCommand;
 import com.kb.cosmetic_wms.inventory.application.port.in.ManageInventoryStatusUseCase;
+import com.kb.cosmetic_wms.oms.domain.event.WarehouseAssignedEvent;
 import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.out.OutboundPort;
 import com.kb.cosmetic_wms.outbound.domain.enums.OutboundType;
 import com.kb.cosmetic_wms.outbound.domain.exception.OutboundInsufficientStockException;
 import com.kb.cosmetic_wms.outbound.domain.model.Outbound;
 import com.kb.cosmetic_wms.outbound.domain.model.OutboundLine;
-import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
@@ -31,7 +31,7 @@ public class OutboundEventHandler {
     private final AuditorAware<Long> auditorProvider;
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    public void onOrderConfirmed(OrderConfirmedEvent event) {
+    public void onWarehouseAssigned(WarehouseAssignedEvent event) {
         Long actorId = auditorProvider.getCurrentAuditor().orElseThrow();
 
         List<OutboundLine> lines = selectWithFefo(event, actorId);
@@ -49,10 +49,10 @@ public class OutboundEventHandler {
         orderLifecycleUseCase.startPreparation(event.orderId());
     }
 
-    private List<OutboundLine> selectWithFefo(OrderConfirmedEvent event, Long actorId) {
+    private List<OutboundLine> selectWithFefo(WarehouseAssignedEvent event, Long actorId) {
         List<OutboundLine> lines = new ArrayList<>();
 
-        for (OrderConfirmedEvent.ItemSnapshot item : event.items()) {
+        for (WarehouseAssignedEvent.ItemSnapshot item : event.items()) {
             List<FefoInventorySlice> slots =
                     findFefoInventoryUseCase.findAvailableForFefo(item.productId(), event.warehouseId());
 

@@ -1,5 +1,9 @@
 package com.kb.cosmetic_wms.storage;
 
+import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
+import com.kb.cosmetic_wms.global.geocoding.GeocodingErrorCode;
+import com.kb.cosmetic_wms.global.geocoding.GeocodingFailedException;
+import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
 import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.fixture.WarehouseTestBuilder;
 import com.kb.cosmetic_wms.storage.application.port.in.*;
@@ -24,10 +28,15 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class StorageServiceTest {
+
+    private static final GeoCoordinate COORDINATE = GeoCoordinate.of(36.9921, 127.1129);
 
     @InjectMocks
     private StorageService storageService;
@@ -35,22 +44,41 @@ public class StorageServiceTest {
     @Mock
     private StoragePort storagePort;
 
+    @Mock
+    private GeocodingPort geocodingPort;
+
     @Test
-    void 올바른_창고_정보를_입력하면_정상적으로_데이터에_등록된다() {
+    void 올바른_창고_정보를_입력하면_주소가_좌표로_변환되어_정상적으로_데이터에_등록된다() {
         RegisterWarehouseCommand command = new RegisterWarehouseCommand("평택 냉동 허브", "경기도 평택시", "10~20도", 50000);
         Warehouse warehouse = new WarehouseTestBuilder()
                 .warehouseName(command.warehouseName())
                 .address(command.address())
+                .coordinate(COORDINATE)
                 .targetTemp(command.targetTemp())
                 .capacity(command.capacity())
                 .build();
 
+        given(geocodingPort.geocode(command.address())).willReturn(COORDINATE);
         given(storagePort.save(any(Warehouse.class))).willReturn(warehouse);
 
         WarehouseResult result = storageService.register(command);
 
         assertThat(result).isNotNull();
         assertThat(result.warehouseName()).isEqualTo("평택 냉동 허브");
+        assertThat(result.latitude()).isEqualTo(COORDINATE.latitude());
+        assertThat(result.longitude()).isEqualTo(COORDINATE.longitude());
+    }
+
+    @Test
+    void 주소_좌표_변환에_실패하면_창고가_저장되지_않고_예외를_던진다() {
+        RegisterWarehouseCommand command = new RegisterWarehouseCommand("평택 냉동 허브", "존재하지 않는 주소", "10~20도", 50000);
+        given(geocodingPort.geocode(anyString()))
+                .willThrow(new GeocodingFailedException(GeocodingErrorCode.GEOCODING_ADDRESS_NOT_FOUND));
+
+        assertThatThrownBy(() -> storageService.register(command))
+                .isInstanceOf(GeocodingFailedException.class);
+
+        verify(storagePort, never()).save(any(Warehouse.class));
     }
 
     @Test

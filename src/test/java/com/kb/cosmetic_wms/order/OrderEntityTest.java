@@ -12,10 +12,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class OrderEntityTest {
 
     @Test
-    void 발주를_정상적인_값으로_생성하면_최초_상태는_PENDING_이어야_한다() {
+    void 발주를_정상적인_값으로_생성하면_최초_상태는_PENDING_이고_창고는_미배정_상태여야_한다() {
         Order order = new OrderTestBuilder().build();
 
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
+        assertThat(order.getWarehouseId()).isNull();
         assertThat(order.getOrderItems()).hasSize(1);
         assertThat(order.getOrderItems().getFirst().getProductId()).isEqualTo(1L);
         assertThat(order.getOrderItems().getFirst().getQuantity()).isEqualTo(10);
@@ -28,12 +29,6 @@ public class OrderEntityTest {
     }
 
     @Test
-    void 발주_생성_시_배정_창고_정보가_누락되면_예외를_던진다() {
-        assertThatThrownBy(() -> new OrderTestBuilder().warehouseId(null).build())
-                .isInstanceOf(OrderWarehouseRequiredException.class);
-    }
-
-    @Test
     void 발주_생성_시_발주_항목_리스트가_비어있으면_예외를_던진다() {
         assertThatThrownBy(() -> new OrderTestBuilder().emptyOrderLines().build())
                 .isInstanceOf(OrderItemsRequiredException.class);
@@ -41,8 +36,45 @@ public class OrderEntityTest {
 
     @Test
     void 발주_생성_시_발주_항목_리스트가_null이면_예외를_던진다() {
-        assertThatThrownBy(() -> Order.create(1L, 10L, null))
+        assertThatThrownBy(() -> Order.create(1L, null))
                 .isInstanceOf(OrderItemsRequiredException.class);
+    }
+
+    @Test
+    void 발주_확정_상태에서_창고를_배정하면_창고_ID가_확정된다() {
+        Order order = new OrderTestBuilder().build();
+        order.confirm();
+
+        order.assignWarehouse(10L);
+
+        assertThat(order.getWarehouseId()).isEqualTo(10L);
+    }
+
+    @Test
+    void 창고_배정_시_창고_ID가_null이면_예외를_던진다() {
+        Order order = new OrderTestBuilder().build();
+        order.confirm();
+
+        assertThatThrownBy(() -> order.assignWarehouse(null))
+                .isInstanceOf(OrderWarehouseRequiredException.class);
+    }
+
+    @Test
+    void 발주_대기_상태에서_창고를_배정하면_예외를_던진다() {
+        Order order = new OrderTestBuilder().build();
+
+        assertThatThrownBy(() -> order.assignWarehouse(10L))
+                .isInstanceOf(OrderWarehouseAssignNotAllowedException.class);
+    }
+
+    @Test
+    void 이미_창고가_배정된_발주에_다시_배정하면_예외를_던진다() {
+        Order order = new OrderTestBuilder().build();
+        order.confirm();
+        order.assignWarehouse(10L);
+
+        assertThatThrownBy(() -> order.assignWarehouse(20L))
+                .isInstanceOf(OrderWarehouseAssignNotAllowedException.class);
     }
 
     @Test

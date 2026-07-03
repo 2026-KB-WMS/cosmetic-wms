@@ -44,10 +44,10 @@ public class OrderServiceTest {
     class 발주_신청 {
 
         @Test
-        void 올바른_발주_정보가_주어지면_발주_신청_상태로_전표가_성공적으로_생성된다() {
+        void 올바른_발주_정보가_주어지면_창고_미배정_상태의_발주_신청_전표가_성공적으로_생성된다() {
             // given
             CreateOrderCommand command = new CreateOrderCommand(
-                    1L, 10L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
+                    1L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
             );
             Order savedOrder = new OrderTestBuilder().build();
             ReflectionTestUtils.setField(savedOrder, "id", 1L);
@@ -59,13 +59,13 @@ public class OrderServiceTest {
             // then
             assertThat(response.orderStatus()).isEqualTo(OrderStatus.PENDING);
             assertThat(response.storeId()).isEqualTo(1L);
-            assertThat(response.warehouseId()).isEqualTo(10L);
+            assertThat(response.warehouseId()).isNull();
         }
 
         @Test
         void 발주_신청_시_가맹점_정보가_누락되면_예외가_발생한다() {
             CreateOrderCommand command = new CreateOrderCommand(
-                    null, 10L, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
+                    null, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
             );
 
             assertThatThrownBy(() -> orderService.createOrder(command))
@@ -73,18 +73,8 @@ public class OrderServiceTest {
         }
 
         @Test
-        void 발주_신청_시_물류창고_정보가_누락되면_예외가_발생한다() {
-            CreateOrderCommand command = new CreateOrderCommand(
-                    1L, null, List.of(new CreateOrderCommand.OrderLineCommand(1L, 10))
-            );
-
-            assertThatThrownBy(() -> orderService.createOrder(command))
-                    .isInstanceOf(OrderWarehouseRequiredException.class);
-        }
-
-        @Test
         void 발주_신청_시_발주_품목_목록이_비어있으면_예외가_발생한다() {
-            CreateOrderCommand command = new CreateOrderCommand(1L, 10L, List.of());
+            CreateOrderCommand command = new CreateOrderCommand(1L, List.of());
 
             assertThatThrownBy(() -> orderService.createOrder(command))
                     .isInstanceOf(OrderItemsRequiredException.class);
@@ -149,7 +139,7 @@ public class OrderServiceTest {
         }
 
         @Test
-        void 발주_확정_이벤트_발행_시_출고_도메인에_필요한_발주_ID와_품목_스냅샷_정보가_정확히_실려있어야_한다() {
+        void 발주_확정_이벤트_발행_시_창고_배정에_필요한_발주_ID와_가맹점_ID와_품목_스냅샷_정보가_정확히_실려있어야_한다() {
             // given
             Long orderId = 1L;
             Order order = new OrderTestBuilder().build();
@@ -166,9 +156,43 @@ public class OrderServiceTest {
 
             OrderConfirmedEvent event = captor.getValue();
             assertThat(event.orderId()).isEqualTo(orderId);
+            assertThat(event.storeId()).isEqualTo(1L);
             assertThat(event.items()).hasSize(1);
             assertThat(event.items().get(0).productId()).isEqualTo(1L);
             assertThat(event.items().get(0).quantity()).isEqualTo(10);
+        }
+    }
+
+    @Nested
+    class 창고_배정 {
+
+        @Test
+        void 발주_확정_상태의_전표에_창고를_배정하면_창고_ID가_반영된다() {
+            // given
+            Long orderId = 1L;
+            Order order = new OrderTestBuilder().build();
+            order.confirm();
+            given(orderPort.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
+            given(orderPort.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+            // when
+            OrderResult response = orderService.assignWarehouse(orderId, 10L);
+
+            // then
+            assertThat(response.warehouseId()).isEqualTo(10L);
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        }
+
+        @Test
+        void 발주_확정_이외의_상태에서_창고를_배정하면_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Order order = new OrderTestBuilder().build(); // PENDING 상태
+            given(orderPort.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
+
+            // when & then
+            assertThatThrownBy(() -> orderService.assignWarehouse(orderId, 10L))
+                    .isInstanceOf(OrderWarehouseAssignNotAllowedException.class);
         }
     }
 
