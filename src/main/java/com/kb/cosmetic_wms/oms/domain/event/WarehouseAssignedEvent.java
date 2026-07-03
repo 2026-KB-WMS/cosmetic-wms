@@ -1,10 +1,10 @@
-package com.kb.cosmetic_wms.order.domain.event;
+package com.kb.cosmetic_wms.oms.domain.event;
 
 import java.util.List;
 
-public record OrderConfirmedEvent(
+public record WarehouseAssignedEvent(
         Long orderId,
-        Long storeId,
+        Long warehouseId,
         List<ItemSnapshot> items
 ) {
     public record ItemSnapshot(Long orderItemId, Long productId, int quantity) {}

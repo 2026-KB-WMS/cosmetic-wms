@@ -139,7 +139,7 @@ public class OrderServiceTest {
         }
 
         @Test
-        void 발주_확정_이벤트_발행_시_출고_도메인에_필요한_발주_ID와_품목_스냅샷_정보가_정확히_실려있어야_한다() {
+        void 발주_확정_이벤트_발행_시_창고_배정에_필요한_발주_ID와_가맹점_ID와_품목_스냅샷_정보가_정확히_실려있어야_한다() {
             // given
             Long orderId = 1L;
             Order order = new OrderTestBuilder().build();
@@ -156,6 +156,7 @@ public class OrderServiceTest {
 
             OrderConfirmedEvent event = captor.getValue();
             assertThat(event.orderId()).isEqualTo(orderId);
+            assertThat(event.storeId()).isEqualTo(1L);
             assertThat(event.items()).hasSize(1);
             assertThat(event.items().get(0).productId()).isEqualTo(1L);
             assertThat(event.items().get(0).quantity()).isEqualTo(10);

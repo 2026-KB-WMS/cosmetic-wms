@@ -87,6 +87,6 @@ public class OrderService implements OrderLifecycleUseCase {
         var snapshots = order.getOrderItems().stream()
                 .map(item -> new OrderConfirmedEvent.ItemSnapshot(item.getId(), item.getProductId(), item.getQuantity()))
                 .toList();
-        return new OrderConfirmedEvent(order.getId(), order.getWarehouseId(), snapshots);
+        return new OrderConfirmedEvent(order.getId(), order.getStoreId(), snapshots);
     }
 }
