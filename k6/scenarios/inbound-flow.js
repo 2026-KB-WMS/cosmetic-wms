@@ -171,6 +171,7 @@ export default function (data) {
     // 최대 10초(20회 × 0.5s) 대기 후 타임아웃 처리
     const pollStart = Date.now();
     let inspectionId = null;
+    let lotId = null;
 
     for (let attempt = 0; attempt < 20; attempt++) {
         sleep(0.5);
@@ -195,6 +196,7 @@ export default function (data) {
 
         const body = JSON.parse(pollRes.body);
         inspectionId = body.id;
+        lotId = body.lotId;
         break;
     }
 
@@ -236,9 +238,31 @@ export default function (data) {
             },
         }
     );
-    const completeOk = check(completeRes, {'[5] inspection completed (200)': r => r.status === 200});
+    if (!check(completeRes, {'[5] inspection completed (200)': r => r.status === 200})) {
+        flowSuccessRate.add(false);
+        return;
+    }
 
-    flowSuccessRate.add(completeOk);
+    // ── Step 6: 재고 반영 검증 ───────────────────────────────────
+    // 검사 완료 이벤트는 BEFORE_COMMIT 단계에서 동기 처리
+    const invRes = get(
+        `/api/v1/inventories?lotId=${lotId}`,
+        {
+            tags: {
+                name: 'GET /api/v1/inventories',
+            },
+        }
+    );
+    const inventoryOk = check(invRes, {
+        '[6] inventory reflected (200)': r => r.status === 200,
+        '[6] normal stock exists': r => {
+            if (r.status !== 200) return false;
+            const items = JSON.parse(r.body);
+            return items.some(i => i.qualityStatus === 'NORMAL');
+        },
+    });
+
+    flowSuccessRate.add(inventoryOk);
     sleep(1);
 }
 
