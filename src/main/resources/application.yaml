@@ -32,3 +32,8 @@ springdoc:
     enabled: true
   swagger-ui:
     url: /docs/openapi3.yaml
+
+geocoding:
+  kakao:
+    base-url: https://dapi.kakao.com
+    api-key: ${KAKAO_REST_API_KEY:}
