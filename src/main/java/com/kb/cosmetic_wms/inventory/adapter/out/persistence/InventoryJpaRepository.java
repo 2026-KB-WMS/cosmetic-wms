@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,18 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
             """, nativeQuery = true)
     List<Object[]> findAvailableForFefo(@Param("productId") Long productId,
                                         @Param("warehouseId") Long warehouseId);
+
+    @Query(value = """
+            SELECT i.warehouse_id, i.product_id, SUM(i.available_quantity), MIN(i.expiry_date)
+            FROM inventory i
+            WHERE i.product_id IN (:productIds)
+              AND i.alloc_status  = 'UNALLOCATED'
+              AND i.quality_status = 'NORMAL'
+              AND i.loc_status    = 'STORED'
+              AND i.available_quantity > 0
+            GROUP BY i.warehouse_id, i.product_id
+            """, nativeQuery = true)
+    List<Object[]> findAvailabilityByProducts(@Param("productIds") Collection<Long> productIds);
 
     List<InventoryEntity> findByLotId(Long lotId);
 
