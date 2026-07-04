@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.inspection.adapter.in.event;
 
-import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.domain.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionCommand;
 import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.in.RecordInspectionFailureCommand;

@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inbound;
 
 import com.kb.cosmetic_wms.global.event.EventPublisher;
-import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.domain.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundCapacityExceededException;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundPartnerNotFoundException;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundWarehouseNotFoundException;
