@@ -4,7 +4,7 @@ import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
-import com.kb.cosmetic_wms.inventory.application.service.InventoryService;
+import com.kb.cosmetic_wms.inventory.application.service.InventoryCommandService;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
@@ -39,10 +39,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class InventoryServiceTest {
+class InventoryCommandServiceTest {
 
     @InjectMocks
-    private InventoryService inventoryService;
+    private InventoryCommandService inventoryService;
 
     @Mock
     private InventoryPort inventoryPort;
@@ -61,71 +61,6 @@ class InventoryServiceTest {
         ReflectionTestUtils.setField(defaultInventory, "id", 1L);
         lenient().when(inventoryPort.save(any(Inventory.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-    }
-
-    // =========================================================
-    // 재고 조회
-    // =========================================================
-
-    @Nested
-    class 재고_조회 {
-
-        @Test
-        void 존재하는_ID로_조회하면_재고_상세정보를_반환한다() {
-            given(inventoryPort.findById(1L)).willReturn(Optional.of(defaultInventory));
-
-            InventoryResult result = inventoryService.findById(1L);
-
-            assertThat(result.id()).isEqualTo(1L);
-            assertThat(result.quantity()).isEqualTo(100);
-            assertThat(result.availableQuantity()).isEqualTo(100);
-            assertThat(result.allocStatus()).isEqualTo(AllocStatus.UNALLOCATED);
-            assertThat(result.qualityStatus()).isEqualTo(QualityStatus.NORMAL);
-            assertThat(result.locStatus()).isEqualTo(LocStatus.STORED);
-        }
-
-        @Test
-        void 존재하지_않는_ID로_조회하면_InventoryNotFoundException이_발생한다() {
-            given(inventoryPort.findById(999L)).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> inventoryService.findById(999L))
-                    .isInstanceOf(InventoryNotFoundException.class)
-                    .hasMessage(InventoryErrorCode.INVENTORY_NOT_FOUND.getMessage());
-        }
-
-        @Test
-        void LOT_ID로_조회하면_해당_LOT의_전체_재고_목록을_반환한다() {
-            Inventory secondInventory = new InventoryTestBuilder().quantity(50).availableQuantity(50).build();
-            ReflectionTestUtils.setField(secondInventory, "id", 2L);
-
-            given(inventoryPort.findByLotId(10L)).willReturn(List.of(defaultInventory, secondInventory));
-
-            List<InventoryResult> result = inventoryService.findByLotId(10L);
-
-            assertThat(result).hasSize(2);
-            assertThat(result.get(0).id()).isEqualTo(1L);
-            assertThat(result.get(1).id()).isEqualTo(2L);
-            assertThat(result.get(1).quantity()).isEqualTo(50);
-        }
-
-        @Test
-        void 해당_LOT에_재고가_없으면_빈_목록을_반환한다() {
-            given(inventoryPort.findByLotId(10L)).willReturn(List.of());
-
-            List<InventoryResult> result = inventoryService.findByLotId(10L);
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        void 상품_ID로_조회하면_해당_상품의_전체_재고_목록을_반환한다() {
-            given(inventoryPort.findByProductId(1L)).willReturn(List.of(defaultInventory));
-
-            List<InventoryResult> result = inventoryService.findByProductId(1L);
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).id()).isEqualTo(1L);
-        }
     }
 
     // =========================================================

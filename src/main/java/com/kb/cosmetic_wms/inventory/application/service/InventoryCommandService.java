@@ -5,7 +5,6 @@ import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
-import java.time.LocalDate;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
@@ -18,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -26,40 +25,15 @@ import java.util.function.Function;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class InventoryService implements
-        FindInventoryUseCase,
+public class InventoryCommandService implements
         ManageInventoryStatusUseCase,
         ApplyInspectionResultUseCase,
         DeductInventoryForOutboundUseCase,
-        ReleaseInventoryForOutboundUseCase,
-        FindFefoInventoryUseCase,
-        FindProductAvailabilityUseCase {
+        ReleaseInventoryForOutboundUseCase {
 
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
     private final SectionAssignmentPort sectionAssignmentPort;
-
-
-    @Override
-    public InventoryResult findById(Long inventoryId) {
-        Inventory inventory = inventoryPort.findById(inventoryId)
-                .orElseThrow(InventoryNotFoundException::new);
-        return InventoryResult.from(inventory);
-    }
-
-    @Override
-    public List<InventoryResult> findByLotId(Long lotId) {
-        return inventoryPort.findByLotId(lotId).stream()
-                .map(InventoryResult::from)
-                .toList();
-    }
-
-    @Override
-    public List<InventoryResult> findByProductId(Long productId) {
-        return inventoryPort.findByProductId(productId).stream()
-                .map(InventoryResult::from)
-                .toList();
-    }
 
     @Override
     @Transactional
@@ -180,19 +154,6 @@ public class InventoryService implements
         Inventory inventory = findOrThrow(inventoryId);
         return applyAndRecord(inventory, inv -> inv.unallocate(command.quantity()),
                 TransactionType.UNALLOCATE, command.quantity(), command.referenceId(), command.memberId());
-    }
-
-    @Override
-    public List<FefoInventorySlice> findAvailableForFefo(Long productId, Long warehouseId) {
-        return inventoryPort.findAvailableForFefo(productId, warehouseId);
-    }
-
-    @Override
-    public List<ProductAvailabilitySlice> findAvailabilityByProducts(Collection<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return List.of();
-        }
-        return inventoryPort.findAvailabilityByProducts(productIds);
     }
 
     private Inventory findOrThrow(Long inventoryId) {
