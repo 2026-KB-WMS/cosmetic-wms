@@ -475,7 +475,7 @@ class InventoryCommandServiceTest {
 
             given(sectionAssignmentPort.assignSectionsForInspection(WAREHOUSE_ID, PRODUCT_ID, 80, 0))
                     .willReturn(new SectionAssignmentPort.SectionAssignment(STORAGE_SECTION_ID, null));
-            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, passStatus, -1L))
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, passStatus, null))
                     .willReturn(Optional.empty());
             given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
 
@@ -502,7 +502,7 @@ class InventoryCommandServiceTest {
 
             given(sectionAssignmentPort.assignSectionsForInspection(WAREHOUSE_ID, PRODUCT_ID, 0, 20))
                     .willReturn(new SectionAssignmentPort.SectionAssignment(null, QUARANTINE_SECTION_ID));
-            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, QUARANTINE_SECTION_ID, holdStatus, -1L))
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, QUARANTINE_SECTION_ID, holdStatus, null))
                     .willReturn(Optional.empty());
             given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
 

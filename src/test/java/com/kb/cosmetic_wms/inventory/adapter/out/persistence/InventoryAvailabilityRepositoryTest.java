@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.inventory.adapter.out.persistence;
 
+import com.kb.cosmetic_wms.inventory.adapter.out.persistence.InventoryJpaRepository.ProductAvailabilityProjection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,16 +40,16 @@ class InventoryAvailabilityRepositoryTest {
         insertInventory(2L, 100L, 50, "2026-10-01", "UNALLOCATED", "NORMAL", "STORED");
 
         // when
-        List<Object[]> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
+        List<ProductAvailabilityProjection> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
 
         // then — (창고1, 상품100) 합계 50 / MIN 2026-08-01, (창고2, 상품100) 합계 50
         assertThat(rows).hasSize(2);
-        Object[] wh1 = findRow(rows, 1L);
-        assertThat(((Number) wh1[2]).intValue()).isEqualTo(50);
-        assertThat(toLocalDate(wh1[3])).isEqualTo(LocalDate.of(2026, 8, 1));
+        ProductAvailabilityProjection wh1 = findRow(rows, 1L);
+        assertThat(wh1.getAvailableQuantity()).isEqualTo(50);
+        assertThat(wh1.getEarliestExpiryDate()).isEqualTo(LocalDate.of(2026, 8, 1));
 
-        Object[] wh2 = findRow(rows, 2L);
-        assertThat(((Number) wh2[2]).intValue()).isEqualTo(50);
+        ProductAvailabilityProjection wh2 = findRow(rows, 2L);
+        assertThat(wh2.getAvailableQuantity()).isEqualTo(50);
     }
 
     @Test
@@ -60,12 +61,12 @@ class InventoryAvailabilityRepositoryTest {
         insertInventory(1L, 100L, 99, "2026-01-01", "UNALLOCATED", "NORMAL", "IN_TRANSIT");
 
         // when
-        List<Object[]> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
+        List<ProductAvailabilityProjection> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
 
         // then
         assertThat(rows).hasSize(1);
-        assertThat(((Number) rows.getFirst()[2]).intValue()).isEqualTo(10);
-        assertThat(toLocalDate(rows.getFirst()[3])).isEqualTo(LocalDate.of(2026, 9, 1));
+        assertThat(rows.getFirst().getAvailableQuantity()).isEqualTo(10);
+        assertThat(rows.getFirst().getEarliestExpiryDate()).isEqualTo(LocalDate.of(2026, 9, 1));
     }
 
     @Test
@@ -75,11 +76,11 @@ class InventoryAvailabilityRepositoryTest {
         insertInventory(1L, 200L, 10, "2026-09-01", "UNALLOCATED", "NORMAL", "STORED");
 
         // when
-        List<Object[]> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
+        List<ProductAvailabilityProjection> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
 
         // then
         assertThat(rows).hasSize(1);
-        assertThat(((Number) rows.getFirst()[1]).longValue()).isEqualTo(100L);
+        assertThat(rows.getFirst().getProductId()).isEqualTo(100L);
     }
 
     private long sectionSeq = 1;
@@ -96,17 +97,10 @@ class InventoryAvailabilityRepositoryTest {
                 availableQty, allocStatus, qualityStatus, locStatus, expiryDate);
     }
 
-    private static Object[] findRow(List<Object[]> rows, Long warehouseId) {
+    private static ProductAvailabilityProjection findRow(List<ProductAvailabilityProjection> rows, Long warehouseId) {
         return rows.stream()
-                .filter(r -> ((Number) r[0]).longValue() == warehouseId)
+                .filter(r -> r.getWarehouseId().equals(warehouseId))
                 .findFirst()
                 .orElseThrow();
-    }
-
-    private static LocalDate toLocalDate(Object value) {
-        if (value instanceof java.sql.Date date) {
-            return date.toLocalDate();
-        }
-        return (LocalDate) value;
     }
 }

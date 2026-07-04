@@ -49,7 +49,9 @@ public class InventoryQueryService implements
 
     @Override
     public List<FefoInventorySlice> findAvailableForFefo(Long productId, Long warehouseId) {
-        return inventoryPort.findAvailableForFefo(productId, warehouseId);
+        return inventoryPort.findAvailableForFefo(productId, warehouseId).stream()
+                .map(view -> new FefoInventorySlice(view.inventoryId(), view.availableQuantity()))
+                .toList();
     }
 
     @Override
@@ -57,6 +59,10 @@ public class InventoryQueryService implements
         if (productIds == null || productIds.isEmpty()) {
             return List.of();
         }
-        return inventoryPort.findAvailabilityByProducts(productIds);
+        return inventoryPort.findAvailabilityByProducts(productIds).stream()
+                .map(view -> new ProductAvailabilitySlice(
+                        view.warehouseId(), view.productId(),
+                        view.availableQuantity(), view.earliestExpiryDate()))
+                .toList();
     }
 }

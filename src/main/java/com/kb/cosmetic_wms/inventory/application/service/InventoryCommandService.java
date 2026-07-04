@@ -227,9 +227,8 @@ public class InventoryCommandService implements
                                TransactionType type, Long referenceId, Long memberId, LocalDate expiryDate) {
         int availableQty = (statusSet.qualityStatus().isNormal() && statusSet.locStatus() != LocStatus.DOCKING) ? quantity : 0;
 
-        long NO_EXCLUDE_ID = -1L;
         Optional<Inventory> mergeTarget = inventoryPort.findMergeTargetForUpdate(
-                productId, lotId, sectionId, statusSet, NO_EXCLUDE_ID
+                productId, lotId, sectionId, statusSet, null
         );
 
         if (mergeTarget.isPresent()) {
