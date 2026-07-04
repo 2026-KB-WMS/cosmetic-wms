@@ -2,6 +2,8 @@ package com.kb.cosmetic_wms.storage.application.service;
 
 import com.kb.cosmetic_wms.storage.application.port.in.ApplyInspectionCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.ApplyInspectionCapacityUseCase;
+import com.kb.cosmetic_wms.storage.application.port.in.CheckWarehouseCapacityCommand;
+import com.kb.cosmetic_wms.storage.application.port.in.CheckWarehouseCapacityUseCase;
 import com.kb.cosmetic_wms.storage.application.port.in.SectionAssignmentResult;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityCommand;
 import com.kb.cosmetic_wms.storage.application.port.in.UpdateDockingCapacityUseCase;
@@ -21,7 +23,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class DockingCapacityService implements UpdateDockingCapacityUseCase, ApplyInspectionCapacityUseCase {
+public class DockingCapacityService implements UpdateDockingCapacityUseCase, ApplyInspectionCapacityUseCase,
+        CheckWarehouseCapacityUseCase {
 
     private final StoragePort storagePort;
     private final ProductTemperatureQueryPort productTemperatureQueryPort;
@@ -52,6 +55,24 @@ public class DockingCapacityService implements UpdateDockingCapacityUseCase, App
                 .orElseThrow(WarehouseNotFoundException::new);
         warehouse.receiveToDocking(receivedByZone);
         storagePort.save(warehouse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canAccommodate(CheckWarehouseCapacityCommand command) {
+        List<Long> productIds = command.items().stream()
+                .map(CheckWarehouseCapacityCommand.ProductQuantity::productId)
+                .toList();
+        Map<Long, TemperatureZone> zoneByProductId =
+                productTemperatureQueryPort.findTemperatureZonesByIds(productIds);
+
+        Map<TemperatureZone, Integer> requiredByZone = command.items().stream()
+                .collect(Collectors.groupingBy(
+                        item -> zoneByProductId.get(item.productId()),
+                        Collectors.summingInt(CheckWarehouseCapacityCommand.ProductQuantity::quantity)
+                ));
+
+        return storagePort.canAccommodate(command.warehouseId(), requiredByZone);
     }
 
     @Override

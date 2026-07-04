@@ -61,4 +61,9 @@ public class StorageService implements RegisterWarehouseUseCase, AddSectionUseCa
                 .map(WarehouseResult::from)
                 .toList();
     }
+
+    @Override
+    public boolean existsById(Long warehouseId) {
+        return storagePort.existsById(warehouseId);
+    }
 }
