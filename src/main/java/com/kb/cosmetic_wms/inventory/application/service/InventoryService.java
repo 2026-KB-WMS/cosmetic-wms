@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.inventory.application.service;
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
+import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import java.time.LocalDate;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
@@ -36,6 +37,7 @@ public class InventoryService implements
 
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
+    private final SectionAssignmentPort sectionAssignmentPort;
 
 
     @Override
@@ -124,17 +126,20 @@ public class InventoryService implements
     @Override
     @Transactional
     public void applyInspectionResult(InspectionResultCommand command) {
+        SectionAssignmentPort.SectionAssignment assignment = sectionAssignmentPort.assignSectionsForInspection(
+                command.warehouseId(), command.productId(), command.passedQuantity(), command.failedQuantity());
+
         if (command.passedQuantity() > 0) {
             InventoryStatusSet normalStatus = InventoryStatusSet.of(
                     AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED);
-            createOrMerge(command.productId(), command.lotId(), command.storageSectionId(), command.warehouseId(),
+            createOrMerge(command.productId(), command.lotId(), assignment.storageSectionId(), command.warehouseId(),
                     command.passedQuantity(), normalStatus, TransactionType.INSPECTION_PASS,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }
         if (command.failedQuantity() > 0) {
             InventoryStatusSet holdStatus = InventoryStatusSet.of(
                     AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.STORED);
-            createOrMerge(command.productId(), command.lotId(), command.quarantineSectionId(), command.warehouseId(),
+            createOrMerge(command.productId(), command.lotId(), assignment.quarantineSectionId(), command.warehouseId(),
                     command.failedQuantity(), holdStatus, TransactionType.INSPECTION_FAIL,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }

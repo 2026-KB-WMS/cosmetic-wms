@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.inventory;
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
+import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inventory.application.service.InventoryService;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
@@ -48,6 +49,9 @@ class InventoryServiceTest {
 
     @Mock
     private InventoryTransactionPort inventoryTransactionPort;
+
+    @Mock
+    private SectionAssignmentPort sectionAssignmentPort;
 
     private Inventory defaultInventory;
 
@@ -534,6 +538,8 @@ class InventoryServiceTest {
                     .quantity(80).availableQuantity(80).build();
             ReflectionTestUtils.setField(saved, "id", 20L);
 
+            given(sectionAssignmentPort.assignSectionsForInspection(WAREHOUSE_ID, PRODUCT_ID, 80, 0))
+                    .willReturn(new SectionAssignmentPort.SectionAssignment(STORAGE_SECTION_ID, null));
             given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, passStatus, -1L))
                     .willReturn(Optional.empty());
             given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
@@ -541,7 +547,7 @@ class InventoryServiceTest {
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             inventoryService.applyInspectionResult(new InspectionResultCommand(
-                    PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, null, WAREHOUSE_ID, 80, 0, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
+                    PRODUCT_ID, LOT_ID, WAREHOUSE_ID, 80, 0, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
 
             verify(inventoryPort).save(any(Inventory.class));
             verify(inventoryTransactionPort).save(txCaptor.capture());
@@ -559,6 +565,8 @@ class InventoryServiceTest {
                     .quantity(20).availableQuantity(0).build();
             ReflectionTestUtils.setField(saved, "id", 21L);
 
+            given(sectionAssignmentPort.assignSectionsForInspection(WAREHOUSE_ID, PRODUCT_ID, 0, 20))
+                    .willReturn(new SectionAssignmentPort.SectionAssignment(null, QUARANTINE_SECTION_ID));
             given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, QUARANTINE_SECTION_ID, holdStatus, -1L))
                     .willReturn(Optional.empty());
             given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
@@ -566,7 +574,7 @@ class InventoryServiceTest {
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             inventoryService.applyInspectionResult(new InspectionResultCommand(
-                    PRODUCT_ID, LOT_ID, null, QUARANTINE_SECTION_ID, WAREHOUSE_ID, 0, 20, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
+                    PRODUCT_ID, LOT_ID, WAREHOUSE_ID, 0, 20, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
 
             verify(inventoryTransactionPort).save(txCaptor.capture());
             InventoryTransaction tx = txCaptor.getValue();
