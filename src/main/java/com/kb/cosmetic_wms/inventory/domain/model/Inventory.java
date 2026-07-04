@@ -183,10 +183,7 @@ public class Inventory {
             throw new InvalidInventoryQuantityException(InventoryErrorCode.QUANTITY_EXCEEDS_STOCK);
         }
 
-        int nextAvailableQuantity = 0;
-        if (nextStatusSet.qualityStatus().isNormal() && nextStatusSet.allocStatus() == AllocStatus.UNALLOCATED) {
-            nextAvailableQuantity = targetQuantity;
-        }
+        int nextAvailableQuantity = nextStatusSet.availableQuantityFor(targetQuantity);
 
         if (this.quantities.total() == targetQuantity) {
             this.statusSet = nextStatusSet;
@@ -195,10 +192,7 @@ public class Inventory {
         }
 
         int newTotal = this.quantities.total() - targetQuantity;
-        int newAvailable = this.quantities.available();
-        if (this.statusSet.qualityStatus().isNormal() && this.statusSet.allocStatus() == AllocStatus.UNALLOCATED) {
-            newAvailable -= targetQuantity;
-        }
+        int newAvailable = this.quantities.available() - this.statusSet.availableQuantityFor(targetQuantity);
         this.quantities = InventoryQuantity.of(newTotal, newAvailable);
 
         return SplitResult.split(this, new Inventory(

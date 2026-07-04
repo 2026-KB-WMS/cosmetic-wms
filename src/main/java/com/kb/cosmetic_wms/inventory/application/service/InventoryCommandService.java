@@ -225,7 +225,7 @@ public class InventoryCommandService implements
     private void createOrMerge(Long productId, Long lotId, Long sectionId, Long warehouseId,
                                int quantity, InventoryStatusSet statusSet,
                                TransactionType type, Long referenceId, Long memberId, LocalDate expiryDate) {
-        int availableQty = (statusSet.qualityStatus().isNormal() && statusSet.locStatus() != LocStatus.DOCKING) ? quantity : 0;
+        int availableQty = statusSet.availableQuantityFor(quantity);
 
         Optional<Inventory> mergeTarget = inventoryPort.findMergeTargetForUpdate(
                 productId, lotId, sectionId, statusSet, null
