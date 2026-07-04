@@ -55,6 +55,8 @@ class InventoryServiceTest {
     void setUp() {
         defaultInventory = new InventoryTestBuilder().build();
         ReflectionTestUtils.setField(defaultInventory, "id", 1L);
+        lenient().when(inventoryPort.save(any(Inventory.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     // =========================================================
@@ -142,7 +144,7 @@ class InventoryServiceTest {
 
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             assertThat(result.availableQuantity()).isEqualTo(0);
-            verify(inventoryPort, never()).save(any());
+            verify(inventoryPort).save(defaultInventory);
         }
 
         @Test
@@ -165,7 +167,7 @@ class InventoryServiceTest {
             assertThat(result.quantity()).isEqualTo(150);
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             verify(inventoryPort).delete(defaultInventory);
-            verify(inventoryPort, never()).save(any());
+            verify(inventoryPort).save(existingAllocated);
         }
 
         @Test
@@ -191,7 +193,8 @@ class InventoryServiceTest {
             assertThat(result.quantity()).isEqualTo(30);
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             assertThat(defaultInventory.getQuantity()).isEqualTo(70);
-            verify(inventoryPort, times(1)).save(any(Inventory.class));
+            verify(inventoryPort, times(2)).save(any(Inventory.class));
+            verify(inventoryPort).save(defaultInventory);
 
             verify(inventoryTransactionPort, times(2)).save(txCaptor.capture());
             List<InventoryTransaction> recorded = txCaptor.getAllValues();
@@ -209,7 +212,7 @@ class InventoryServiceTest {
         }
 
         @Test
-        void 부분_수량을_할당할_때_동일_상태_재고가_이미_존재하면_신규_저장_없이_수량이_합산되며_이력이_2건_기록된다() {
+        void 부분_수량을_할당할_때_동일_상태_재고가_이미_존재하면_신규_생성_없이_기존_재고에_합산되며_이력이_2건_기록된다() {
             InventoryStatusChangeCommand command = new InventoryDtoBuilder()
                     .quantity(30).referenceId(10L).memberId(1L).build();
 
@@ -230,7 +233,8 @@ class InventoryServiceTest {
             assertThat(result.quantity()).isEqualTo(50);
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             assertThat(defaultInventory.getQuantity()).isEqualTo(70);
-            verify(inventoryPort, never()).save(any());
+            verify(inventoryPort).save(defaultInventory);
+            verify(inventoryPort).save(existingAllocated);
 
             verify(inventoryTransactionPort, times(2)).save(txCaptor.capture());
             List<InventoryTransaction> recorded = txCaptor.getAllValues();

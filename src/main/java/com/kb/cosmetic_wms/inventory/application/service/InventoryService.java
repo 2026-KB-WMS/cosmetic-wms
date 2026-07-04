@@ -212,18 +212,22 @@ public class InventoryService implements
         );
 
         if (mergeTarget.isPresent()) {
-            mergeTarget.get().mergeFrom(result);
-            if (!isSplit) {
+            Inventory target = mergeTarget.get();
+            target.mergeFrom(result);
+            if (isSplit) {
+                inventoryPort.save(inventory);
+            } else {
                 inventoryPort.delete(inventory);
             }
-            return mergeTarget.get();
+            return inventoryPort.save(target);
         }
 
         if (isSplit) {
+            inventoryPort.save(inventory);
             return inventoryPort.save(result);
         }
 
-        return result;
+        return inventoryPort.save(result);
     }
 
     private void recordTransactions(
@@ -257,8 +261,9 @@ public class InventoryService implements
             Inventory existing = mergeTarget.get();
             existing.mergeFrom(Inventory.create(productId, lotId, sectionId, warehouseId,
                     quantity, availableQty, statusSet, expiryDate));
+            Inventory merged = inventoryPort.save(existing);
             inventoryTransactionPort.save(InventoryTransaction.create(
-                    existing.getId(), type, quantity, existing.getQuantity(),
+                    merged.getId(), type, quantity, merged.getQuantity(),
                     referenceId, statusSet, statusSet, memberId, null
             ));
             return;
