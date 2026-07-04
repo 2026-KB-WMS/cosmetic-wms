@@ -70,9 +70,7 @@ public class InventoryService implements
     @Override
     @Transactional
     public InventoryResult unallocate(Long inventoryId, InventoryStatusChangeCommand command) {
-        Inventory inventory = findOrThrow(inventoryId);
-        return applyAndRecord(inventory, inv -> inv.unallocate(command.quantity()),
-                TransactionType.UNALLOCATE, command.quantity(), command.referenceId(), command.memberId());
+        return doUnallocate(inventoryId, command);
     }
 
     @Override
@@ -149,11 +147,16 @@ public class InventoryService implements
                 .findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, outboundId);
         for (InventoryTransaction alloc : allocations) {
             Inventory inv = findOrThrow(alloc.getInventoryId());
+            inv.deduct(alloc.getTransactionQuantity());
             inventoryTransactionPort.save(InventoryTransaction.create(
-                    inv.getId(), TransactionType.SHIP, alloc.getTransactionQuantity(), 0,
+                    inv.getId(), TransactionType.SHIP, alloc.getTransactionQuantity(), inv.getQuantity(),
                     outboundId, inv.getStatusSet(), inv.getStatusSet(), memberId, null
             ));
-            inventoryPort.delete(inv);
+            if (inv.isEmpty()) {
+                inventoryPort.delete(inv);
+            } else {
+                inventoryPort.save(inv);
+            }
         }
     }
 
@@ -163,9 +166,15 @@ public class InventoryService implements
         List<InventoryTransaction> allocations = inventoryTransactionPort
                 .findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, outboundId);
         for (InventoryTransaction alloc : allocations) {
-            unallocate(alloc.getInventoryId(),
+            doUnallocate(alloc.getInventoryId(),
                     new InventoryStatusChangeCommand(alloc.getTransactionQuantity(), outboundId, memberId));
         }
+    }
+
+    private InventoryResult doUnallocate(Long inventoryId, InventoryStatusChangeCommand command) {
+        Inventory inventory = findOrThrow(inventoryId);
+        return applyAndRecord(inventory, inv -> inv.unallocate(command.quantity()),
+                TransactionType.UNALLOCATE, command.quantity(), command.referenceId(), command.memberId());
     }
 
     @Override

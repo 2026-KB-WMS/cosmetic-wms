@@ -574,4 +574,87 @@ class InventoryServiceTest {
             assertThat(tx.getCurrStatusSet()).isEqualTo(holdStatus);
         }
     }
+
+    // =========================================================
+    // 출고 차감 (deductForOutbound)
+    // =========================================================
+
+    @Nested
+    class 출고_차감 {
+
+        private static final Long OUTBOUND_ID = 10L;
+        private static final Long MEMBER_ID = 1L;
+
+        private final InventoryStatusSet allocatedStatus = InventoryStatusSet.of(
+                AllocStatus.ALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
+        );
+
+        private InventoryTransaction allocateTx(Long inventoryId, int quantity, int balance) {
+            return InventoryTransaction.create(
+                    inventoryId, TransactionType.ALLOCATE, quantity, balance,
+                    OUTBOUND_ID, allocatedStatus, allocatedStatus, MEMBER_ID, null
+            );
+        }
+
+        @Test
+        void 병합으로_수량이_불어난_재고_행은_할당_수량만큼만_차감되고_삭제되지_않는다() {
+            Inventory allocated = new InventoryTestBuilder()
+                    .quantity(50).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(allocated, "id", 2L);
+
+            given(inventoryTransactionPort.findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, OUTBOUND_ID))
+                    .willReturn(List.of(allocateTx(2L, 30, 50)));
+            given(inventoryPort.findByIdForUpdate(2L)).willReturn(Optional.of(allocated));
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+
+            inventoryService.deductForOutbound(OUTBOUND_ID, MEMBER_ID);
+
+            assertThat(allocated.getQuantity()).isEqualTo(20);
+            verify(inventoryPort).save(allocated);
+            verify(inventoryPort, never()).delete(any());
+
+            verify(inventoryTransactionPort).save(txCaptor.capture());
+            InventoryTransaction shipTx = txCaptor.getValue();
+            assertThat(shipTx.getTransactionType()).isEqualTo(TransactionType.SHIP);
+            assertThat(shipTx.getTransactionQuantity()).isEqualTo(30);
+            assertThat(shipTx.getBalanceQuantity()).isEqualTo(20);
+        }
+
+        @Test
+        void 차감_후_잔여_수량이_0이면_재고_행을_삭제한다() {
+            Inventory allocated = new InventoryTestBuilder()
+                    .quantity(30).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(allocated, "id", 2L);
+
+            given(inventoryTransactionPort.findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, OUTBOUND_ID))
+                    .willReturn(List.of(allocateTx(2L, 30, 30)));
+            given(inventoryPort.findByIdForUpdate(2L)).willReturn(Optional.of(allocated));
+
+            inventoryService.deductForOutbound(OUTBOUND_ID, MEMBER_ID);
+
+            verify(inventoryPort).delete(allocated);
+            verify(inventoryPort, never()).save(any(Inventory.class));
+        }
+
+        @Test
+        void 같은_출고의_할당_이력이_여러_건이면_각_할당_수량만큼_순차_차감한다() {
+            Inventory allocated = new InventoryTestBuilder()
+                    .quantity(50).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(allocated, "id", 2L);
+
+            given(inventoryTransactionPort.findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, OUTBOUND_ID))
+                    .willReturn(List.of(allocateTx(2L, 30, 30), allocateTx(2L, 20, 50)));
+            given(inventoryPort.findByIdForUpdate(2L)).willReturn(Optional.of(allocated));
+
+            inventoryService.deductForOutbound(OUTBOUND_ID, MEMBER_ID);
+
+            assertThat(allocated.getQuantity()).isZero();
+            verify(inventoryPort).save(allocated);
+            verify(inventoryPort).delete(allocated);
+        }
+    }
 }

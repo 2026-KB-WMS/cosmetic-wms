@@ -207,6 +207,21 @@ public class Inventory {
         ));
     }
 
+    public void deduct(int quantity) {
+        if (quantity <= 0) {
+            throw new InvalidInventoryQuantityException(InventoryErrorCode.INVALID_QUANTITY);
+        }
+        if (this.quantities.total() < quantity) {
+            throw new InvalidInventoryQuantityException(InventoryErrorCode.QUANTITY_EXCEEDS_STOCK);
+        }
+        int newTotal = this.quantities.total() - quantity;
+        this.quantities = InventoryQuantity.of(newTotal, Math.min(this.quantities.available(), newTotal));
+    }
+
+    public boolean isEmpty() {
+        return this.quantities.total() == 0;
+    }
+
     public void mergeFrom(Inventory other) {
         if (!this.productId.equals(other.productId)
                 || !this.lotId.equals(other.lotId)
