@@ -1,8 +1,20 @@
 package com.kb.cosmetic_wms.inspection.application.port.out;
 
-import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import java.time.LocalDate;
 
 public interface InspectionCreationFailurePort {
 
-    void save(InboundCompletedEvent event, InboundCompletedEvent.LineSnapshot line, String errorMessage);
+    void save(InspectionCreationFailure failure);
+
+    record InspectionCreationFailure(
+            Long inboundId,
+            Long lineId,
+            Long productId,
+            Long warehouseId,
+            int receivedQuantity,
+            String manufacturerLotNumber,
+            LocalDate expirationDate,
+            String errorMessage
+    ) {
+    }
 }

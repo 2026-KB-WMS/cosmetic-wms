@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inspection.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.global.common.BaseEntity;
-import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inspection.application.port.out.InspectionCreationFailurePort.InspectionCreationFailure;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -60,18 +60,16 @@ class FailedInspectionEventEntity extends BaseEntity {
         this.failedAt = LocalDateTime.now();
     }
 
-    static FailedInspectionEventEntity from(InboundCompletedEvent event,
-                                            InboundCompletedEvent.LineSnapshot line,
-                                            String errorMessage) {
+    static FailedInspectionEventEntity from(InspectionCreationFailure failure) {
         return new FailedInspectionEventEntity(
-                event.inboundId(),
-                line.lineId(),
-                line.productId(),
-                event.warehouseId(),
-                line.receivedQuantity(),
-                line.manufacturerLotNumber(),
-                line.expirationDate() != null ? line.expirationDate().toLocalDate() : null,
-                errorMessage
+                failure.inboundId(),
+                failure.lineId(),
+                failure.productId(),
+                failure.warehouseId(),
+                failure.receivedQuantity(),
+                failure.manufacturerLotNumber(),
+                failure.expirationDate(),
+                failure.errorMessage()
         );
     }
 }
