@@ -1,6 +1,6 @@
 package com.kb.cosmetic_wms.lot.adapter.in.event;
 
-import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.domain.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotCommand;
 import com.kb.cosmetic_wms.lot.application.port.in.RegisterLotUseCase;
 import lombok.RequiredArgsConstructor;

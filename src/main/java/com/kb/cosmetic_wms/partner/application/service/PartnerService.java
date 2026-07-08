@@ -36,4 +36,9 @@ public class PartnerService implements RegisterPartnerUseCase, FindPartnerUseCas
                 .orElseThrow(PartnerNotFoundException::new);
         return PartnerResult.from(partner);
     }
+
+    @Override
+    public boolean existsById(Long partnerId) {
+        return partnerPort.existsById(partnerId);
+    }
 }

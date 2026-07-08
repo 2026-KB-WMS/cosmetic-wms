@@ -1,9 +1,10 @@
 package com.kb.cosmetic_wms.inspection.adapter.in.event;
 
-import com.kb.cosmetic_wms.inbound.application.event.InboundCompletedEvent;
+import com.kb.cosmetic_wms.inbound.domain.event.InboundCompletedEvent;
 import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionCommand;
 import com.kb.cosmetic_wms.inspection.application.port.in.CreateInspectionUseCase;
-import com.kb.cosmetic_wms.inspection.application.port.out.InspectionCreationFailurePort;
+import com.kb.cosmetic_wms.inspection.application.port.in.RecordInspectionFailureCommand;
+import com.kb.cosmetic_wms.inspection.application.port.in.RecordInspectionFailureUseCase;
 import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.annotation.Backoff;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class RetryableInspectionCreator {
 
     private final CreateInspectionUseCase createInspectionUseCase;
-    private final InspectionCreationFailurePort inspectionCreationFailurePort;
+    private final RecordInspectionFailureUseCase recordInspectionFailureUseCase;
 
     @Retryable(
             retryFor = Exception.class,
@@ -38,6 +39,15 @@ public class RetryableInspectionCreator {
 
     @Recover
     public void recover(Exception ex, InboundCompletedEvent event, InboundCompletedEvent.LineSnapshot line) {
-        inspectionCreationFailurePort.save(event, line, ex.getMessage());
+        recordInspectionFailureUseCase.record(new RecordInspectionFailureCommand(
+                event.inboundId(),
+                line.lineId(),
+                line.productId(),
+                event.warehouseId(),
+                line.receivedQuantity(),
+                line.manufacturerLotNumber(),
+                line.expirationDate() != null ? line.expirationDate().toLocalDate() : null,
+                ex.getMessage()
+        ));
     }
 }

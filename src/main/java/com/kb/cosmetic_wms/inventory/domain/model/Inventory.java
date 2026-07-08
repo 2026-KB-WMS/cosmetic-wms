@@ -183,10 +183,7 @@ public class Inventory {
             throw new InvalidInventoryQuantityException(InventoryErrorCode.QUANTITY_EXCEEDS_STOCK);
         }
 
-        int nextAvailableQuantity = 0;
-        if (nextStatusSet.qualityStatus().isNormal() && nextStatusSet.allocStatus() == AllocStatus.UNALLOCATED) {
-            nextAvailableQuantity = targetQuantity;
-        }
+        int nextAvailableQuantity = nextStatusSet.availableQuantityFor(targetQuantity);
 
         if (this.quantities.total() == targetQuantity) {
             this.statusSet = nextStatusSet;
@@ -195,16 +192,28 @@ public class Inventory {
         }
 
         int newTotal = this.quantities.total() - targetQuantity;
-        int newAvailable = this.quantities.available();
-        if (this.statusSet.qualityStatus().isNormal() && this.statusSet.allocStatus() == AllocStatus.UNALLOCATED) {
-            newAvailable -= targetQuantity;
-        }
+        int newAvailable = this.quantities.available() - this.statusSet.availableQuantityFor(targetQuantity);
         this.quantities = InventoryQuantity.of(newTotal, newAvailable);
 
         return SplitResult.split(this, new Inventory(
                 null, this.productId, this.lotId, this.sectionId, this.warehouseId,
                 InventoryQuantity.of(targetQuantity, nextAvailableQuantity), nextStatusSet, this.expiryDate
         ));
+    }
+
+    public void deduct(int quantity) {
+        if (quantity <= 0) {
+            throw new InvalidInventoryQuantityException(InventoryErrorCode.INVALID_QUANTITY);
+        }
+        if (this.quantities.total() < quantity) {
+            throw new InvalidInventoryQuantityException(InventoryErrorCode.QUANTITY_EXCEEDS_STOCK);
+        }
+        int newTotal = this.quantities.total() - quantity;
+        this.quantities = InventoryQuantity.of(newTotal, Math.min(this.quantities.available(), newTotal));
+    }
+
+    public boolean isEmpty() {
+        return this.quantities.total() == 0;
     }
 
     public void mergeFrom(Inventory other) {

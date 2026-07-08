@@ -17,8 +17,20 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = e.getErrorCode();
 
         return ResponseEntity
-                .status(errorCode.getStatus())
+                .status(toHttpStatus(errorCode.getType()))
                 .body(ErrorResponseDto.of(errorCode));
+    }
+
+    private HttpStatus toHttpStatus(ErrorType type) {
+        return switch (type) {
+            case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
+            case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case CONFLICT -> HttpStatus.CONFLICT;
+            case RULE_VIOLATION -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case EXTERNAL_SERVICE_ERROR -> HttpStatus.BAD_GATEWAY;
+        };
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -16,7 +16,7 @@ import java.util.Optional;
 interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
 
     @Query(value = """
-            SELECT i.inventory_id, i.available_quantity
+            SELECT i.inventory_id AS inventoryId, i.available_quantity AS availableQuantity
             FROM inventory i
             WHERE i.product_id = :productId
               AND i.warehouse_id = :warehouseId
@@ -26,11 +26,12 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
               AND i.available_quantity > 0
             ORDER BY i.expiry_date ASC
             """, nativeQuery = true)
-    List<Object[]> findAvailableForFefo(@Param("productId") Long productId,
-                                        @Param("warehouseId") Long warehouseId);
+    List<FefoInventoryProjection> findAvailableForFefo(@Param("productId") Long productId,
+                                                       @Param("warehouseId") Long warehouseId);
 
     @Query(value = """
-            SELECT i.warehouse_id, i.product_id, SUM(i.available_quantity), MIN(i.expiry_date)
+            SELECT i.warehouse_id AS warehouseId, i.product_id AS productId,
+                   SUM(i.available_quantity) AS availableQuantity, MIN(i.expiry_date) AS earliestExpiryDate
             FROM inventory i
             WHERE i.product_id IN (:productIds)
               AND i.alloc_status  = 'UNALLOCATED'
@@ -39,7 +40,7 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
               AND i.available_quantity > 0
             GROUP BY i.warehouse_id, i.product_id
             """, nativeQuery = true)
-    List<Object[]> findAvailabilityByProducts(@Param("productIds") Collection<Long> productIds);
+    List<ProductAvailabilityProjection> findAvailabilityByProducts(@Param("productIds") Collection<Long> productIds);
 
     List<InventoryEntity> findByLotId(Long lotId);
 
@@ -58,7 +59,7 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
               AND i.allocStatus = :allocStatus
               AND i.qualityStatus = :qualityStatus
               AND i.locStatus = :locStatus
-              AND i.id <> :excludeId
+              AND (:excludeId IS NULL OR i.id <> :excludeId)
             ORDER BY i.id ASC
             """)
     Optional<InventoryEntity> findMergeTargetForUpdate(
@@ -70,4 +71,20 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
             @Param("locStatus") LocStatus locStatus,
             @Param("excludeId") Long excludeId
     );
+
+    interface FefoInventoryProjection {
+        Long getInventoryId();
+
+        Integer getAvailableQuantity();
+    }
+
+    interface ProductAvailabilityProjection {
+        Long getWarehouseId();
+
+        Long getProductId();
+
+        Integer getAvailableQuantity();
+
+        java.time.LocalDate getEarliestExpiryDate();
+    }
 }

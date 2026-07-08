@@ -7,4 +7,6 @@ public interface FindWarehouseUseCase {
     WarehouseResult findById(Long warehouseId);
 
     List<WarehouseResult> findAll();
+
+    boolean existsById(Long warehouseId);
 }
