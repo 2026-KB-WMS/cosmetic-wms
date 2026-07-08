@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inbound.adapter.out.external;
 
 import com.kb.cosmetic_wms.inbound.application.port.out.ProductQueryPort;
-import com.kb.cosmetic_wms.product.product.application.port.out.ProductPort;
+import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,15 +11,15 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class ProductQueryAdapter implements ProductQueryPort {
 
-    private final ProductPort productPort;
+    private final FindProductUseCase findProductUseCase;
 
     @Override
     public boolean existsById(Long productId) {
-        return productPort.existsById(productId);
+        return findProductUseCase.existsById(productId);
     }
 
     @Override
     public boolean allExistByIds(Collection<Long> productIds) {
-        return productPort.allExistByIds(productIds);
+        return findProductUseCase.allExistByIds(productIds);
     }
 }

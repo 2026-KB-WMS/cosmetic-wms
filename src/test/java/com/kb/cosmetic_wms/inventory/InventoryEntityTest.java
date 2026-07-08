@@ -443,6 +443,55 @@ public class InventoryEntityTest {
                 .hasMessage("도킹 구역 대기 중인 재고는 이동(MOVING) 상태로 전환할 수 없습니다.");
     }
 
+    @Test
+    void 보유_수량_일부를_차감하면_잔여_수량이_감소하고_비어있지_않다() {
+        Inventory inventory = new InventoryTestBuilder()
+                .quantity(50)
+                .availableQuantity(0)
+                .allocStatus(AllocStatus.ALLOCATED)
+                .build();
+
+        inventory.deduct(30);
+
+        assertThat(inventory.getQuantity()).isEqualTo(20);
+        assertThat(inventory.getAvailableQuantity()).isEqualTo(0);
+        assertThat(inventory.isEmpty()).isFalse();
+    }
+
+    @Test
+    void 보유_수량_전부를_차감하면_수량이_0이_되고_비어있다() {
+        Inventory inventory = new InventoryTestBuilder()
+                .quantity(30)
+                .availableQuantity(0)
+                .allocStatus(AllocStatus.ALLOCATED)
+                .build();
+
+        inventory.deduct(30);
+
+        assertThat(inventory.getQuantity()).isZero();
+        assertThat(inventory.isEmpty()).isTrue();
+    }
+
+    @Test
+    void 보유_수량을_초과하여_차감을_시도하면_예외를_던진다() {
+        Inventory inventory = new InventoryTestBuilder()
+                .quantity(30)
+                .availableQuantity(0)
+                .allocStatus(AllocStatus.ALLOCATED)
+                .build();
+
+        assertThatThrownBy(() -> inventory.deduct(40))
+                .isInstanceOf(InvalidInventoryQuantityException.class);
+    }
+
+    @Test
+    void 차감_수량이_0_이하이면_예외를_던진다() {
+        Inventory inventory = new InventoryTestBuilder().build();
+
+        assertThatThrownBy(() -> inventory.deduct(0))
+                .isInstanceOf(InvalidInventoryQuantityException.class);
+    }
+
     private static Stream<Arguments> provideInvalidStatusCombinations() {
         return Stream.of(
                 Arguments.of(AllocStatus.ALLOCATED, QualityStatus.DISCARD_SCHEDULED, LocStatus.STORED,

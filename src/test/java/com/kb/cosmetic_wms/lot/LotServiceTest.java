@@ -13,7 +13,7 @@ import com.kb.cosmetic_wms.lot.domain.exception.LotErrorCode;
 import com.kb.cosmetic_wms.lot.domain.exception.LotNotFoundException;
 import com.kb.cosmetic_wms.lot.domain.exception.LotProductNotFoundException;
 import com.kb.cosmetic_wms.lot.domain.model.Lot;
-import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
+import com.kb.cosmetic_wms.lot.application.port.out.ProductQueryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ class LotServiceTest {
     private LotPort lotPort;
 
     @Mock
-    private FindProductUseCase findProductUseCase;
+    private ProductQueryPort productQueryPort;
 
     private Lot defaultLot;
 
@@ -59,7 +59,7 @@ class LotServiceTest {
         void 올바른_정보로_등록하면_로트가_저장되고_초기_상태는_AVAILABLE이다() {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
-            given(findProductUseCase.existsById(command.productId())).willReturn(true);
+            given(productQueryPort.existsById(command.productId())).willReturn(true);
             given(lotPort.existsByInboundIdAndManufacturerLotNumber(anyLong(), anyString())).willReturn(false);
             given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
@@ -76,7 +76,7 @@ class LotServiceTest {
         void 등록된_로트의_제조일자와_유통기한이_응답에_포함된다() {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
-            given(findProductUseCase.existsById(command.productId())).willReturn(true);
+            given(productQueryPort.existsById(command.productId())).willReturn(true);
             given(lotPort.existsByInboundIdAndManufacturerLotNumber(anyLong(), anyString())).willReturn(false);
             given(lotPort.save(any(Lot.class))).willReturn(defaultLot);
 
@@ -90,7 +90,7 @@ class LotServiceTest {
         void 존재하지_않는_상품_ID로_등록하면_LotProductNotFoundException이_발생한다() {
             RegisterLotCommand command = new LotCommandBuilder().productId(999L).build();
 
-            given(findProductUseCase.existsById(999L)).willReturn(false);
+            given(productQueryPort.existsById(999L)).willReturn(false);
 
             assertThatThrownBy(() -> lotService.register(command))
                     .isInstanceOf(LotProductNotFoundException.class)
@@ -101,7 +101,7 @@ class LotServiceTest {
         void 이미_등록된_입고ID와_제조사_로트번호로_등록하면_DuplicateLotNumberException이_발생한다() {
             RegisterLotCommand command = new LotCommandBuilder().build();
 
-            given(findProductUseCase.existsById(command.productId())).willReturn(true);
+            given(productQueryPort.existsById(command.productId())).willReturn(true);
             given(lotPort.existsByInboundIdAndManufacturerLotNumber(anyLong(), anyString())).willReturn(true);
 
             assertThatThrownBy(() -> lotService.register(command))
@@ -143,7 +143,7 @@ class LotServiceTest {
         void 상품에_등록된_로트가_여러_개이면_전체_목록을_반환한다() {
             Lot secondLot = new LotTestBuilder().inboundId(2L).manufacturerLotNumber("LOT0002").buildWithId(2L);
 
-            given(findProductUseCase.existsById(1L)).willReturn(true);
+            given(productQueryPort.existsById(1L)).willReturn(true);
             given(lotPort.findByProductId(1L)).willReturn(List.of(defaultLot, secondLot));
 
             List<LotResult> result = lotService.findByProductId(1L);
@@ -157,7 +157,7 @@ class LotServiceTest {
 
         @Test
         void 등록된_로트가_없으면_빈_목록을_반환한다() {
-            given(findProductUseCase.existsById(1L)).willReturn(true);
+            given(productQueryPort.existsById(1L)).willReturn(true);
             given(lotPort.findByProductId(1L)).willReturn(List.of());
 
             List<LotResult> result = lotService.findByProductId(1L);
@@ -167,7 +167,7 @@ class LotServiceTest {
 
         @Test
         void 존재하지_않는_상품_ID로_조회하면_LotProductNotFoundException이_발생한다() {
-            given(findProductUseCase.existsById(999L)).willReturn(false);
+            given(productQueryPort.existsById(999L)).willReturn(false);
 
             assertThatThrownBy(() -> lotService.findByProductId(999L))
                     .isInstanceOf(LotProductNotFoundException.class)

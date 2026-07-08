@@ -3,8 +3,8 @@ package com.kb.cosmetic_wms.inventory.application.service;
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
+import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
-import java.time.LocalDate;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -25,39 +25,15 @@ import java.util.function.Function;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class InventoryService implements
-        FindInventoryUseCase,
+public class InventoryCommandService implements
         ManageInventoryStatusUseCase,
         ApplyInspectionResultUseCase,
         DeductInventoryForOutboundUseCase,
-        ReleaseInventoryForOutboundUseCase,
-        FindFefoInventoryUseCase,
-        FindProductAvailabilityUseCase {
+        ReleaseInventoryForOutboundUseCase {
 
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
-
-
-    @Override
-    public InventoryResult findById(Long inventoryId) {
-        Inventory inventory = inventoryPort.findById(inventoryId)
-                .orElseThrow(InventoryNotFoundException::new);
-        return InventoryResult.from(inventory);
-    }
-
-    @Override
-    public List<InventoryResult> findByLotId(Long lotId) {
-        return inventoryPort.findByLotId(lotId).stream()
-                .map(InventoryResult::from)
-                .toList();
-    }
-
-    @Override
-    public List<InventoryResult> findByProductId(Long productId) {
-        return inventoryPort.findByProductId(productId).stream()
-                .map(InventoryResult::from)
-                .toList();
-    }
+    private final SectionAssignmentPort sectionAssignmentPort;
 
     @Override
     @Transactional
@@ -70,9 +46,7 @@ public class InventoryService implements
     @Override
     @Transactional
     public InventoryResult unallocate(Long inventoryId, InventoryStatusChangeCommand command) {
-        Inventory inventory = findOrThrow(inventoryId);
-        return applyAndRecord(inventory, inv -> inv.unallocate(command.quantity()),
-                TransactionType.UNALLOCATE, command.quantity(), command.referenceId(), command.memberId());
+        return doUnallocate(inventoryId, command);
     }
 
     @Override
@@ -126,17 +100,20 @@ public class InventoryService implements
     @Override
     @Transactional
     public void applyInspectionResult(InspectionResultCommand command) {
+        SectionAssignmentPort.SectionAssignment assignment = sectionAssignmentPort.assignSectionsForInspection(
+                command.warehouseId(), command.productId(), command.passedQuantity(), command.failedQuantity());
+
         if (command.passedQuantity() > 0) {
             InventoryStatusSet normalStatus = InventoryStatusSet.of(
                     AllocStatus.UNALLOCATED, QualityStatus.NORMAL, LocStatus.STORED);
-            createOrMerge(command.productId(), command.lotId(), command.storageSectionId(), command.warehouseId(),
+            createOrMerge(command.productId(), command.lotId(), assignment.storageSectionId(), command.warehouseId(),
                     command.passedQuantity(), normalStatus, TransactionType.INSPECTION_PASS,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }
         if (command.failedQuantity() > 0) {
             InventoryStatusSet holdStatus = InventoryStatusSet.of(
                     AllocStatus.UNALLOCATED, QualityStatus.HOLD, LocStatus.STORED);
-            createOrMerge(command.productId(), command.lotId(), command.quarantineSectionId(), command.warehouseId(),
+            createOrMerge(command.productId(), command.lotId(), assignment.quarantineSectionId(), command.warehouseId(),
                     command.failedQuantity(), holdStatus, TransactionType.INSPECTION_FAIL,
                     command.inspectionId(), command.memberId(), command.expiryDate());
         }
@@ -149,11 +126,16 @@ public class InventoryService implements
                 .findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, outboundId);
         for (InventoryTransaction alloc : allocations) {
             Inventory inv = findOrThrow(alloc.getInventoryId());
+            inv.deduct(alloc.getTransactionQuantity());
             inventoryTransactionPort.save(InventoryTransaction.create(
-                    inv.getId(), TransactionType.SHIP, alloc.getTransactionQuantity(), 0,
+                    inv.getId(), TransactionType.SHIP, alloc.getTransactionQuantity(), inv.getQuantity(),
                     outboundId, inv.getStatusSet(), inv.getStatusSet(), memberId, null
             ));
-            inventoryPort.delete(inv);
+            if (inv.isEmpty()) {
+                inventoryPort.delete(inv);
+            } else {
+                inventoryPort.save(inv);
+            }
         }
     }
 
@@ -163,22 +145,15 @@ public class InventoryService implements
         List<InventoryTransaction> allocations = inventoryTransactionPort
                 .findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, outboundId);
         for (InventoryTransaction alloc : allocations) {
-            unallocate(alloc.getInventoryId(),
+            doUnallocate(alloc.getInventoryId(),
                     new InventoryStatusChangeCommand(alloc.getTransactionQuantity(), outboundId, memberId));
         }
     }
 
-    @Override
-    public List<FefoInventorySlice> findAvailableForFefo(Long productId, Long warehouseId) {
-        return inventoryPort.findAvailableForFefo(productId, warehouseId);
-    }
-
-    @Override
-    public List<ProductAvailabilitySlice> findAvailabilityByProducts(Collection<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return List.of();
-        }
-        return inventoryPort.findAvailabilityByProducts(productIds);
+    private InventoryResult doUnallocate(Long inventoryId, InventoryStatusChangeCommand command) {
+        Inventory inventory = findOrThrow(inventoryId);
+        return applyAndRecord(inventory, inv -> inv.unallocate(command.quantity()),
+                TransactionType.UNALLOCATE, command.quantity(), command.referenceId(), command.memberId());
     }
 
     private Inventory findOrThrow(Long inventoryId) {
@@ -212,18 +187,22 @@ public class InventoryService implements
         );
 
         if (mergeTarget.isPresent()) {
-            mergeTarget.get().mergeFrom(result);
-            if (!isSplit) {
+            Inventory target = mergeTarget.get();
+            target.mergeFrom(result);
+            if (isSplit) {
+                inventoryPort.save(inventory);
+            } else {
                 inventoryPort.delete(inventory);
             }
-            return mergeTarget.get();
+            return inventoryPort.save(target);
         }
 
         if (isSplit) {
+            inventoryPort.save(inventory);
             return inventoryPort.save(result);
         }
 
-        return result;
+        return inventoryPort.save(result);
     }
 
     private void recordTransactions(
@@ -246,19 +225,19 @@ public class InventoryService implements
     private void createOrMerge(Long productId, Long lotId, Long sectionId, Long warehouseId,
                                int quantity, InventoryStatusSet statusSet,
                                TransactionType type, Long referenceId, Long memberId, LocalDate expiryDate) {
-        int availableQty = (statusSet.qualityStatus().isNormal() && statusSet.locStatus() != LocStatus.DOCKING) ? quantity : 0;
+        int availableQty = statusSet.availableQuantityFor(quantity);
 
-        long NO_EXCLUDE_ID = -1L;
         Optional<Inventory> mergeTarget = inventoryPort.findMergeTargetForUpdate(
-                productId, lotId, sectionId, statusSet, NO_EXCLUDE_ID
+                productId, lotId, sectionId, statusSet, null
         );
 
         if (mergeTarget.isPresent()) {
             Inventory existing = mergeTarget.get();
             existing.mergeFrom(Inventory.create(productId, lotId, sectionId, warehouseId,
                     quantity, availableQty, statusSet, expiryDate));
+            Inventory merged = inventoryPort.save(existing);
             inventoryTransactionPort.save(InventoryTransaction.create(
-                    existing.getId(), type, quantity, existing.getQuantity(),
+                    merged.getId(), type, quantity, merged.getQuantity(),
                     referenceId, statusSet, statusSet, memberId, null
             ));
             return;

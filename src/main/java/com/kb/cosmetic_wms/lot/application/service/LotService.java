@@ -2,11 +2,11 @@ package com.kb.cosmetic_wms.lot.application.service;
 
 import com.kb.cosmetic_wms.lot.application.port.in.*;
 import com.kb.cosmetic_wms.lot.application.port.out.LotPort;
+import com.kb.cosmetic_wms.lot.application.port.out.ProductQueryPort;
 import com.kb.cosmetic_wms.lot.domain.exception.DuplicateLotNumberException;
 import com.kb.cosmetic_wms.lot.domain.exception.LotNotFoundException;
 import com.kb.cosmetic_wms.lot.domain.exception.LotProductNotFoundException;
 import com.kb.cosmetic_wms.lot.domain.model.Lot;
-import com.kb.cosmetic_wms.product.product.application.port.in.FindProductUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,12 +20,12 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
         UpdateLotStatusUseCase, DeleteLotUseCase {
 
     private final LotPort lotPort;
-    private final FindProductUseCase findProductUseCase;
+    private final ProductQueryPort productQueryPort;
 
     @Override
     @Transactional
     public LotResult register(RegisterLotCommand command) {
-        if (!findProductUseCase.existsById(command.productId())) {
+        if (!productQueryPort.existsById(command.productId())) {
             throw new LotProductNotFoundException();
         }
 
@@ -52,7 +52,7 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
 
     @Override
     public List<LotResult> findByProductId(Long productId) {
-        if (!findProductUseCase.existsById(productId)) {
+        if (!productQueryPort.existsById(productId)) {
             throw new LotProductNotFoundException();
         }
         return lotPort.findByProductId(productId).stream()

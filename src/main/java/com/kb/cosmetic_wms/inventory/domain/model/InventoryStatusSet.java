@@ -18,6 +18,19 @@ public record InventoryStatusSet(
         return new InventoryStatusSet(allocStatus, qualityStatus, locStatus);
     }
 
+    /**
+     * 미할당·정상 품질이며 도킹 대기가 아닌 재고만 출고 가능 수량으로 잡을 수 있다.
+     */
+    public boolean isAvailableForOutbound() {
+        return allocStatus == AllocStatus.UNALLOCATED
+                && qualityStatus.isNormal()
+                && locStatus != LocStatus.DOCKING;
+    }
+
+    public int availableQuantityFor(int quantity) {
+        return isAvailableForOutbound() ? quantity : 0;
+    }
+
     private static void validate(
             AllocStatus allocStatus, QualityStatus qualityStatus, LocStatus locStatus
     ) {

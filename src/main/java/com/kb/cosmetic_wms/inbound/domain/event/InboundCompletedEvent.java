@@ -1,4 +1,4 @@
-package com.kb.cosmetic_wms.inbound.application.event;
+package com.kb.cosmetic_wms.inbound.domain.event;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
