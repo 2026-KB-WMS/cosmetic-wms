@@ -3,7 +3,8 @@ package com.kb.cosmetic_wms.inventory;
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
-import com.kb.cosmetic_wms.inventory.application.service.InventoryService;
+import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
+import com.kb.cosmetic_wms.inventory.application.service.InventoryCommandService;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
@@ -38,10 +39,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class InventoryServiceTest {
+class InventoryCommandServiceTest {
 
     @InjectMocks
-    private InventoryService inventoryService;
+    private InventoryCommandService inventoryService;
 
     @Mock
     private InventoryPort inventoryPort;
@@ -49,77 +50,17 @@ class InventoryServiceTest {
     @Mock
     private InventoryTransactionPort inventoryTransactionPort;
 
+    @Mock
+    private SectionAssignmentPort sectionAssignmentPort;
+
     private Inventory defaultInventory;
 
     @BeforeEach
     void setUp() {
         defaultInventory = new InventoryTestBuilder().build();
         ReflectionTestUtils.setField(defaultInventory, "id", 1L);
-    }
-
-    // =========================================================
-    // 재고 조회
-    // =========================================================
-
-    @Nested
-    class 재고_조회 {
-
-        @Test
-        void 존재하는_ID로_조회하면_재고_상세정보를_반환한다() {
-            given(inventoryPort.findById(1L)).willReturn(Optional.of(defaultInventory));
-
-            InventoryResult result = inventoryService.findById(1L);
-
-            assertThat(result.id()).isEqualTo(1L);
-            assertThat(result.quantity()).isEqualTo(100);
-            assertThat(result.availableQuantity()).isEqualTo(100);
-            assertThat(result.allocStatus()).isEqualTo(AllocStatus.UNALLOCATED);
-            assertThat(result.qualityStatus()).isEqualTo(QualityStatus.NORMAL);
-            assertThat(result.locStatus()).isEqualTo(LocStatus.STORED);
-        }
-
-        @Test
-        void 존재하지_않는_ID로_조회하면_InventoryNotFoundException이_발생한다() {
-            given(inventoryPort.findById(999L)).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> inventoryService.findById(999L))
-                    .isInstanceOf(InventoryNotFoundException.class)
-                    .hasMessage(InventoryErrorCode.INVENTORY_NOT_FOUND.getMessage());
-        }
-
-        @Test
-        void LOT_ID로_조회하면_해당_LOT의_전체_재고_목록을_반환한다() {
-            Inventory secondInventory = new InventoryTestBuilder().quantity(50).availableQuantity(50).build();
-            ReflectionTestUtils.setField(secondInventory, "id", 2L);
-
-            given(inventoryPort.findByLotId(10L)).willReturn(List.of(defaultInventory, secondInventory));
-
-            List<InventoryResult> result = inventoryService.findByLotId(10L);
-
-            assertThat(result).hasSize(2);
-            assertThat(result.get(0).id()).isEqualTo(1L);
-            assertThat(result.get(1).id()).isEqualTo(2L);
-            assertThat(result.get(1).quantity()).isEqualTo(50);
-        }
-
-        @Test
-        void 해당_LOT에_재고가_없으면_빈_목록을_반환한다() {
-            given(inventoryPort.findByLotId(10L)).willReturn(List.of());
-
-            List<InventoryResult> result = inventoryService.findByLotId(10L);
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        void 상품_ID로_조회하면_해당_상품의_전체_재고_목록을_반환한다() {
-            given(inventoryPort.findByProductId(1L)).willReturn(List.of(defaultInventory));
-
-            List<InventoryResult> result = inventoryService.findByProductId(1L);
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).id()).isEqualTo(1L);
-        }
+        lenient().when(inventoryPort.save(any(Inventory.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     // =========================================================
@@ -142,7 +83,7 @@ class InventoryServiceTest {
 
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             assertThat(result.availableQuantity()).isEqualTo(0);
-            verify(inventoryPort, never()).save(any());
+            verify(inventoryPort).save(defaultInventory);
         }
 
         @Test
@@ -165,7 +106,7 @@ class InventoryServiceTest {
             assertThat(result.quantity()).isEqualTo(150);
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             verify(inventoryPort).delete(defaultInventory);
-            verify(inventoryPort, never()).save(any());
+            verify(inventoryPort).save(existingAllocated);
         }
 
         @Test
@@ -191,7 +132,8 @@ class InventoryServiceTest {
             assertThat(result.quantity()).isEqualTo(30);
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             assertThat(defaultInventory.getQuantity()).isEqualTo(70);
-            verify(inventoryPort, times(1)).save(any(Inventory.class));
+            verify(inventoryPort, times(2)).save(any(Inventory.class));
+            verify(inventoryPort).save(defaultInventory);
 
             verify(inventoryTransactionPort, times(2)).save(txCaptor.capture());
             List<InventoryTransaction> recorded = txCaptor.getAllValues();
@@ -209,7 +151,7 @@ class InventoryServiceTest {
         }
 
         @Test
-        void 부분_수량을_할당할_때_동일_상태_재고가_이미_존재하면_신규_저장_없이_수량이_합산되며_이력이_2건_기록된다() {
+        void 부분_수량을_할당할_때_동일_상태_재고가_이미_존재하면_신규_생성_없이_기존_재고에_합산되며_이력이_2건_기록된다() {
             InventoryStatusChangeCommand command = new InventoryDtoBuilder()
                     .quantity(30).referenceId(10L).memberId(1L).build();
 
@@ -230,7 +172,8 @@ class InventoryServiceTest {
             assertThat(result.quantity()).isEqualTo(50);
             assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
             assertThat(defaultInventory.getQuantity()).isEqualTo(70);
-            verify(inventoryPort, never()).save(any());
+            verify(inventoryPort).save(defaultInventory);
+            verify(inventoryPort).save(existingAllocated);
 
             verify(inventoryTransactionPort, times(2)).save(txCaptor.capture());
             List<InventoryTransaction> recorded = txCaptor.getAllValues();
@@ -530,14 +473,16 @@ class InventoryServiceTest {
                     .quantity(80).availableQuantity(80).build();
             ReflectionTestUtils.setField(saved, "id", 20L);
 
-            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, passStatus, -1L))
+            given(sectionAssignmentPort.assignSectionsForInspection(WAREHOUSE_ID, PRODUCT_ID, 80, 0))
+                    .willReturn(new SectionAssignmentPort.SectionAssignment(STORAGE_SECTION_ID, null));
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, passStatus, null))
                     .willReturn(Optional.empty());
             given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             inventoryService.applyInspectionResult(new InspectionResultCommand(
-                    PRODUCT_ID, LOT_ID, STORAGE_SECTION_ID, null, WAREHOUSE_ID, 80, 0, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
+                    PRODUCT_ID, LOT_ID, WAREHOUSE_ID, 80, 0, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
 
             verify(inventoryPort).save(any(Inventory.class));
             verify(inventoryTransactionPort).save(txCaptor.capture());
@@ -555,19 +500,104 @@ class InventoryServiceTest {
                     .quantity(20).availableQuantity(0).build();
             ReflectionTestUtils.setField(saved, "id", 21L);
 
-            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, QUARANTINE_SECTION_ID, holdStatus, -1L))
+            given(sectionAssignmentPort.assignSectionsForInspection(WAREHOUSE_ID, PRODUCT_ID, 0, 20))
+                    .willReturn(new SectionAssignmentPort.SectionAssignment(null, QUARANTINE_SECTION_ID));
+            given(inventoryPort.findMergeTargetForUpdate(PRODUCT_ID, LOT_ID, QUARANTINE_SECTION_ID, holdStatus, null))
                     .willReturn(Optional.empty());
             given(inventoryPort.save(any(Inventory.class))).willReturn(saved);
 
             ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
 
             inventoryService.applyInspectionResult(new InspectionResultCommand(
-                    PRODUCT_ID, LOT_ID, null, QUARANTINE_SECTION_ID, WAREHOUSE_ID, 0, 20, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
+                    PRODUCT_ID, LOT_ID, WAREHOUSE_ID, 0, 20, INSPECTION_ID, MEMBER_ID, LocalDate.of(2026, 12, 31)));
 
             verify(inventoryTransactionPort).save(txCaptor.capture());
             InventoryTransaction tx = txCaptor.getValue();
             assertThat(tx.getTransactionType()).isEqualTo(TransactionType.INSPECTION_FAIL);
             assertThat(tx.getCurrStatusSet()).isEqualTo(holdStatus);
+        }
+    }
+
+    // =========================================================
+    // 출고 차감 (deductForOutbound)
+    // =========================================================
+
+    @Nested
+    class 출고_차감 {
+
+        private static final Long OUTBOUND_ID = 10L;
+        private static final Long MEMBER_ID = 1L;
+
+        private final InventoryStatusSet allocatedStatus = InventoryStatusSet.of(
+                AllocStatus.ALLOCATED, QualityStatus.NORMAL, LocStatus.STORED
+        );
+
+        private InventoryTransaction allocateTx(Long inventoryId, int quantity, int balance) {
+            return InventoryTransaction.create(
+                    inventoryId, TransactionType.ALLOCATE, quantity, balance,
+                    OUTBOUND_ID, allocatedStatus, allocatedStatus, MEMBER_ID, null
+            );
+        }
+
+        @Test
+        void 병합으로_수량이_불어난_재고_행은_할당_수량만큼만_차감되고_삭제되지_않는다() {
+            Inventory allocated = new InventoryTestBuilder()
+                    .quantity(50).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(allocated, "id", 2L);
+
+            given(inventoryTransactionPort.findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, OUTBOUND_ID))
+                    .willReturn(List.of(allocateTx(2L, 30, 50)));
+            given(inventoryPort.findByIdForUpdate(2L)).willReturn(Optional.of(allocated));
+
+            ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+
+            inventoryService.deductForOutbound(OUTBOUND_ID, MEMBER_ID);
+
+            assertThat(allocated.getQuantity()).isEqualTo(20);
+            verify(inventoryPort).save(allocated);
+            verify(inventoryPort, never()).delete(any());
+
+            verify(inventoryTransactionPort).save(txCaptor.capture());
+            InventoryTransaction shipTx = txCaptor.getValue();
+            assertThat(shipTx.getTransactionType()).isEqualTo(TransactionType.SHIP);
+            assertThat(shipTx.getTransactionQuantity()).isEqualTo(30);
+            assertThat(shipTx.getBalanceQuantity()).isEqualTo(20);
+        }
+
+        @Test
+        void 차감_후_잔여_수량이_0이면_재고_행을_삭제한다() {
+            Inventory allocated = new InventoryTestBuilder()
+                    .quantity(30).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(allocated, "id", 2L);
+
+            given(inventoryTransactionPort.findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, OUTBOUND_ID))
+                    .willReturn(List.of(allocateTx(2L, 30, 30)));
+            given(inventoryPort.findByIdForUpdate(2L)).willReturn(Optional.of(allocated));
+
+            inventoryService.deductForOutbound(OUTBOUND_ID, MEMBER_ID);
+
+            verify(inventoryPort).delete(allocated);
+            verify(inventoryPort, never()).save(any(Inventory.class));
+        }
+
+        @Test
+        void 같은_출고의_할당_이력이_여러_건이면_각_할당_수량만큼_순차_차감한다() {
+            Inventory allocated = new InventoryTestBuilder()
+                    .quantity(50).availableQuantity(0)
+                    .allocStatus(AllocStatus.ALLOCATED).build();
+            ReflectionTestUtils.setField(allocated, "id", 2L);
+
+            given(inventoryTransactionPort.findByTransactionTypeAndReferenceId(TransactionType.ALLOCATE, OUTBOUND_ID))
+                    .willReturn(List.of(allocateTx(2L, 30, 30), allocateTx(2L, 20, 50)));
+            given(inventoryPort.findByIdForUpdate(2L)).willReturn(Optional.of(allocated));
+
+            inventoryService.deductForOutbound(OUTBOUND_ID, MEMBER_ID);
+
+            assertThat(allocated.getQuantity()).isZero();
+            verify(inventoryPort).save(allocated);
+            verify(inventoryPort).delete(allocated);
         }
     }
 }

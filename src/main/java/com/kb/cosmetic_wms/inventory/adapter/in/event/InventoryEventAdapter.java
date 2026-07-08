@@ -1,7 +1,6 @@
 package com.kb.cosmetic_wms.inventory.adapter.in.event;
 
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
-import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inspection.domain.event.InspectionCompletedEvent;
 import com.kb.cosmetic_wms.outbound.domain.event.OutboundAllocatedEvent;
 import com.kb.cosmetic_wms.outbound.domain.event.OutboundShippedEvent;
@@ -20,19 +19,14 @@ public class InventoryEventAdapter {
     private final ManageInventoryStatusUseCase manageInventoryStatusUseCase;
     private final DeductInventoryForOutboundUseCase deductInventoryForOutboundUseCase;
     private final ReleaseInventoryForOutboundUseCase releaseInventoryForOutboundUseCase;
-    private final SectionAssignmentPort sectionAssignmentPort;
     private final AuditorAware<Long> auditorProvider;
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onInspectionCompleted(InspectionCompletedEvent event) {
         Long actorId = auditorProvider.getCurrentAuditor().orElseThrow();
-        SectionAssignmentPort.SectionAssignment assignment = sectionAssignmentPort.assignSectionsForInspection(
-                event.warehouseId(), event.productId(), event.passedQuantity(), event.failedQuantity());
         applyInspectionResultUseCase.applyInspectionResult(new InspectionResultCommand(
                 event.productId(),
                 event.lotId(),
-                assignment.storageSectionId(),
-                assignment.quarantineSectionId(),
                 event.warehouseId(),
                 event.passedQuantity(),
                 event.failedQuantity(),

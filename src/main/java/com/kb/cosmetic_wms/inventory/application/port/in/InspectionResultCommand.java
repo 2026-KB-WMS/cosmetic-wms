@@ -5,8 +5,6 @@ import java.time.LocalDate;
 public record InspectionResultCommand(
         Long productId,
         Long lotId,
-        Long storageSectionId,
-        Long quarantineSectionId,
         Long warehouseId,
         int passedQuantity,
         int failedQuantity,

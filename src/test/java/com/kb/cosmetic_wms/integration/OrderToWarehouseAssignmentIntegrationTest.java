@@ -131,6 +131,21 @@ class OrderToWarehouseAssignmentIntegrationTest {
                 "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'ALLOCATED'",
                 Integer.class, nearWarehouseId);
         assertThat(allocatedQuantity).isEqualTo(30);
+
+        // 원본 재고 행이 차감되고 전체 수량이 보존되는지 검증 (재고 부풀림 회귀 방지)
+        Integer unallocatedQuantity = jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'UNALLOCATED'",
+                Integer.class, nearWarehouseId);
+        assertThat(unallocatedQuantity).isEqualTo(70);
+
+        Integer totalQuantity = jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ?", Integer.class, nearWarehouseId);
+        assertThat(totalQuantity).isEqualTo(100);
+
+        Integer untouchedQuantity = jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'UNALLOCATED'",
+                Integer.class, farWarehouseId);
+        assertThat(untouchedQuantity).isEqualTo(100);
     }
 
     @Test
