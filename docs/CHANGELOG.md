@@ -27,6 +27,48 @@
 
 <br>
 
+### [1.5.0] - 2026-07-07
+
+- **[DB] 데이터베이스 설계서(Notion)를 Flyway 마이그레이션(`V1__init_schema.sql`, `V2__add_foreign_keys.sql`) 기준으로 전면 동기화**
+
+#### Added
+
+- **[DB] `failed_inspection_event` 테이블 명세 추가** — 입고 검수 이벤트 처리 실패 시 원본 페이로드와 오류를 기록하는 보상(Dead Letter) 테이블
+- **[DB] `failed_assignment_event` 테이블 명세 추가** — OMS 최적 창고 자동 배정 실패 시 재처리를 위한 기록 테이블
+- **[DB] `store` / `warehouse` 테이블에 `latitude`, `longitude DECIMAL(10,7) NOT NULL` 컬럼 추가** — 발주 시 최적 창고 자동 배정(하버사인 거리 계산)용
+- **[DB] `inventory` 테이블에 `expiry_date DATE NOT NULL DEFAULT '9999-12-31'` 컬럼 추가** — FEFO 정렬 키 (Lot 유통기한 비정규화)
+- **[DB] `inbound` 테이블에 `version BIGINT` 컬럼 추가** — JPA `@Version` 기반 Optimistic Lock
+- **[DB] `quality_inspection` 테이블에 `expiry_date DATE` 컬럼 추가** — 검사 합격분 재고 반영 시 FEFO 정렬용
+
+#### Changed
+
+- **[DB] `inbound_item` → `inbound_line` 테이블 개명 및 구조 변경**
+    - `quantity` → `ordered_quantity`(발주 수량) / `received_quantity`(실수령 수량, DEFAULT 0) 분리로 부분 입고 지원
+    - `manufacturer_lot_no`, `manufacturing_date`, `expiration_date`는 nullable로 변경 — 실물 수령 시점에 확정
+    - `lot_id`, `section_id`, `inspection_status` 컬럼 제거 — 로트 생성·검사·적재는 각 도메인에서 관리
+- **[DB] `lot` 테이블 — 로트 번호 정책 변경 반영**
+    - `lot_number` 컬럼 제거 — 시스템 생성 포맷(`PRD-YYMMDD-VV-SSSS`) 폐기
+    - `inbound_id BIGINT NOT NULL`(FK 제약 없는 논리적 참조), `manufacturer_lot_no VARCHAR(50) NOT NULL` 추가
+    - `uq_lot_inbound_manufacturer (inbound_id, manufacturer_lot_no)` 복합 UNIQUE 추가
+    - 로트 번호는 `YYMMDD-{입고ID}-{제조사 로트 번호}` 복합 포맷을 애플리케이션 레벨에서 조합
+- **[DB] `quality_inspection` 테이블 — 검사 대상 직접 식별 구조로 변경**
+    - `inventory_id` FK 제거 → `product_id`, `lot_id`, `warehouse_id` FK로 대체
+    - DB 레벨 CHECK 제약(`chk_inspection_qty_*`) 제거 — 수량/불량 사유 검증은 애플리케이션 레벨로 이관
+- **[DB] `section` 테이블 — 역할 기반 SectionType 리팩토링 반영 (PR #95)**
+    - `section_type` 값: `DOCKING`, `HIGH_ROT`, `MID_ROT`, `LOW_ROT`, `QUARANTINE` → `STR`(일반 보관), `DOCKING`(입고/검사), `QUARANTINE`(격리/폐기)
+    - 섹션 코드 형식: `WH01-A-01` → `WH01-STR-R-01`
+    - DB 레벨 `chk_capacity` CHECK 제약 제거 — 수용량 검증은 엔티티에서 수행
+- **[DB] `orders` 테이블 — `warehouse_id`를 nullable로 변경** — 발주 생성 시 미배정(NULL), OMS 자동 배정 완료 시 확정 (PR #103)
+- **[DB] `product` 테이블 — `sku_code` 포맷 설명을 `P%06d`(Product PK 기반)로 갱신** (ADR: SKU 코드 포맷 단순화, 2026-06-24)
+- **[DB] 공통 컬럼 명세 수정** — `updated_by`, `updated_at`은 NOT NULL이 아닌 nullable로 정정, `outbound_item`은 Audit 컬럼 미포함 예외 명시
+
+#### Removed
+
+- **[DB] `sku_sequence` 테이블 명세 제거** — ADR "SKU 코드 포맷 단순화"(2026-06-24)에 따라 폐기
+- **[DB] 미구현 테이블 명세를 별도 보류 섹션으로 이동** — `member_store`, `member_warehouse`, `stock_transfer`, `stock_transfer_item`, `return`, `return_item`, `recall`, `disposal`, `disposal_item` (현재 스키마 미구현, 구현 착수 시 명세 재정의 예정)
+
+<br>
+
 ### [1.4.0] - 2026-06-20
 
 #### Changed
