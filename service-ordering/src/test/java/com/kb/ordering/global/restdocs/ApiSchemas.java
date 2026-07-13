@@ -11,6 +11,10 @@ public final class ApiSchemas {
     public static final String LOGIN_REQUEST = "LoginRequest";
     public static final String LOGIN_RESPONSE = "LoginResponse";
 
+    // Store
+    public static final String STORE_CREATE_REQUEST = "StoreCreateRequest";
+    public static final String STORE_RESPONSE = "StoreResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }
