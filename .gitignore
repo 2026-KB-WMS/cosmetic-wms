@@ -25,9 +25,9 @@ Thumbs.db
 *.log
 
 ### Build files ###
-/target/
-/build/
-/out/
+target/
+build/
+out/
 
 ### Gradle ###
 .gradle/
@@ -56,7 +56,7 @@ application-secret.properties
 generated/s
 
 ### Spring REST Docs
-src/main/resources/static/docs/
+**/src/main/resources/static/docs/
 
 ### Cluade Code
 CLAUDE.md

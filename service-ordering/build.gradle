@@ -1,0 +1,77 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.epages.restdocs-api-spec'
+    id 'java'
+}
+
+bootJar {
+    enabled = true
+    dependsOn 'copyOasToStatic'
+}
+
+jar { enabled = false }
+
+dependencies {
+    implementation project(':libs:common')
+    // implementation project(':libs:contracts')
+
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.retry:spring-retry'
+
+    // DB & Migration
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-mysql'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    testRuntimeOnly 'com.h2database:h2'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // Swagger UI (애플리케이션 구동 시 docs 폴더 안의 yaml을 읽어 서빙)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+
+    // Test & RestDocs
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.19.4'
+}
+
+// ── 📝 RestDocs & OpenAPI3 명세서 자동화 파이프라인 ──
+ext {
+    snippetsDir = file('build/generated-snippets')
+}
+
+test {
+    outputs.dir snippetsDir
+    useJUnitPlatform()
+}
+
+openapi3 {
+    server = 'http://localhost:8080'
+    title = 'Cosmetic WMS - 발주 시스템 API 명세서'
+    description = '본사 컨텍스트(가맹점 발주 접수, 창고 배정)에 특화된 발주 시스템 명세서입니다.'
+    version = '0.0.1'
+    format = 'yaml'
+}
+
+// 생성된 yaml 명세서를 static/docs 내부로 자동 복사하여 Swagger UI가 읽을 수 있게 매핑
+tasks.register('copyOasToStatic', Copy) {
+    dependsOn(tasks.openapi3)
+    from("build/api-spec")
+    into("src/main/resources/static/docs")
+}
+
+build {
+    dependsOn 'copyOasToStatic'
+}
