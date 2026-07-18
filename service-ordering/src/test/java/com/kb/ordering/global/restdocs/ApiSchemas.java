@@ -15,6 +15,20 @@ public final class ApiSchemas {
     public static final String STORE_CREATE_REQUEST = "StoreCreateRequest";
     public static final String STORE_RESPONSE = "StoreResponse";
 
+    // Category
+    public static final String CATEGORY_CREATE_REQUEST = "CategoryCreateRequest";
+    public static final String CATEGORY_RESPONSE = "CategoryResponse";
+
+    // ProductType
+    public static final String PRODUCT_TYPE_CREATE_REQUEST = "ProductTypeCreateRequest";
+    public static final String PRODUCT_TYPE_RESPONSE = "ProductTypeResponse";
+
+    // Product
+    public static final String PRODUCT_CREATE_REQUEST = "ProductCreateRequest";
+    public static final String PRODUCT_UPDATE_REQUEST = "ProductUpdateRequest";
+    public static final String PRODUCT_SUMMARY_RESPONSE = "ProductSummaryResponse";
+    public static final String PRODUCT_DETAIL_RESPONSE = "ProductDetailResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }
