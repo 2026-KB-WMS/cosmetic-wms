@@ -88,3 +88,42 @@ CREATE TABLE product (
     CONSTRAINT chk_product_price_non_negative CHECK  (product_price >= 0),
     CONSTRAINT chk_volume_positive            CHECK  (volume > 0)
 );
+
+CREATE TABLE orders (
+    orders_id    BIGINT      NOT NULL AUTO_INCREMENT,
+    order_status VARCHAR(20) NOT NULL,
+    store_id     BIGINT      NOT NULL,
+    warehouse_id BIGINT,
+    created_by   BIGINT      NOT NULL,
+    created_at   DATETIME(6) NOT NULL,
+    updated_by   BIGINT,
+    updated_at   DATETIME(6),
+    PRIMARY KEY (orders_id),
+    CONSTRAINT chk_order_status CHECK (order_status IN ('PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELED'))
+);
+
+CREATE TABLE orders_item (
+    orders_item_id BIGINT NOT NULL AUTO_INCREMENT,
+    orders_id      BIGINT NOT NULL,
+    product_id     BIGINT NOT NULL,
+    quantity       INT    NOT NULL,
+    created_by     BIGINT      NOT NULL,
+    created_at     DATETIME(6) NOT NULL,
+    updated_by     BIGINT,
+    updated_at     DATETIME(6),
+    PRIMARY KEY (orders_item_id),
+    CONSTRAINT chk_orders_item_quantity CHECK (quantity > 0)
+);
+
+CREATE TABLE failed_assignment_event (
+    failed_event_id BIGINT      NOT NULL AUTO_INCREMENT,
+    orders_id       BIGINT      NOT NULL,
+    store_id        BIGINT      NOT NULL,
+    error_message   TEXT,
+    failed_at       DATETIME(6) NOT NULL,
+    created_by      BIGINT      NOT NULL,
+    created_at      DATETIME(6) NOT NULL,
+    updated_by      BIGINT,
+    updated_at      DATETIME(6),
+    PRIMARY KEY (failed_event_id)
+);
