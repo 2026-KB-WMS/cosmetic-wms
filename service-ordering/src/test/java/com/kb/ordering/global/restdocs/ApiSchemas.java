@@ -29,6 +29,10 @@ public final class ApiSchemas {
     public static final String PRODUCT_SUMMARY_RESPONSE = "ProductSummaryResponse";
     public static final String PRODUCT_DETAIL_RESPONSE = "ProductDetailResponse";
 
+    // Order
+    public static final String ORDER_CREATE_REQUEST = "OrderCreateRequest";
+    public static final String ORDER_RESPONSE = "OrderResponse";
+
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }

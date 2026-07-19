@@ -11,4 +11,5 @@ public final class ApiDocs {
     public static final String CATEGORY = "Category API";
     public static final String PRODUCT_TYPE = "ProductType API";
     public static final String PRODUCT = "Product API";
+    public static final String ORDER = "Order API";
 }
