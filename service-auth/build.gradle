@@ -1,0 +1,73 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.epages.restdocs-api-spec'
+    id 'java'
+}
+
+bootJar {
+    enabled = true
+    dependsOn 'copyOasToStatic'
+}
+
+jar { enabled = false }
+
+dependencies {
+    implementation project(':libs:common')
+
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // DB & Migration
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-mysql'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    testRuntimeOnly 'com.h2database:h2'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // Swagger UI
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+
+    // Test & RestDocs
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.19.4'
+}
+
+ext {
+    snippetsDir = file('build/generated-snippets')
+}
+
+test {
+    outputs.dir snippetsDir
+    useJUnitPlatform()
+}
+
+openapi3 {
+    server = 'http://localhost:8082'
+    title = 'Cosmetic WMS - 인증 서비스 API 명세서'
+    description = '회원 가입, 로그인, 토큰 발급을 담당하는 인증 서비스 명세서입니다.'
+    version = '0.0.1'
+    format = 'yaml'
+}
+
+tasks.register('copyOasToStatic', Copy) {
+    dependsOn(tasks.openapi3)
+    from("build/api-spec")
+    into("src/main/resources/static/docs")
+}
+
+build {
+    dependsOn 'copyOasToStatic'
+}
+
