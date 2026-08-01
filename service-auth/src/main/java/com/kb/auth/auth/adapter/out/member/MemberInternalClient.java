@@ -1,11 +1,9 @@
-package com.kb.auth.member.adapter.out.auth;
+package com.kb.auth.auth.adapter.out.member;
 
-import com.kb.auth.auth.application.port.out.LoadMemberPort;
-import com.kb.auth.auth.application.port.out.RegisterMemberPort;
+import com.kb.auth.auth.application.port.out.MemberPort;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
-import com.kb.auth.member.application.port.in.FindMemberUseCase;
-import com.kb.auth.member.application.port.in.RegisterMemberUseCase;
+import com.kb.auth.member.adapter.in.internal.MemberInternalAdapter;
 import com.kb.auth.member.application.port.in.dto.MemberResult;
 import com.kb.auth.member.application.port.in.dto.RegisterMemberCommand;
 import lombok.RequiredArgsConstructor;
@@ -13,19 +11,18 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class AuthMemberAdapter implements LoadMemberPort, RegisterMemberPort {
+public class MemberInternalClient implements MemberPort {
 
-    private final FindMemberUseCase findMemberUseCase;
-    private final RegisterMemberUseCase registerMemberUseCase;
+    private final MemberInternalAdapter memberInternalAdapter;
 
     @Override
     public MemberInfo loadById(Long memberId) {
-        return toMemberInfo(findMemberUseCase.findById(memberId));
+        return toMemberInfo(memberInternalAdapter.findById(memberId));
     }
 
     @Override
     public MemberInfo register(MemberRegistration registration) {
-        return toMemberInfo(registerMemberUseCase.register(new RegisterMemberCommand(
+        return toMemberInfo(memberInternalAdapter.register(new RegisterMemberCommand(
                 registration.role(),
                 registration.memberName(),
                 registration.email(),

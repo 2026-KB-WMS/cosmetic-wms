@@ -3,7 +3,7 @@ package com.kb.auth;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {"com.kb.auth", "com.kb.common"})
+@SpringBootApplication
 public class AuthApplication {
 
     public static void main(String[] args) {
