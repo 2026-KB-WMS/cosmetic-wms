@@ -49,6 +49,10 @@ application-secret.properties
 ### Environment ###
 .env
 
+### JWT Keys ###
+**/resources/keys/private.pem
+**/resources/keys/public.pem
+
 ### Database ###
 *.db
 *.mv.db

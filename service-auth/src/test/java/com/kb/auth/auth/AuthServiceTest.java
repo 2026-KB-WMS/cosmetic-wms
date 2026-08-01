@@ -6,7 +6,7 @@ import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
 import com.kb.auth.auth.application.port.out.MemberPort;
-import com.kb.auth.auth.application.port.out.TokenProvider;
+import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.application.service.AuthService;
@@ -48,7 +48,7 @@ public class AuthServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private TokenProvider tokenProvider;
+    private TokenIssuer tokenIssuer;
 
     @Nested
     class 로그인 {
@@ -62,7 +62,7 @@ public class AuthServiceTest {
             given(credentialPort.findByLoginId("user12345")).willReturn(Optional.of(credential));
             given(passwordEncoder.matches("Password1!", "$2a$10$encoded")).willReturn(true);
             given(memberPort.loadById(1L)).willReturn(memberInfo);
-            given(tokenProvider.issue(1L, Role.ROLE_HEADQUARTERS)).willReturn("access.token");
+            given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("access.token");
 
             // when
             LoginResult result = authService.login(new LoginCommand("user12345", "Password1!"));

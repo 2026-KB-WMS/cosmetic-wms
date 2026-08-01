@@ -25,6 +25,12 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
 
+jwt:
+  private-key-path: keys/private.pem
+  access-token-expiration-ms: 3600000
+  refresh-token-expiration-ms: 1209600000
+  issuer: cosmetic_wms
+
 springdoc:
   api-docs:
     enabled: true

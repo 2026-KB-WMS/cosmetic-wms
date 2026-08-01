@@ -8,7 +8,7 @@ import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
 import com.kb.auth.auth.application.port.out.MemberPort;
-import com.kb.auth.auth.application.port.out.TokenProvider;
+import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.domain.exception.DuplicateLoginIdException;
@@ -27,7 +27,7 @@ public class AuthService implements LoginUseCase, SignUpUseCase {
     private final CredentialPort credentialPort;
     private final MemberPort memberPort;
     private final PasswordEncoder passwordEncoder;
-    private final TokenProvider tokenProvider;
+    private final TokenIssuer tokenIssuer;
 
     @Override
     public LoginResult login(LoginCommand command) {
@@ -39,7 +39,7 @@ public class AuthService implements LoginUseCase, SignUpUseCase {
         }
 
         MemberInfo member = memberPort.loadById(credential.getMemberId());
-        String accessToken = tokenProvider.issue(member.memberId(), member.role());
+        String accessToken = tokenIssuer.issueAccessToken(member.memberId(), member.role());
 
         return new LoginResult(member.memberId(), member.memberName(), member.role(), accessToken);
     }
