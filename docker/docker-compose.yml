@@ -1,3 +1,5 @@
+name: cosmetic-wms
+
 services:
   mysql:
     image: mysql:8.0

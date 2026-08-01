@@ -1,6 +1,6 @@
 package com.kb.ordering.assignment;
 
-import com.kb.common.event.EventPublisher;
+import com.kb.ordering.assignment.application.port.out.EventPublisher;
 import com.kb.ordering.assignment.application.port.in.AssignWarehouseCommand;
 import com.kb.ordering.assignment.application.port.in.WarehouseAssignmentResult;
 import com.kb.ordering.assignment.application.port.out.AssignOrderWarehousePort;
@@ -92,7 +92,7 @@ class AssignWarehouseServiceTest {
         verify(assignOrderWarehousePort).assignWarehouse(1L, 1L);
 
         ArgumentCaptor<WarehouseAssignedEvent> captor = ArgumentCaptor.forClass(WarehouseAssignedEvent.class);
-        verify(eventPublisher).publish(captor.capture());
+        verify(eventPublisher).publishWarehouseAssigned(captor.capture());
         WarehouseAssignedEvent event = captor.getValue();
         assertThat(event.orderId()).isEqualTo(1L);
         assertThat(event.warehouseId()).isEqualTo(1L);
@@ -117,6 +117,6 @@ class AssignWarehouseServiceTest {
                 .isInstanceOf(NoAssignableWarehouseException.class);
 
         verify(assignOrderWarehousePort, never()).assignWarehouse(anyLong(), anyLong());
-        verify(eventPublisher, never()).publish(any());
+        verify(eventPublisher, never()).publishWarehouseAssigned(any());
     }
 }

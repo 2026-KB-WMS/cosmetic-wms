@@ -14,7 +14,7 @@ jar { enabled = false }
 
 dependencies {
     implementation project(':libs:common')
-    // implementation project(':libs:contracts')
+    implementation project(':libs:contracts')
 
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-web'

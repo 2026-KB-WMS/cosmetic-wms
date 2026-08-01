@@ -1,10 +1,11 @@
 package com.kb.ordering.order;
 
-// import com.kb.ordering.order.domain.event.OrderConfirmedEvent; // TODO: Kafka 도입 후 이벤트 테스트 복원
 import com.kb.ordering.order.application.port.in.CreateOrderCommand;
 import com.kb.ordering.order.application.port.in.OrderResult;
+import com.kb.ordering.order.application.port.out.EventPublisher;
 import com.kb.ordering.order.application.port.out.OrderPort;
 import com.kb.ordering.order.application.service.OrderService;
+import com.kb.ordering.order.domain.event.OrderConfirmedEvent;
 import com.kb.ordering.order.domain.enums.OrderStatus;
 import com.kb.ordering.order.domain.exception.*;
 import com.kb.ordering.order.domain.model.Order;
@@ -12,6 +13,7 @@ import com.kb.ordering.order.fixture.OrderTestBuilder;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,6 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
@@ -34,7 +38,8 @@ public class OrderServiceTest {
     @Mock
     private OrderPort orderPort;
 
-    // @Mock EventPublisher eventPublisher; // TODO: Kafka 도입 후 복원
+    @Mock
+    private EventPublisher eventPublisher;
 
     @Nested
     class 발주_신청 {
@@ -119,9 +124,42 @@ public class OrderServiceTest {
                     .isInstanceOf(OrderNotFoundException.class);
         }
 
-        // TODO: Kafka 도입 후 이벤트 발행 검증 테스트 복원
-        // @Test void 발주_확정_성공_시_발주_확정_이벤트가_정확히_1번_발행된다() { ... }
-        // @Test void 발주_확정_이벤트_발행_시_창고_배정에_필요한_발주_ID와_가맹점_ID와_품목_스냅샷_정보가_정확히_실려있어야_한다() { ... }
+        @Test
+        void 발주_확정_성공_시_발주_확정_이벤트가_정확히_1번_발행된다() {
+            // given
+            Long orderId = 1L;
+            Order order = new OrderTestBuilder().build();
+            given(orderPort.findByIdWithItemsForUpdate(orderId)).willReturn(Optional.of(order));
+            given(orderPort.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+            // when
+            orderService.confirmOrder(orderId);
+
+            // then
+            then(eventPublisher).should(times(1)).publishOrderConfirmed(any(OrderConfirmedEvent.class));
+        }
+
+        @Test
+        void 발주_확정_이벤트에는_발주_ID와_가맹점_ID와_품목_스냅샷이_포함된다() {
+            // given
+            Long orderId = 1L;
+            Order order = new OrderTestBuilder().build();
+            ReflectionTestUtils.setField(order, "id", orderId);
+            given(orderPort.findByIdWithItemsForUpdate(orderId)).willReturn(Optional.of(order));
+            given(orderPort.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+            ArgumentCaptor<OrderConfirmedEvent> captor = ArgumentCaptor.forClass(OrderConfirmedEvent.class);
+
+            // when
+            orderService.confirmOrder(orderId);
+
+            // then
+            then(eventPublisher).should().publishOrderConfirmed(captor.capture());
+            OrderConfirmedEvent event = captor.getValue();
+            assertThat(event.orderId()).isEqualTo(orderId);
+            assertThat(event.storeId()).isEqualTo(order.getStoreId());
+            assertThat(event.items()).hasSize(order.getOrderItems().size());
+        }
     }
 
     @Nested

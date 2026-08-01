@@ -3,8 +3,9 @@ package com.kb.ordering.order.application.service;
 import com.kb.ordering.order.application.port.in.CreateOrderCommand;
 import com.kb.ordering.order.application.port.in.OrderLifecycleUseCase;
 import com.kb.ordering.order.application.port.in.OrderResult;
+import com.kb.ordering.order.application.port.out.EventPublisher;
 import com.kb.ordering.order.application.port.out.OrderPort;
-// import com.kb.ordering.order.domain.event.OrderConfirmedEvent; // TODO: Kafka 도입 후 이벤트 발행 복원
+import com.kb.ordering.order.domain.event.OrderConfirmedEvent;
 import com.kb.ordering.order.domain.exception.OrderNotFoundException;
 import com.kb.ordering.order.domain.model.Order;
 import com.kb.ordering.order.domain.model.OrderLine;
@@ -20,7 +21,7 @@ import java.util.List;
 public class OrderService implements OrderLifecycleUseCase {
 
     private final OrderPort orderPort;
-    // private final EventPublisher eventPublisher; // TODO: Kafka 도입 후 복원
+    private final EventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -38,7 +39,7 @@ public class OrderService implements OrderLifecycleUseCase {
         Order order = findByIdWithItemsForUpdateOrThrow(orderId);
         order.confirm();
         Order saved = orderPort.save(order);
-        // eventPublisher.publish(toOrderConfirmedEvent(saved)); // TODO: Kafka 도입 후 복원
+        eventPublisher.publishOrderConfirmed(toOrderConfirmedEvent(saved));
         return OrderResult.from(saved);
     }
 
@@ -90,10 +91,10 @@ public class OrderService implements OrderLifecycleUseCase {
         return orderPort.findByIdWithItemsForUpdate(orderId).orElseThrow(OrderNotFoundException::new);
     }
 
-    // private OrderConfirmedEvent toOrderConfirmedEvent(Order order) { // TODO: Kafka 도입 후 복원
-    //     var snapshots = order.getOrderItems().stream()
-    //             .map(item -> new OrderConfirmedEvent.ItemSnapshot(item.getId(), item.getProductId(), item.getQuantity()))
-    //             .toList();
-    //     return new OrderConfirmedEvent(order.getId(), order.getStoreId(), snapshots);
-    // }
+    private OrderConfirmedEvent toOrderConfirmedEvent(Order order) {
+        List<OrderConfirmedEvent.ItemSnapshot> snapshots = order.getOrderItems().stream()
+                .map(item -> new OrderConfirmedEvent.ItemSnapshot(item.getId(), item.getProductId(), item.getQuantity()))
+                .toList();
+        return new OrderConfirmedEvent(order.getId(), order.getStoreId(), snapshots);
+    }
 }

@@ -1,6 +1,6 @@
 package com.kb.ordering.assignment.application.service;
 
-import com.kb.common.event.EventPublisher;
+import com.kb.ordering.assignment.application.port.out.EventPublisher;
 import com.kb.ordering.assignment.application.port.in.AssignWarehouseCommand;
 import com.kb.ordering.assignment.application.port.in.AssignWarehouseUseCase;
 import com.kb.ordering.assignment.application.port.in.WarehouseAssignmentResult;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
-// @Service
+// @Service — WMS(FindWarehousePort, FindProductAvailabilityPort) 구현 후 활성화
 @RequiredArgsConstructor
 public class AssignWarehouseService implements AssignWarehouseUseCase {
 
@@ -49,7 +49,7 @@ public class AssignWarehouseService implements AssignWarehouseUseCase {
                 destination, candidates, demands, LocalDate.now(), routingPort::drivingDistanceMeters);
 
         assignOrderWarehousePort.assignWarehouse(command.orderId(), selected.getWarehouseId());
-        eventPublisher.publish(toWarehouseAssignedEvent(command, selected.getWarehouseId()));
+        eventPublisher.publishWarehouseAssigned(toWarehouseAssignedEvent(command, selected.getWarehouseId()));
 
         return new WarehouseAssignmentResult(command.orderId(), selected.getWarehouseId());
     }

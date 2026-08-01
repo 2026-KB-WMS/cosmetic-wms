@@ -4,7 +4,7 @@ import com.kb.ordering.assignment.adapter.in.event.RetryableWarehouseAssigner;
 import com.kb.ordering.assignment.application.port.in.AssignWarehouseCommand;
 import com.kb.ordering.assignment.application.port.in.AssignWarehouseUseCase;
 import com.kb.ordering.assignment.application.port.out.AssignmentFailurePort;
-import com.kb.ordering.order.domain.event.OrderConfirmedEvent;
+import com.kb.contracts.ordering.OrderConfirmedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

@@ -1,18 +1,18 @@
 package com.kb.ordering.assignment.adapter.in.event;
 
+import com.kb.contracts.ordering.OrderConfirmedEvent;
 import com.kb.ordering.assignment.application.port.in.AssignWarehouseCommand;
 import com.kb.ordering.assignment.application.port.in.AssignWarehouseUseCase;
 import com.kb.ordering.assignment.application.port.out.AssignmentFailurePort;
 import com.kb.ordering.assignment.domain.exception.AssignmentValidationException;
 import com.kb.ordering.assignment.domain.exception.NoAssignableWarehouseException;
-import com.kb.ordering.order.domain.event.OrderConfirmedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
-// @Component
+// @Component — AssignWarehouseService 활성화 후 함께 활성화
 @RequiredArgsConstructor
 public class RetryableWarehouseAssigner {
 

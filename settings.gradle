@@ -1,4 +1,8 @@
 rootProject.name = 'cosmetic_wms'
 
-include ':service-ordering'
+// 공통 서비스
 include ':libs:common'
+include ':libs:contracts'
+
+include ':service-ordering'
+include ':service-auth'
