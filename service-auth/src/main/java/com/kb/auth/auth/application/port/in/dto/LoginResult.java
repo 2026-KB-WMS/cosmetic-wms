@@ -6,6 +6,7 @@ public record LoginResult(
         Long memberId,
         String memberName,
         Role role,
-        String accessToken
+        String accessToken,
+        String refreshToken
 ) {
 }

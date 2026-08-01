@@ -8,6 +8,7 @@ import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
 import com.kb.auth.auth.application.port.out.MemberPort;
+import com.kb.auth.auth.application.port.out.RefreshTokenPort;
 import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
@@ -28,6 +29,7 @@ public class AuthService implements LoginUseCase, SignUpUseCase {
     private final MemberPort memberPort;
     private final PasswordEncoder passwordEncoder;
     private final TokenIssuer tokenIssuer;
+    private final RefreshTokenPort refreshTokenPort;
 
     @Override
     public LoginResult login(LoginCommand command) {
@@ -40,8 +42,10 @@ public class AuthService implements LoginUseCase, SignUpUseCase {
 
         MemberInfo member = memberPort.loadById(credential.getMemberId());
         String accessToken = tokenIssuer.issueAccessToken(member.memberId(), member.role());
+        String refreshToken = tokenIssuer.issueRefreshToken(member.memberId());
+        refreshTokenPort.save(member.memberId(), refreshToken);
 
-        return new LoginResult(member.memberId(), member.memberName(), member.role(), accessToken);
+        return new LoginResult(member.memberId(), member.memberName(), member.role(), accessToken, refreshToken);
     }
 
     @Override

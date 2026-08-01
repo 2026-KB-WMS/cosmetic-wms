@@ -7,14 +7,16 @@ public record LoginResponse(
         Long memberId,
         String memberName,
         Role role,
-        String accessToken
+        String accessToken,
+        String refreshToken
 ) {
     public static LoginResponse from(LoginResult result) {
         return new LoginResponse(
                 result.memberId(),
                 result.memberName(),
                 result.role(),
-                result.accessToken()
+                result.accessToken(),
+                result.refreshToken()
         );
     }
 }

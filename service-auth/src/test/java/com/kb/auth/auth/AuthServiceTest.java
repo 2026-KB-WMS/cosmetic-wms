@@ -6,6 +6,7 @@ import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
 import com.kb.auth.auth.application.port.out.MemberPort;
+import com.kb.auth.auth.application.port.out.RefreshTokenPort;
 import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
@@ -50,11 +51,14 @@ public class AuthServiceTest {
     @Mock
     private TokenIssuer tokenIssuer;
 
+    @Mock
+    private RefreshTokenPort refreshTokenPort;
+
     @Nested
     class 로그인 {
 
         @Test
-        void 올바른_아이디와_비밀번호로_로그인하면_토큰을_포함한_LoginResult를_반환한다() {
+        void 올바른_아이디와_비밀번호로_로그인하면_액세스_토큰과_리프레시_토큰을_포함한_LoginResult를_반환한다() {
             // given
             Credential credential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
             MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
@@ -63,6 +67,7 @@ public class AuthServiceTest {
             given(passwordEncoder.matches("Password1!", "$2a$10$encoded")).willReturn(true);
             given(memberPort.loadById(1L)).willReturn(memberInfo);
             given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("access.token");
+            given(tokenIssuer.issueRefreshToken(1L)).willReturn("refresh.token");
 
             // when
             LoginResult result = authService.login(new LoginCommand("user12345", "Password1!"));
@@ -72,6 +77,26 @@ public class AuthServiceTest {
             assertThat(result.memberName()).isEqualTo("홍길동");
             assertThat(result.role()).isEqualTo(Role.ROLE_HEADQUARTERS);
             assertThat(result.accessToken()).isEqualTo("access.token");
+            assertThat(result.refreshToken()).isEqualTo("refresh.token");
+        }
+
+        @Test
+        void 로그인_성공_시_리프레시_토큰이_저장소에_1회_저장된다() {
+            // given
+            Credential credential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
+            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+
+            given(credentialPort.findByLoginId("user12345")).willReturn(Optional.of(credential));
+            given(passwordEncoder.matches("Password1!", "$2a$10$encoded")).willReturn(true);
+            given(memberPort.loadById(1L)).willReturn(memberInfo);
+            given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("access.token");
+            given(tokenIssuer.issueRefreshToken(1L)).willReturn("refresh.token");
+
+            // when
+            authService.login(new LoginCommand("user12345", "Password1!"));
+
+            // then
+            then(refreshTokenPort).should(times(1)).save(1L, "refresh.token");
         }
 
         @Test

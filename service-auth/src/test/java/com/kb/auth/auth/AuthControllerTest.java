@@ -277,7 +277,7 @@ public class AuthControllerTest extends RestDocsSupport {
     }
 
     private static LoginResult loginResult() {
-        return new LoginResult(1L, "홍길동", Role.ROLE_HEADQUARTERS, "access.token");
+        return new LoginResult(1L, "홍길동", Role.ROLE_HEADQUARTERS, "access.token", "refresh.token");
     }
 
     // ── Field Descriptors ──
@@ -316,7 +316,8 @@ public class AuthControllerTest extends RestDocsSupport {
                 fieldWithPath("memberId").description("회원 ID"),
                 fieldWithPath("memberName").description("회원 이름"),
                 fieldWithPath("role").description("회원 역할"),
-                fieldWithPath("accessToken").description("JWT 액세스 토큰")
+                fieldWithPath("accessToken").description("JWT 액세스 토큰"),
+                fieldWithPath("refreshToken").description("JWT 리프레시 토큰")
         };
     }
 }
