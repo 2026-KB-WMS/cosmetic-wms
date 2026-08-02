@@ -21,6 +21,11 @@ public class MemberPersistenceAdapter implements MemberPort {
     }
 
     @Override
+    public boolean existsByPhoneNumber(String phoneNumber) {
+        return memberJpaRepository.existsByPhoneNumber(phoneNumber);
+    }
+
+    @Override
     public Optional<Member> findById(Long id) {
         return memberJpaRepository.findById(id)
                 .map(MemberEntity::toDomain);

@@ -44,7 +44,8 @@ class MemberEntity extends BaseEntity {
     @Column(name = "phone_number", nullable = false, length = 50)
     private String phoneNumber;
 
-    private MemberEntity(Role role, String memberName, String email, String phoneNumber) {
+    private MemberEntity(Long id, Role role, String memberName, String email, String phoneNumber) {
+        this.id = id;
         this.role = role;
         this.memberName = memberName;
         this.email = email;
@@ -53,6 +54,7 @@ class MemberEntity extends BaseEntity {
 
     static MemberEntity fromDomain(Member member) {
         return new MemberEntity(
+                member.getMemberId(),
                 member.getRole(),
                 member.getMemberName(),
                 member.getEmail().value(),

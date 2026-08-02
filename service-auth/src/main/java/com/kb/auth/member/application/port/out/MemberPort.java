@@ -10,6 +10,8 @@ public interface MemberPort {
 
     boolean existsByEmail(String email);
 
+    boolean existsByPhoneNumber(String phoneNumber);
+
     Optional<Member> findById(Long id);
 
     Page<Member> findAll(Pageable pageable);

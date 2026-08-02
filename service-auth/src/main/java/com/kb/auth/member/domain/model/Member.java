@@ -45,6 +45,10 @@ public class Member {
         );
     }
 
+    public Member changeRole(Role newRole) {
+        return new Member(memberId, newRole, memberName, email, phoneNumber);
+    }
+
     private static void validateMemberName(String memberName) {
         if (memberName == null || memberName.isBlank()) {
             throw new MemberValidationException();
