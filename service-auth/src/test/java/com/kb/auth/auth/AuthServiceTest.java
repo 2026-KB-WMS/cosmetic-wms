@@ -8,18 +8,19 @@ import com.kb.auth.auth.application.port.in.dto.ReissueResult;
 import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
-import com.kb.auth.auth.application.port.out.MemberPort;
 import com.kb.auth.auth.application.port.out.RefreshTokenPort;
 import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.TokenParser;
-import com.kb.auth.auth.application.port.out.dto.MemberInfo;
-import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.application.service.AuthService;
 import com.kb.auth.auth.domain.exception.DuplicateLoginIdException;
 import com.kb.auth.auth.domain.exception.HeadquartersRoleNotAllowedException;
 import com.kb.auth.auth.domain.exception.InvalidRefreshTokenException;
 import com.kb.auth.auth.domain.exception.LoginFailedException;
 import com.kb.auth.auth.domain.model.Credential;
+import com.kb.auth.member.application.port.in.FindMemberUseCase;
+import com.kb.auth.member.application.port.in.RegisterMemberUseCase;
+import com.kb.auth.member.application.port.in.dto.MemberResult;
+import com.kb.auth.member.application.port.in.dto.RegisterMemberCommand;
 import com.kb.auth.member.domain.model.Role;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,10 @@ public class AuthServiceTest {
     private CredentialPort credentialPort;
 
     @Mock
-    private MemberPort memberPort;
+    private FindMemberUseCase findMemberUseCase;
+
+    @Mock
+    private RegisterMemberUseCase registerMemberUseCase;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -70,11 +74,11 @@ public class AuthServiceTest {
         void 올바른_아이디와_비밀번호로_로그인하면_액세스_토큰과_리프레시_토큰을_포함한_LoginResult를_반환한다() {
             // given
             Credential credential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+            MemberResult memberResult = new MemberResult(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
 
             given(credentialPort.findByLoginId("user12345")).willReturn(Optional.of(credential));
             given(passwordEncoder.matches("Password1!", "$2a$10$encoded")).willReturn(true);
-            given(memberPort.loadById(1L)).willReturn(memberInfo);
+            given(findMemberUseCase.findById(1L)).willReturn(memberResult);
             given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("access.token");
             given(tokenIssuer.issueRefreshToken(1L)).willReturn("refresh.token");
 
@@ -93,11 +97,11 @@ public class AuthServiceTest {
         void 로그인_성공_시_리프레시_토큰이_저장소에_1회_저장된다() {
             // given
             Credential credential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+            MemberResult memberResult = new MemberResult(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
 
             given(credentialPort.findByLoginId("user12345")).willReturn(Optional.of(credential));
             given(passwordEncoder.matches("Password1!", "$2a$10$encoded")).willReturn(true);
-            given(memberPort.loadById(1L)).willReturn(memberInfo);
+            given(findMemberUseCase.findById(1L)).willReturn(memberResult);
             given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("access.token");
             given(tokenIssuer.issueRefreshToken(1L)).willReturn("refresh.token");
 
@@ -138,6 +142,7 @@ public class AuthServiceTest {
         void 유효한_리프레시_토큰으로_로그아웃하면_Redis에서_토큰이_삭제된다() {
             // given
             given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
+            given(refreshTokenPort.find(1L)).willReturn(Optional.of("valid.refresh.token"));
 
             // when
             authService.logout(new LogoutCommand("valid.refresh.token"));
@@ -157,7 +162,7 @@ public class AuthServiceTest {
         }
 
         @Test
-        void 토큰_파싱_실패_시_Redis_삭제가_호출되지_않는다() {
+        void 토큰_파싱_실패_시_Redis와_상호작용하지_않는다() {
             // given
             given(tokenParser.extractMemberId("malformed.token")).willReturn(Optional.empty());
 
@@ -170,6 +175,28 @@ public class AuthServiceTest {
             // then
             then(refreshTokenPort).shouldHaveNoInteractions();
         }
+
+        @Test
+        void Redis에_저장된_토큰이_없으면_InvalidRefreshTokenException을_던진다() {
+            // given
+            given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
+            given(refreshTokenPort.find(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> authService.logout(new LogoutCommand("valid.refresh.token")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
+        }
+
+        @Test
+        void 저장된_토큰과_입력_토큰이_다르면_InvalidRefreshTokenException을_던진다() {
+            // given
+            given(tokenParser.extractMemberId("stale.refresh.token")).willReturn(Optional.of(1L));
+            given(refreshTokenPort.find(1L)).willReturn(Optional.of("current.refresh.token"));
+
+            // when & then
+            assertThatThrownBy(() -> authService.logout(new LogoutCommand("stale.refresh.token")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
+        }
     }
 
     @Nested
@@ -178,11 +205,11 @@ public class AuthServiceTest {
         @Test
         void 유효한_리프레시_토큰으로_재발급하면_새_액세스_토큰과_새_리프레시_토큰을_반환한다() {
             // given
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+            MemberResult memberResult = new MemberResult(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
 
             given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
             given(refreshTokenPort.find(1L)).willReturn(Optional.of("valid.refresh.token"));
-            given(memberPort.loadById(1L)).willReturn(memberInfo);
+            given(findMemberUseCase.findById(1L)).willReturn(memberResult);
             given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("new.access.token");
             given(tokenIssuer.issueRefreshToken(1L)).willReturn("new.refresh.token");
 
@@ -198,11 +225,11 @@ public class AuthServiceTest {
         @Test
         void 재발급_성공_시_기존_토큰을_덮어쓰는_방식으로_새_토큰을_저장하고_delete는_호출되지_않는다() {
             // given
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+            MemberResult memberResult = new MemberResult(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
 
             given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
             given(refreshTokenPort.find(1L)).willReturn(Optional.of("valid.refresh.token"));
-            given(memberPort.loadById(1L)).willReturn(memberInfo);
+            given(findMemberUseCase.findById(1L)).willReturn(memberResult);
             given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("new.access.token");
             given(tokenIssuer.issueRefreshToken(1L)).willReturn("new.refresh.token");
 
@@ -253,11 +280,11 @@ public class AuthServiceTest {
         @Test
         void 올바른_정보로_회원가입하면_memberId와_loginId를_포함한_SignUpResult를_반환한다() {
             // given
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_WAREHOUSE_MANAGER);
+            MemberResult memberResult = new MemberResult(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_WAREHOUSE_MANAGER);
             Credential savedCredential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
 
             given(credentialPort.existsByLoginId("user12345")).willReturn(false);
-            given(memberPort.register(any(MemberRegistration.class))).willReturn(memberInfo);
+            given(registerMemberUseCase.register(any(RegisterMemberCommand.class))).willReturn(memberResult);
             given(passwordEncoder.encode("Password1!")).willReturn("$2a$10$encoded");
             given(credentialPort.save(any(Credential.class))).willReturn(savedCredential);
 
@@ -308,11 +335,11 @@ public class AuthServiceTest {
         @Test
         void 회원가입_성공_시_Credential이_정확히_1회_저장된다() {
             // given
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_WAREHOUSE_MANAGER);
+            MemberResult memberResult = new MemberResult(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_WAREHOUSE_MANAGER);
             Credential savedCredential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
 
             given(credentialPort.existsByLoginId("user12345")).willReturn(false);
-            given(memberPort.register(any(MemberRegistration.class))).willReturn(memberInfo);
+            given(registerMemberUseCase.register(any(RegisterMemberCommand.class))).willReturn(memberResult);
             given(passwordEncoder.encode(anyString())).willReturn("$2a$10$encoded");
             given(credentialPort.save(any(Credential.class))).willReturn(savedCredential);
 

@@ -20,4 +20,8 @@ public record ErrorResponseDto(
     public static ErrorResponseDto ofValidation(String message) {
         return new ErrorResponseDto("INVALID_INPUT", message, LocalDateTime.now());
     }
+
+    public static ErrorResponseDto ofConflict(String message) {
+        return new ErrorResponseDto("DUPLICATE_RESOURCE", message, LocalDateTime.now());
+    }
 }

@@ -3,7 +3,7 @@ package com.kb.auth.member;
 import com.kb.auth.member.application.port.in.dto.ChangeRoleCommand;
 import com.kb.auth.member.application.port.in.dto.MemberResult;
 import com.kb.auth.member.application.port.in.dto.RegisterMemberCommand;
-import com.kb.auth.member.application.port.out.MemberPort;
+import com.kb.auth.member.application.port.out.MemberRepositoryPort;
 import com.kb.auth.member.application.service.MemberService;
 import com.kb.auth.member.domain.exception.DuplicateMemberException;
 import com.kb.auth.member.domain.exception.DuplicatePhoneNumberException;
@@ -36,7 +36,7 @@ public class MemberServiceTest {
     private MemberService memberService;
 
     @Mock
-    private MemberPort memberPort;
+    private MemberRepositoryPort memberPort;
 
     @Nested
     class 회원_조회 {

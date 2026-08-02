@@ -1,6 +1,6 @@
 package com.kb.auth.member.adapter.out.persistence;
 
-import com.kb.auth.member.application.port.out.MemberPort;
+import com.kb.auth.member.application.port.out.MemberRepositoryPort;
 import com.kb.auth.member.domain.model.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class MemberPersistenceAdapter implements MemberPort {
+public class MemberPersistenceAdapter implements MemberRepositoryPort {
 
     private final MemberJpaRepository memberJpaRepository;
 

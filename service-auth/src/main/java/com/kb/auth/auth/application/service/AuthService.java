@@ -12,17 +12,18 @@ import com.kb.auth.auth.application.port.in.dto.ReissueResult;
 import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
-import com.kb.auth.auth.application.port.out.MemberPort;
 import com.kb.auth.auth.application.port.out.RefreshTokenPort;
 import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.TokenParser;
-import com.kb.auth.auth.application.port.out.dto.MemberInfo;
-import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.domain.exception.DuplicateLoginIdException;
 import com.kb.auth.auth.domain.exception.HeadquartersRoleNotAllowedException;
 import com.kb.auth.auth.domain.exception.InvalidRefreshTokenException;
 import com.kb.auth.auth.domain.exception.LoginFailedException;
 import com.kb.auth.auth.domain.model.Credential;
+import com.kb.auth.member.application.port.in.FindMemberUseCase;
+import com.kb.auth.member.application.port.in.RegisterMemberUseCase;
+import com.kb.auth.member.application.port.in.dto.MemberResult;
+import com.kb.auth.member.application.port.in.dto.RegisterMemberCommand;
 import com.kb.auth.member.domain.model.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,7 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUseCase, LogoutUseCase {
 
     private final CredentialPort credentialPort;
-    private final MemberPort memberPort;
+    private final FindMemberUseCase findMemberUseCase;
+    private final RegisterMemberUseCase registerMemberUseCase;
     private final PasswordEncoder passwordEncoder;
     private final TokenIssuer tokenIssuer;
     private final TokenParser tokenParser;
@@ -51,7 +53,7 @@ public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUse
             throw new LoginFailedException();
         }
 
-        MemberInfo member = memberPort.loadById(credential.getMemberId());
+        MemberResult member = findMemberUseCase.findById(credential.getMemberId());
         String accessToken = tokenIssuer.issueAccessToken(member.memberId(), member.role());
         String refreshToken = tokenIssuer.issueRefreshToken(member.memberId());
         refreshTokenPort.save(member.memberId(), refreshToken);
@@ -64,6 +66,13 @@ public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUse
     public void logout(LogoutCommand command) {
         Long memberId = tokenParser.extractMemberId(command.refreshToken())
                 .orElseThrow(InvalidRefreshTokenException::new);
+
+        String storedToken = refreshTokenPort.find(memberId)
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        if (!storedToken.equals(command.refreshToken())) {
+            throw new InvalidRefreshTokenException();
+        }
 
         refreshTokenPort.delete(memberId);
     }
@@ -81,7 +90,7 @@ public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUse
             throw new InvalidRefreshTokenException();
         }
 
-        MemberInfo member = memberPort.loadById(memberId);
+        MemberResult member = findMemberUseCase.findById(memberId);
         String newAccessToken = tokenIssuer.issueAccessToken(member.memberId(), member.role());
         String newRefreshToken = tokenIssuer.issueRefreshToken(member.memberId());
         refreshTokenPort.save(memberId, newRefreshToken);
@@ -100,7 +109,7 @@ public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUse
             throw new DuplicateLoginIdException();
         }
 
-        MemberInfo member = memberPort.register(new MemberRegistration(
+        MemberResult member = registerMemberUseCase.register(new RegisterMemberCommand(
                 command.role(),
                 command.memberName(),
                 command.email(),

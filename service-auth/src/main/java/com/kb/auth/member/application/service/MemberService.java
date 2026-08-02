@@ -6,7 +6,7 @@ import com.kb.auth.member.application.port.in.RegisterMemberUseCase;
 import com.kb.auth.member.application.port.in.dto.ChangeRoleCommand;
 import com.kb.auth.member.application.port.in.dto.MemberResult;
 import com.kb.auth.member.application.port.in.dto.RegisterMemberCommand;
-import com.kb.auth.member.application.port.out.MemberPort;
+import com.kb.auth.member.application.port.out.MemberRepositoryPort;
 import com.kb.auth.member.domain.exception.DuplicateMemberException;
 import com.kb.auth.member.domain.exception.DuplicatePhoneNumberException;
 import com.kb.auth.member.domain.exception.MemberNotFoundException;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberService implements RegisterMemberUseCase, FindMemberUseCase, ChangeRoleUseCase {
 
-    private final MemberPort memberPort;
+    private final MemberRepositoryPort memberPort;
 
     @Override
     public MemberResult findById(Long id) {

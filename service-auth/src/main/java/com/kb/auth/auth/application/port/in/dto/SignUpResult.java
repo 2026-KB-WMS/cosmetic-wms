@@ -1,6 +1,6 @@
 package com.kb.auth.auth.application.port.in.dto;
 
-import com.kb.auth.auth.application.port.out.dto.MemberInfo;
+import com.kb.auth.member.application.port.in.dto.MemberResult;
 import com.kb.auth.member.domain.model.Role;
 
 public record SignUpResult(
@@ -11,7 +11,7 @@ public record SignUpResult(
         String email,
         String phoneNumber
 ) {
-    public static SignUpResult of(MemberInfo member, String loginId) {
+    public static SignUpResult of(MemberResult member, String loginId) {
         return new SignUpResult(
                 member.memberId(),
                 loginId,
