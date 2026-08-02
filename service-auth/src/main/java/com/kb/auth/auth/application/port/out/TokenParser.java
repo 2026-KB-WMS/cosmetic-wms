@@ -1,6 +1,8 @@
 package com.kb.auth.auth.application.port.out;
 
+import java.util.Optional;
+
 public interface TokenParser {
 
-    Long extractMemberId(String token);
+    Optional<Long> extractMemberId(String token);
 }

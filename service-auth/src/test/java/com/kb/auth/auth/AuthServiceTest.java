@@ -2,19 +2,25 @@ package com.kb.auth.auth;
 
 import com.kb.auth.auth.application.port.in.dto.LoginCommand;
 import com.kb.auth.auth.application.port.in.dto.LoginResult;
+import com.kb.auth.auth.application.port.in.dto.LogoutCommand;
+import com.kb.auth.auth.application.port.in.dto.ReissueCommand;
+import com.kb.auth.auth.application.port.in.dto.ReissueResult;
 import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
 import com.kb.auth.auth.application.port.out.MemberPort;
 import com.kb.auth.auth.application.port.out.RefreshTokenPort;
 import com.kb.auth.auth.application.port.out.TokenIssuer;
+import com.kb.auth.auth.application.port.out.TokenParser;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.application.service.AuthService;
 import com.kb.auth.auth.domain.exception.DuplicateLoginIdException;
+import com.kb.auth.auth.domain.exception.InvalidRefreshTokenException;
 import com.kb.auth.auth.domain.exception.LoginFailedException;
 import com.kb.auth.auth.domain.model.Credential;
 import com.kb.auth.member.domain.model.Role;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +56,9 @@ public class AuthServiceTest {
 
     @Mock
     private TokenIssuer tokenIssuer;
+
+    @Mock
+    private TokenParser tokenParser;
 
     @Mock
     private RefreshTokenPort refreshTokenPort;
@@ -119,6 +128,122 @@ public class AuthServiceTest {
             // when & then
             assertThatThrownBy(() -> authService.login(new LoginCommand("user12345", "wrongPassword")))
                     .isInstanceOf(LoginFailedException.class);
+        }
+    }
+
+    @Nested
+    class 로그아웃 {
+
+        @Test
+        void 유효한_리프레시_토큰으로_로그아웃하면_Redis에서_토큰이_삭제된다() {
+            // given
+            given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
+
+            // when
+            authService.logout(new LogoutCommand("valid.refresh.token"));
+
+            // then
+            then(refreshTokenPort).should(times(1)).delete(1L);
+        }
+
+        @Test
+        void 토큰_파싱_실패_시_InvalidRefreshTokenException을_던진다() {
+            // given
+            given(tokenParser.extractMemberId("malformed.token")).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> authService.logout(new LogoutCommand("malformed.token")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
+        }
+
+        @Test
+        void 토큰_파싱_실패_시_Redis_삭제가_호출되지_않는다() {
+            // given
+            given(tokenParser.extractMemberId("malformed.token")).willReturn(Optional.empty());
+
+            // when
+            try {
+                authService.logout(new LogoutCommand("malformed.token"));
+            } catch (InvalidRefreshTokenException ignored) {
+            }
+
+            // then
+            then(refreshTokenPort).shouldHaveNoInteractions();
+        }
+    }
+
+    @Nested
+    class 토큰_재발급 {
+
+        @Test
+        void 유효한_리프레시_토큰으로_재발급하면_새_액세스_토큰과_새_리프레시_토큰을_반환한다() {
+            // given
+            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+
+            given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
+            given(refreshTokenPort.find(1L)).willReturn(Optional.of("valid.refresh.token"));
+            given(memberPort.loadById(1L)).willReturn(memberInfo);
+            given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("new.access.token");
+            given(tokenIssuer.issueRefreshToken(1L)).willReturn("new.refresh.token");
+
+            // when
+            ReissueResult result = authService.reissue(new ReissueCommand("valid.refresh.token"));
+
+            // then
+            assertThat(result.memberId()).isEqualTo(1L);
+            assertThat(result.accessToken()).isEqualTo("new.access.token");
+            assertThat(result.refreshToken()).isEqualTo("new.refresh.token");
+        }
+
+        @Test
+        void 재발급_성공_시_기존_토큰을_삭제하고_새_토큰을_저장한다() {
+            // given
+            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+
+            given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
+            given(refreshTokenPort.find(1L)).willReturn(Optional.of("valid.refresh.token"));
+            given(memberPort.loadById(1L)).willReturn(memberInfo);
+            given(tokenIssuer.issueAccessToken(1L, Role.ROLE_HEADQUARTERS)).willReturn("new.access.token");
+            given(tokenIssuer.issueRefreshToken(1L)).willReturn("new.refresh.token");
+
+            // when
+            authService.reissue(new ReissueCommand("valid.refresh.token"));
+
+            // then
+            then(refreshTokenPort).should(times(1)).delete(1L);
+            then(refreshTokenPort).should(times(1)).save(1L, "new.refresh.token");
+        }
+
+        @Test
+        void 토큰_파싱_실패_시_InvalidRefreshTokenException을_던진다() {
+            // given
+            given(tokenParser.extractMemberId("malformed.token")).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> authService.reissue(new ReissueCommand("malformed.token")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
+        }
+
+        @Test
+        void Redis에_저장된_토큰이_없으면_InvalidRefreshTokenException을_던진다() {
+            // given
+            given(tokenParser.extractMemberId("valid.refresh.token")).willReturn(Optional.of(1L));
+            given(refreshTokenPort.find(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> authService.reissue(new ReissueCommand("valid.refresh.token")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
+        }
+
+        @Test
+        void 저장된_토큰과_입력_토큰이_다르면_InvalidRefreshTokenException을_던진다() {
+            // given
+            given(tokenParser.extractMemberId("stolen.token")).willReturn(Optional.of(1L));
+            given(refreshTokenPort.find(1L)).willReturn(Optional.of("original.token"));
+
+            // when & then
+            assertThatThrownBy(() -> authService.reissue(new ReissueCommand("stolen.token")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
         }
     }
 

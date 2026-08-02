@@ -4,6 +4,7 @@ import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.TokenParser;
 import com.kb.auth.global.config.JwtProperties;
 import com.kb.auth.member.domain.model.Role;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ public class JwtTokenProvider implements TokenIssuer, TokenParser {
         Date now = new Date();
 
         return Jwts.builder()
+                .header().keyId(jwtProperties.kid()).and()
                 .issuer(jwtProperties.issuer())
                 .subject(String.valueOf(memberId))
                 .claim("role", role.name())
@@ -40,6 +43,7 @@ public class JwtTokenProvider implements TokenIssuer, TokenParser {
         Date now = new Date();
 
         return Jwts.builder()
+                .header().keyId(jwtProperties.kid()).and()
                 .issuer(jwtProperties.issuer())
                 .subject(String.valueOf(memberId))
                 .claim("type", "REFRESH")
@@ -50,14 +54,17 @@ public class JwtTokenProvider implements TokenIssuer, TokenParser {
     }
 
     @Override
-    public Long extractMemberId(String token) {
-        String subject = Jwts.parser()
-                .verifyWith(jwtPublicKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
-
-        return Long.parseLong(subject);
+    public Optional<Long> extractMemberId(String token) {
+        try {
+            String subject = Jwts.parser()
+                    .verifyWith(jwtPublicKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+            return Optional.of(Long.parseLong(subject));
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 }

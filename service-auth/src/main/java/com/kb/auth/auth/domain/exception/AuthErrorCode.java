@@ -25,6 +25,12 @@ public enum AuthErrorCode implements ErrorCode {
             ErrorType.INVALID_REQUEST,
             "INVALID_CREDENTIAL",
             "자격증명 유효성 검증에 실패했습니다."
+    ),
+
+    INVALID_REFRESH_TOKEN(
+            ErrorType.UNAUTHORIZED,
+            "INVALID_REFRESH_TOKEN",
+            "유효하지 않거나 만료된 리프레시 토큰입니다."
     );
 
     private final ErrorType type;

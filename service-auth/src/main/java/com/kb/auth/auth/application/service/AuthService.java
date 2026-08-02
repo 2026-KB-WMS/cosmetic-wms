@@ -1,18 +1,25 @@
 package com.kb.auth.auth.application.service;
 
 import com.kb.auth.auth.application.port.in.LoginUseCase;
+import com.kb.auth.auth.application.port.in.LogoutUseCase;
+import com.kb.auth.auth.application.port.in.ReissueTokenUseCase;
 import com.kb.auth.auth.application.port.in.SignUpUseCase;
 import com.kb.auth.auth.application.port.in.dto.LoginCommand;
 import com.kb.auth.auth.application.port.in.dto.LoginResult;
+import com.kb.auth.auth.application.port.in.dto.LogoutCommand;
+import com.kb.auth.auth.application.port.in.dto.ReissueCommand;
+import com.kb.auth.auth.application.port.in.dto.ReissueResult;
 import com.kb.auth.auth.application.port.in.dto.SignUpCommand;
 import com.kb.auth.auth.application.port.in.dto.SignUpResult;
 import com.kb.auth.auth.application.port.out.CredentialPort;
 import com.kb.auth.auth.application.port.out.MemberPort;
 import com.kb.auth.auth.application.port.out.RefreshTokenPort;
 import com.kb.auth.auth.application.port.out.TokenIssuer;
+import com.kb.auth.auth.application.port.out.TokenParser;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.domain.exception.DuplicateLoginIdException;
+import com.kb.auth.auth.domain.exception.InvalidRefreshTokenException;
 import com.kb.auth.auth.domain.exception.LoginFailedException;
 import com.kb.auth.auth.domain.model.Credential;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AuthService implements LoginUseCase, SignUpUseCase {
+public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUseCase, LogoutUseCase {
 
     private final CredentialPort credentialPort;
     private final MemberPort memberPort;
     private final PasswordEncoder passwordEncoder;
     private final TokenIssuer tokenIssuer;
+    private final TokenParser tokenParser;
     private final RefreshTokenPort refreshTokenPort;
 
     @Override
@@ -46,6 +54,38 @@ public class AuthService implements LoginUseCase, SignUpUseCase {
         refreshTokenPort.save(member.memberId(), refreshToken);
 
         return new LoginResult(member.memberId(), member.memberName(), member.role(), accessToken, refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void logout(LogoutCommand command) {
+        Long memberId = tokenParser.extractMemberId(command.refreshToken())
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        refreshTokenPort.delete(memberId);
+    }
+
+    @Override
+    @Transactional
+    public ReissueResult reissue(ReissueCommand command) {
+        Long memberId = tokenParser.extractMemberId(command.refreshToken())
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        String storedToken = refreshTokenPort.find(memberId)
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        if (!storedToken.equals(command.refreshToken())) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        MemberInfo member = memberPort.loadById(memberId);
+        String newAccessToken = tokenIssuer.issueAccessToken(member.memberId(), member.role());
+        String newRefreshToken = tokenIssuer.issueRefreshToken(member.memberId());
+
+        refreshTokenPort.delete(memberId);
+        refreshTokenPort.save(memberId, newRefreshToken);
+
+        return new ReissueResult(memberId, newAccessToken, newRefreshToken);
     }
 
     @Override

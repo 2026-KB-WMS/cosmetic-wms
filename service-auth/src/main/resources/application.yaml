@@ -35,6 +35,7 @@ jwt:
   access-token-expiration-ms: 3600000
   refresh-token-expiration-ms: 1209600000
   issuer: cosmetic_wms
+  kid: cosmetic_wms_rsa_v1
 
 springdoc:
   api-docs:
