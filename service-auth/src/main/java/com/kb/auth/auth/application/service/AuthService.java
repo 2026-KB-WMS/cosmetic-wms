@@ -19,9 +19,11 @@ import com.kb.auth.auth.application.port.out.TokenParser;
 import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.domain.exception.DuplicateLoginIdException;
+import com.kb.auth.auth.domain.exception.HeadquartersRoleNotAllowedException;
 import com.kb.auth.auth.domain.exception.InvalidRefreshTokenException;
 import com.kb.auth.auth.domain.exception.LoginFailedException;
 import com.kb.auth.auth.domain.model.Credential;
+import com.kb.auth.member.domain.model.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUse
     private final RefreshTokenPort refreshTokenPort;
 
     @Override
+    @Transactional
     public LoginResult login(LoginCommand command) {
         Credential credential = credentialPort.findByLoginId(command.loginId())
                 .orElseThrow(LoginFailedException::new);
@@ -81,8 +84,6 @@ public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUse
         MemberInfo member = memberPort.loadById(memberId);
         String newAccessToken = tokenIssuer.issueAccessToken(member.memberId(), member.role());
         String newRefreshToken = tokenIssuer.issueRefreshToken(member.memberId());
-
-        refreshTokenPort.delete(memberId);
         refreshTokenPort.save(memberId, newRefreshToken);
 
         return new ReissueResult(memberId, newAccessToken, newRefreshToken);
@@ -91,6 +92,10 @@ public class AuthService implements LoginUseCase, SignUpUseCase, ReissueTokenUse
     @Override
     @Transactional
     public SignUpResult signUp(SignUpCommand command) {
+        if (command.role() == Role.ROLE_HEADQUARTERS) {
+            throw new HeadquartersRoleNotAllowedException();
+        }
+
         if (credentialPort.existsByLoginId(command.loginId())) {
             throw new DuplicateLoginIdException();
         }

@@ -31,6 +31,12 @@ public enum AuthErrorCode implements ErrorCode {
             ErrorType.UNAUTHORIZED,
             "INVALID_REFRESH_TOKEN",
             "유효하지 않거나 만료된 리프레시 토큰입니다."
+    ),
+
+    HEADQUARTERS_ROLE_NOT_ALLOWED(
+            ErrorType.INVALID_REQUEST,
+            "HEADQUARTERS_ROLE_NOT_ALLOWED",
+            "본사 관리자 계정은 직접 생성할 수 없습니다."
     );
 
     private final ErrorType type;
