@@ -1,10 +1,12 @@
 package com.kb.auth.member;
 
+import com.kb.auth.member.application.port.in.dto.ChangeRoleCommand;
 import com.kb.auth.member.application.port.in.dto.MemberResult;
 import com.kb.auth.member.application.port.in.dto.RegisterMemberCommand;
 import com.kb.auth.member.application.port.out.MemberPort;
 import com.kb.auth.member.application.service.MemberService;
 import com.kb.auth.member.domain.exception.DuplicateMemberException;
+import com.kb.auth.member.domain.exception.DuplicatePhoneNumberException;
 import com.kb.auth.member.domain.exception.MemberNotFoundException;
 import com.kb.auth.member.domain.model.Member;
 import com.kb.auth.member.domain.model.Role;
@@ -74,9 +76,10 @@ public class MemberServiceTest {
         void 올바른_정보로_등록하면_저장된_MemberResult를_반환한다() {
             // given
             RegisterMemberCommand command = new RegisterMemberCommand(
-                    Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+                    Role.ROLE_WAREHOUSE_MANAGER, "홍길동", "test@example.com", "010-1234-5678"
             );
             given(memberPort.existsByEmail("test@example.com")).willReturn(false);
+            given(memberPort.existsByPhoneNumber("010-1234-5678")).willReturn(false);
             given(memberPort.save(any(Member.class))).willAnswer(inv -> {
                 Member m = inv.getArgument(0);
                 ReflectionTestUtils.setField(m, "memberId", 1L);
@@ -96,7 +99,7 @@ public class MemberServiceTest {
         void 이미_등록된_이메일로_등록하면_DuplicateMemberException을_던진다() {
             // given
             RegisterMemberCommand command = new RegisterMemberCommand(
-                    Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+                    Role.ROLE_WAREHOUSE_MANAGER, "홍길동", "test@example.com", "010-1234-5678"
             );
             given(memberPort.existsByEmail("test@example.com")).willReturn(true);
 
@@ -106,16 +109,75 @@ public class MemberServiceTest {
         }
 
         @Test
+        void 이미_등록된_전화번호로_등록하면_DuplicatePhoneNumberException을_던진다() {
+            // given
+            RegisterMemberCommand command = new RegisterMemberCommand(
+                    Role.ROLE_WAREHOUSE_MANAGER, "홍길동", "test@example.com", "010-1234-5678"
+            );
+            given(memberPort.existsByEmail("test@example.com")).willReturn(false);
+            given(memberPort.existsByPhoneNumber("010-1234-5678")).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> memberService.register(command))
+                    .isInstanceOf(DuplicatePhoneNumberException.class);
+        }
+
+        @Test
         void 회원_등록_성공_시_Member가_정확히_1회_저장된다() {
             // given
             RegisterMemberCommand command = new RegisterMemberCommand(
-                    Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+                    Role.ROLE_WAREHOUSE_MANAGER, "홍길동", "test@example.com", "010-1234-5678"
             );
             given(memberPort.existsByEmail(anyString())).willReturn(false);
+            given(memberPort.existsByPhoneNumber(anyString())).willReturn(false);
             given(memberPort.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
 
             // when
             memberService.register(command);
+
+            // then
+            then(memberPort).should(times(1)).save(any(Member.class));
+        }
+    }
+
+    @Nested
+    class 역할_변경 {
+
+        @Test
+        void 존재하는_회원의_역할을_변경하면_변경된_MemberResult를_반환한다() {
+            // given
+            Member member = new MemberTestBuilder().role(Role.ROLE_WAREHOUSE_MANAGER).build();
+            ReflectionTestUtils.setField(member, "memberId", 1L);
+            given(memberPort.findById(1L)).willReturn(Optional.of(member));
+            given(memberPort.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
+
+            // when
+            MemberResult result = memberService.changeRole(new ChangeRoleCommand(1L, Role.ROLE_HEADQUARTERS));
+
+            // then
+            assertThat(result.role()).isEqualTo(Role.ROLE_HEADQUARTERS);
+        }
+
+        @Test
+        void 존재하지_않는_회원의_역할을_변경하면_MemberNotFoundException을_던진다() {
+            // given
+            given(memberPort.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> memberService.changeRole(new ChangeRoleCommand(999L, Role.ROLE_HEADQUARTERS)))
+                    .isInstanceOf(MemberNotFoundException.class);
+        }
+
+        @Test
+        void 역할_변경_성공_시_변경된_Member가_정확히_1회_저장된다() {
+            // given
+            Member member = new MemberTestBuilder().role(Role.ROLE_WAREHOUSE_MANAGER).build();
+            ReflectionTestUtils.setField(member, "memberId", 1L);
+            given(memberPort.findById(1L)).willReturn(Optional.of(member));
+            given(memberPort.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
+
+            // when
+            memberService.changeRole(new ChangeRoleCommand(1L, Role.ROLE_HEADQUARTERS));
 
             // then
             then(memberPort).should(times(1)).save(any(Member.class));

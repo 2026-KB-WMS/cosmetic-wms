@@ -14,5 +14,9 @@ public final class ApiSchemas {
     public static final String LOGOUT_REQUEST = "LogoutRequest";
     public static final String JWKS_RESPONSE = "JwksResponse";
 
+    public static final String MEMBER_RESPONSE = "MemberResponse";
+    public static final String MEMBER_PAGE_RESPONSE = "MemberPageResponse";
+    public static final String CHANGE_ROLE_REQUEST = "ChangeRoleRequest";
+
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";
 }

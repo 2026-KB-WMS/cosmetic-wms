@@ -16,11 +16,11 @@ import com.kb.auth.auth.application.port.out.dto.MemberInfo;
 import com.kb.auth.auth.application.port.out.dto.MemberRegistration;
 import com.kb.auth.auth.application.service.AuthService;
 import com.kb.auth.auth.domain.exception.DuplicateLoginIdException;
+import com.kb.auth.auth.domain.exception.HeadquartersRoleNotAllowedException;
 import com.kb.auth.auth.domain.exception.InvalidRefreshTokenException;
 import com.kb.auth.auth.domain.exception.LoginFailedException;
 import com.kb.auth.auth.domain.model.Credential;
 import com.kb.auth.member.domain.model.Role;
-import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -196,7 +196,7 @@ public class AuthServiceTest {
         }
 
         @Test
-        void 재발급_성공_시_기존_토큰을_삭제하고_새_토큰을_저장한다() {
+        void 재발급_성공_시_기존_토큰을_덮어쓰는_방식으로_새_토큰을_저장하고_delete는_호출되지_않는다() {
             // given
             MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
 
@@ -210,7 +210,7 @@ public class AuthServiceTest {
             authService.reissue(new ReissueCommand("valid.refresh.token"));
 
             // then
-            then(refreshTokenPort).should(times(1)).delete(1L);
+            then(refreshTokenPort).should(times(0)).delete(1L);
             then(refreshTokenPort).should(times(1)).save(1L, "new.refresh.token");
         }
 
@@ -253,7 +253,7 @@ public class AuthServiceTest {
         @Test
         void 올바른_정보로_회원가입하면_memberId와_loginId를_포함한_SignUpResult를_반환한다() {
             // given
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_WAREHOUSE_MANAGER);
             Credential savedCredential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
 
             given(credentialPort.existsByLoginId("user12345")).willReturn(false);
@@ -263,13 +263,35 @@ public class AuthServiceTest {
 
             // when
             SignUpResult result = authService.signUp(new SignUpCommand(
-                    "user12345", "Password1!", Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+                    "user12345", "Password1!", Role.ROLE_WAREHOUSE_MANAGER, "홍길동", "test@example.com", "010-1234-5678"
             ));
 
             // then
             assertThat(result.memberId()).isEqualTo(1L);
             assertThat(result.loginId()).isEqualTo("user12345");
-            assertThat(result.role()).isEqualTo(Role.ROLE_HEADQUARTERS);
+            assertThat(result.role()).isEqualTo(Role.ROLE_WAREHOUSE_MANAGER);
+        }
+
+        @Test
+        void ROLE_HEADQUARTERS로_가입하면_HeadquartersRoleNotAllowedException을_던진다() {
+            // when & then
+            assertThatThrownBy(() -> authService.signUp(new SignUpCommand(
+                    "user12345", "Password1!", Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+            ))).isInstanceOf(HeadquartersRoleNotAllowedException.class);
+        }
+
+        @Test
+        void ROLE_HEADQUARTERS_차단_시_loginId_중복_검사가_호출되지_않는다() {
+            // when
+            try {
+                authService.signUp(new SignUpCommand(
+                        "user12345", "Password1!", Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+                ));
+            } catch (HeadquartersRoleNotAllowedException ignored) {
+            }
+
+            // then
+            then(credentialPort).shouldHaveNoInteractions();
         }
 
         @Test
@@ -279,14 +301,14 @@ public class AuthServiceTest {
 
             // when & then
             assertThatThrownBy(() -> authService.signUp(new SignUpCommand(
-                    "user12345", "Password1!", Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+                    "user12345", "Password1!", Role.ROLE_WAREHOUSE_MANAGER, "홍길동", "test@example.com", "010-1234-5678"
             ))).isInstanceOf(DuplicateLoginIdException.class);
         }
 
         @Test
         void 회원가입_성공_시_Credential이_정확히_1회_저장된다() {
             // given
-            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_HEADQUARTERS);
+            MemberInfo memberInfo = new MemberInfo(1L, "홍길동", "test@example.com", "010-1234-5678", Role.ROLE_WAREHOUSE_MANAGER);
             Credential savedCredential = Credential.reconstitute(1L, 1L, "user12345", "$2a$10$encoded");
 
             given(credentialPort.existsByLoginId("user12345")).willReturn(false);
@@ -296,7 +318,7 @@ public class AuthServiceTest {
 
             // when
             authService.signUp(new SignUpCommand(
-                    "user12345", "Password1!", Role.ROLE_HEADQUARTERS, "홍길동", "test@example.com", "010-1234-5678"
+                    "user12345", "Password1!", Role.ROLE_WAREHOUSE_MANAGER, "홍길동", "test@example.com", "010-1234-5678"
             ));
 
             // then
