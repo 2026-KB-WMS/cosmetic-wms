@@ -21,6 +21,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class JwtTokenProvider implements TokenIssuer, TokenParser, JwtClaimExtractor {
 
+    private static final String CLAIM_TYPE = "type";
+    private static final String TYPE_ACCESS = "ACCESS";
+    private static final String TYPE_REFRESH = "REFRESH";
+
     private final JwtProperties jwtProperties;
     private final RSAPrivateKey jwtPrivateKey;
     private final RSAPublicKey jwtPublicKey;
@@ -34,7 +38,7 @@ public class JwtTokenProvider implements TokenIssuer, TokenParser, JwtClaimExtra
                 .issuer(jwtProperties.issuer())
                 .subject(String.valueOf(memberId))
                 .claim("role", role.name())
-                .claim("type", "ACCESS")
+                .claim(CLAIM_TYPE, TYPE_ACCESS)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + jwtProperties.accessTokenExpirationMs()))
                 .signWith(jwtPrivateKey, Jwts.SIG.RS256)
@@ -49,7 +53,7 @@ public class JwtTokenProvider implements TokenIssuer, TokenParser, JwtClaimExtra
                 .header().keyId(jwtProperties.kid()).and()
                 .issuer(jwtProperties.issuer())
                 .subject(String.valueOf(memberId))
-                .claim("type", "REFRESH")
+                .claim(CLAIM_TYPE, TYPE_REFRESH)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + jwtProperties.refreshTokenExpirationMs()))
                 .signWith(jwtPrivateKey, Jwts.SIG.RS256)
@@ -58,18 +62,22 @@ public class JwtTokenProvider implements TokenIssuer, TokenParser, JwtClaimExtra
 
     @Override
     public Optional<Long> extractMemberId(String token) {
-        return parseClaims(token).map(claims -> Long.parseLong(claims.getSubject()));
+        return parseClaims(token)
+                .filter(claims -> TYPE_REFRESH.equals(claims.get(CLAIM_TYPE, String.class)))
+                .map(claims -> Long.parseLong(claims.getSubject()));
     }
 
     @Override
     public Optional<AuthenticatedMember> extract(String token) {
-        return parseClaims(token).flatMap(claims -> {
-            String role = claims.get("role", String.class);
-            if (role == null) {
-                return Optional.empty();
-            }
-            return Optional.of(new AuthenticatedMember(Long.parseLong(claims.getSubject()), role));
-        });
+        return parseClaims(token)
+                .filter(claims -> TYPE_ACCESS.equals(claims.get(CLAIM_TYPE, String.class)))
+                .flatMap(claims -> {
+                    String role = claims.get("role", String.class);
+                    if (role == null) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(new AuthenticatedMember(Long.parseLong(claims.getSubject()), role));
+                });
     }
 
     private Optional<Claims> parseClaims(String token) {

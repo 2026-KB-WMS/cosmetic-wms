@@ -59,10 +59,10 @@ public class JwtTokenProviderTest {
         }
 
         @Test
-        void accessToken에서_memberId를_추출할_수_있다() {
+        void accessToken은_REFRESH_타입이_아니므로_extractMemberId는_empty를_반환한다() {
             String token = provider.issueAccessToken(42L, Role.ROLE_HEADQUARTERS);
 
-            assertThat(provider.extractMemberId(token)).contains(42L);
+            assertThat(provider.extractMemberId(token)).isEmpty();
         }
 
         @Test
