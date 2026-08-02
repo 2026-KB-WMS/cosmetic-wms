@@ -18,6 +18,8 @@ dependencies {
     api 'org.springframework.data:spring-data-jpa'
     implementation 'org.springframework:spring-web'
     implementation 'org.slf4j:slf4j-api'
+    compileOnly 'org.springframework.security:spring-security-web'
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

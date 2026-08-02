@@ -9,6 +9,8 @@ import com.kb.auth.member.domain.exception.DuplicateMemberException;
 import com.kb.auth.member.domain.exception.MemberNotFoundException;
 import com.kb.auth.member.domain.model.Member;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,11 @@ public class MemberService implements RegisterMemberUseCase, FindMemberUseCase {
                 .orElseThrow(MemberNotFoundException::new);
 
         return MemberResult.from(member);
+    }
+
+    @Override
+    public Page<MemberResult> findAll(Pageable pageable) {
+        return memberPort.findAll(pageable).map(MemberResult::from);
     }
 
     @Override

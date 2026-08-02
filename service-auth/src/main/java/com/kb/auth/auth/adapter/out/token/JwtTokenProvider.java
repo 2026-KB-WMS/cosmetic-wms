@@ -4,6 +4,9 @@ import com.kb.auth.auth.application.port.out.TokenIssuer;
 import com.kb.auth.auth.application.port.out.TokenParser;
 import com.kb.auth.global.config.JwtProperties;
 import com.kb.auth.member.domain.model.Role;
+import com.kb.common.security.AuthenticatedMember;
+import com.kb.common.security.JwtClaimExtractor;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +19,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class JwtTokenProvider implements TokenIssuer, TokenParser {
+public class JwtTokenProvider implements TokenIssuer, TokenParser, JwtClaimExtractor {
 
     private final JwtProperties jwtProperties;
     private final RSAPrivateKey jwtPrivateKey;
@@ -55,14 +58,27 @@ public class JwtTokenProvider implements TokenIssuer, TokenParser {
 
     @Override
     public Optional<Long> extractMemberId(String token) {
+        return parseClaims(token).map(claims -> Long.parseLong(claims.getSubject()));
+    }
+
+    @Override
+    public Optional<AuthenticatedMember> extract(String token) {
+        return parseClaims(token).flatMap(claims -> {
+            String role = claims.get("role", String.class);
+            if (role == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new AuthenticatedMember(Long.parseLong(claims.getSubject()), role));
+        });
+    }
+
+    private Optional<Claims> parseClaims(String token) {
         try {
-            String subject = Jwts.parser()
+            return Optional.of(Jwts.parser()
                     .verifyWith(jwtPublicKey)
                     .build()
                     .parseSignedClaims(token)
-                    .getPayload()
-                    .getSubject();
-            return Optional.of(Long.parseLong(subject));
+                    .getPayload());
         } catch (JwtException | IllegalArgumentException e) {
             return Optional.empty();
         }
