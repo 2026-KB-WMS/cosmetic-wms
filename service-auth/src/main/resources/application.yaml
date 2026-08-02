@@ -36,8 +36,6 @@ jwt:
   refresh-token-expiration-ms: 1209600000
   issuer: cosmetic_wms
   kid: cosmetic_wms_rsa_v1
-  filter:
-    enabled: false
 
 springdoc:
   api-docs:
