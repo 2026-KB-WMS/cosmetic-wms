@@ -135,6 +135,24 @@ DB_PASSWORD=<password> ./gradlew bootRun
 
 테스트(`./gradlew test`, `scripts/verify.sh`)는 Testcontainers로 MySQL 컨테이너를 띄우므로 **Docker가 실행 중이어야 한다.**
 
+### 인증 설정과 Redis
+
+로그인은 JWT를 발급하고 리프레시 토큰은 Redis에 저장하므로 **Redis가 필요하다.** 아래 환경변수를 지정한다. `JWT_SECRET`은 기본값이 없으며 32바이트 이상이어야 한다.
+
+| 환경변수 | 필수 | 기본값 |
+|:--|:-:|:--|
+| `JWT_SECRET` | O | - |
+| `JWT_ACCESS_TOKEN_TTL` | X | `30m` |
+| `JWT_REFRESH_TOKEN_TTL` | X | `14d` |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | X | `localhost` / `6379` / 없음 |
+
+```bash
+docker run -d --name wms-redis -p 6379:6379 redis:7.4
+DB_PASSWORD=<password> JWT_SECRET=<32바이트 이상의 비밀 문자열> ./gradlew bootRun
+```
+
+API는 `POST /api/v1/auth/login`으로 받은 액세스 토큰을 `Authorization: Bearer <토큰>` 헤더에 담아 호출한다. 역할별 접근 규칙은 [docs/agents/security.md](docs/agents/security.md)를 참고한다.
+
 ### 최초 본사 관리자 계정
 
 `ROLE_HEADQUARTERS`는 회원 가입 API로 만들 수 없다. 아래 환경변수를 **모두** 지정하고 기동하면, 본사 관리자 계정이 아직 없을 때 한 번 생성한다. 이미 있으면 건너뛴다.

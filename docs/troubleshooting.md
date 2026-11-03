@@ -6,6 +6,7 @@
 
 | 날짜 | 항목 |
 |---|---|
+| 2026-11-03 | [로그인 도입 후 비동기 배정과 재고 이력이 FK 위반으로 실패](#로그인-도입-후-비동기-배정과-재고-이력이-fk-위반으로-실패) |
 | 2026-11-03 | [CI에서 의존성 다운로드가 403 Forbidden으로 실패](#ci에서-의존성-다운로드가-403-forbidden으로-실패) |
 | 2026-11-03 | [동시 입고 시 DOCKING 용량 갱신 유실 (MySQL REPEATABLE READ)](#동시-입고-시-docking-용량-갱신-유실-mysql-repeatable-read) |
 | 2026-11-03 | [Testcontainers가 Docker에 접속하지 못함 (client version 1.32 is too old)](#testcontainers가-docker에-접속하지-못함-client-version-132-is-too-old) |
@@ -13,6 +14,32 @@
 | 2026-11-03 | [import 검색으로 찾지 못한 도메인 간 의존 위반](#import-검색으로-찾지-못한-도메인-간-의존-위반) |
 | 2026-07-04 | [BEFORE_COMMIT 리스너 안에서 발행한 이벤트의 리스너가 실행되지 않음](#before_commit-리스너-안에서-발행한-이벤트의-리스너가-실행되지-않음) |
 | 2026-07-04 | [도메인 객체를 수정했는데 DB에 반영되지 않음](#도메인-객체를-수정했는데-db에-반영되지-않음) |
+
+---
+
+## 로그인 도입 후 비동기 배정과 재고 이력이 FK 위반으로 실패
+
+이슈 #142
+
+**증상**
+- 인증 도입 후 `InboundToInventoryIntegrationTest`의 검사 완료 플로우 4건이 실패했다.
+- 로그: `Cannot add or update a child row: a foreign key constraint fails (inventory_transaction, CONSTRAINT fk_inv_tx_member FOREIGN KEY (member_id) REFERENCES member (member_id))`
+
+**원인**
+- 재고 이력의 행위자(`inventory_transaction.member_id`, `member` FK)를 `AuditorAware.getCurrentAuditor()`에서 얻고 있었다. 이전 구현이 항상 `1L`을 반환해서 문제가 드러나지 않았다.
+- 인증 정보가 없을 때의 감사자를 시스템 값 `0`으로 바꾸자 `member`에 없는 `0`이 들어가 FK가 깨졌다.
+- 운영에서도 같은 경로가 있었다. 발주 확정 후 창고 배정은 `@Async` 스레드에서 실행되는데, 이 스레드에는 보안 컨텍스트가 전달되지 않아 행위자가 `0`이 된다. 테스트 한 건만 실패한 게 아니라 운영 흐름이 깨질 뻔했다.
+
+**해결**
+- `@Async` 실행기(`eventTaskExecutor`)에 `TaskDecorator`로 `DelegatingSecurityContextRunnable`을 적용해 호출한 스레드의 보안 컨텍스트를 전달했다. 이제 비동기 배정·출고 생성의 행위자도 발주를 확정한 로그인 사용자다.
+- 서비스를 직접 호출하는 통합 테스트는 `TestAuthentication.authenticateAs(회원ID)`로 실제 회원이 로그인한 상태에서 실행한다.
+
+**확인 방법**
+- `OrderToWarehouseAssignmentIntegrationTest`가 비동기 체인이 만든 모든 재고 이력의 `member_id`가 확정한 사용자 ID인지 검사한다. 컨텍스트 전달 코드를 빼면 이 테스트와 `AsyncConfigSecurityContextTest`가 실패한다.
+
+**재발 방지**
+- 새 `@Async` 실행기나 스레드 풀을 만들면 보안 컨텍스트 전달을 함께 설정한다.
+- `member`를 FK로 참조하는 컬럼에 행위자를 쓰는 작업은 인증된 사용자가 필요하다. 사용자가 없는 시스템 작업은 시스템 회원을 정해야 한다 ([security.md](agents/security.md#사용자-정보-읽기와-감사-필드)).
 
 ---
 

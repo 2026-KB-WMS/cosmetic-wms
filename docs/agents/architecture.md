@@ -36,7 +36,7 @@ global/                       # 전역 설정과 공통 모듈
     └── service/              # 도메인 서비스
 ```
 
-도메인: `member`, `partner`, `store`, `storage`(Warehouse·Section), `product`(category·product·producttype 하위 구성), `lot`, `inventory`, `inbound`, `inspection`, `outbound`, `order`, `oms`.
+도메인: `auth`, `member`, `partner`, `store`, `storage`(Warehouse·Section), `product`(category·product·producttype 하위 구성), `lot`, `inventory`, `inbound`, `inspection`, `outbound`, `order`, `oms`.
 
 도메인에 따라 일부 하위 패키지가 없을 수 있다. 필요할 때만 만든다.
 
@@ -89,4 +89,6 @@ global/                       # 전역 설정과 공통 모듈
 
 ## 보안
 
-`SecurityConfig`는 `/api/v1/**`, Swagger, `/docs/**`를 `permitAll`로 두고 `httpBasic`·`formLogin`·CSRF를 끈 상태다. 인증/인가 체계는 아직 없다. 인증을 전제로 한 코드를 가정하지 않는다 (이슈 #126 참고).
+JWT 인증과 역할별 접근 제어가 적용되어 있다. `SecurityConfig`가 URL·메서드별 역할을 정하고 규칙에 없는 경로는 거부한다. 상세는 [security.md](security.md)와 [ADR-0006](../adr/0006-jwt-authentication-and-rbac.md)을 참고한다.
+
+`auth` 도메인은 로그인·재발급·로그아웃을 맡고, 회원 정보는 `member`의 `MemberIdentityUseCase`를 통해서만 얻는다 (도메인 타입 대신 회원 ID와 권한 문자열을 주고받는다).

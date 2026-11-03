@@ -2,7 +2,7 @@ package com.kb.cosmetic_wms.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.storage.adapter.in.web.SectionCreateRequest;
@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = StorageController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 public class StorageControllerTest extends RestDocsSupport {
 
     private static final BigDecimal LAT = new BigDecimal("37.2410000");

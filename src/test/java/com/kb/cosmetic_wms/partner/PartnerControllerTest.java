@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.partner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.partner.adapter.in.web.PartnerController;
@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = PartnerController.class)
 @Import({
-        SecurityConfig.class,
+        TestSecurityConfig.class,
         GlobalExceptionHandler.class
 })
 class PartnerControllerTest extends RestDocsSupport {

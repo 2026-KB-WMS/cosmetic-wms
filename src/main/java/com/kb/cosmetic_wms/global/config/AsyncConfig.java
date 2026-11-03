@@ -9,6 +9,8 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
 
 import java.util.concurrent.Executor;
 
@@ -26,6 +28,8 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(16);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("event-async-");
+        executor.setTaskDecorator(runnable ->
+                new DelegatingSecurityContextRunnable(runnable, SecurityContextHolder.getContext()));
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(30);
         executor.initialize();

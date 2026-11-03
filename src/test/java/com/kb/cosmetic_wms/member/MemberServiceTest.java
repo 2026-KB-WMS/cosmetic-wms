@@ -2,7 +2,8 @@ package com.kb.cosmetic_wms.member;
 
 import com.kb.cosmetic_wms.member.fixture.MemberDtoBuilder;
 import com.kb.cosmetic_wms.member.fixture.MemberTestBuilder;
-import com.kb.cosmetic_wms.member.adapter.in.web.MemberLoginRequest;
+import com.kb.cosmetic_wms.member.application.port.in.LoginMemberCommand;
+import com.kb.cosmetic_wms.member.application.port.in.MemberIdentityResult;
 import com.kb.cosmetic_wms.member.adapter.in.web.MemberSignUpRequest;
 import com.kb.cosmetic_wms.member.application.port.in.MemberResult;
 import com.kb.cosmetic_wms.member.application.port.out.MemberPort;
@@ -129,42 +130,71 @@ public class MemberServiceTest {
     }
 
     @Test
-    void 올바른_로그인_ID와_비밀번호를_입력하면_로그인에_성공하여_회원_정보를_반환한다() {
+    void 올바른_로그인_ID와_비밀번호를_입력하면_인증에_성공하여_회원_ID와_권한을_반환한다() {
         // given
-        MemberLoginRequest request = MemberDtoBuilder.loginRequest().build();
-        String encodedPassword = passwordEncoder.encode(request.password());
-
+        LoginMemberCommand command = new LoginMemberCommand("admin01", "password123!");
         Member existingMember = new MemberTestBuilder()
-                .loginId(request.loginId())
-                .password(encodedPassword)
+                .loginId(command.loginId())
+                .password(passwordEncoder.encode(command.password()))
+                .role(Role.ROLE_WAREHOUSE_MANAGER)
                 .buildWithId(1L);
 
-        given(memberPort.findByLoginId(request.loginId())).willReturn(Optional.of(existingMember));
+        given(memberPort.findByLoginId(command.loginId())).willReturn(Optional.of(existingMember));
 
         // when
-        MemberResult result = memberService.login(request.toCommand());
+        MemberIdentityResult result = memberService.authenticate(command);
 
         // then
         assertThat(result.memberId()).isEqualTo(1L);
-        assertThat(result.memberName()).isEqualTo(existingMember.getMemberName());
+        assertThat(result.role()).isEqualTo("ROLE_WAREHOUSE_MANAGER");
     }
 
     @Test
-    void 올바른_로그인_ID를_입력해도_비밀번호가_일치하지_않으면_LoginFailedException_예외를_던진다() {
+    void 비밀번호가_일치하지_않으면_LoginFailedException_예외를_던진다() {
         // given
-        MemberLoginRequest request = MemberDtoBuilder.loginRequest()
-                .password("password20934!")
-                .build();
-
+        LoginMemberCommand command = new LoginMemberCommand("admin01", "wrong-password1!");
         Member existingMember = new MemberTestBuilder()
-                .loginId(request.loginId())
-                .password(passwordEncoder.encode("password123!@"))
+                .loginId(command.loginId())
+                .password(passwordEncoder.encode("password123!"))
                 .buildWithId(1L);
 
-        given(memberPort.findByLoginId(request.loginId())).willReturn(Optional.of(existingMember));
+        given(memberPort.findByLoginId(command.loginId())).willReturn(Optional.of(existingMember));
 
         // when & then
-        assertThatThrownBy(() -> memberService.login(request.toCommand()))
+        assertThatThrownBy(() -> memberService.authenticate(command))
                 .isInstanceOf(LoginFailedException.class);
+    }
+
+    @Test
+    void 존재하지_않는_로그인_ID로_인증하면_LoginFailedException_예외를_던진다() {
+        // given
+        LoginMemberCommand command = new LoginMemberCommand("nobody01", "password123!");
+        given(memberPort.findByLoginId(command.loginId())).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> memberService.authenticate(command))
+                .isInstanceOf(LoginFailedException.class);
+    }
+
+    @Test
+    void 회원_ID로_식별_정보를_조회하면_회원_ID와_권한을_반환한다() {
+        // given
+        Member existingMember = new MemberTestBuilder().role(Role.ROLE_FRANCHISE_MANAGER).buildWithId(5L);
+        given(memberPort.findById(5L)).willReturn(Optional.of(existingMember));
+
+        // when
+        Optional<MemberIdentityResult> result = memberService.findIdentity(5L);
+
+        // then
+        assertThat(result).contains(new MemberIdentityResult(5L, "ROLE_FRANCHISE_MANAGER"));
+    }
+
+    @Test
+    void 존재하지_않는_회원_ID의_식별_정보를_조회하면_빈_결과를_반환한다() {
+        // given
+        given(memberPort.findById(999L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThat(memberService.findIdentity(999L)).isEmpty();
     }
 }

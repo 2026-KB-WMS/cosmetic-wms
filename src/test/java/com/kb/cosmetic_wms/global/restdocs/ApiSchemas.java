@@ -20,8 +20,12 @@ public final class ApiSchemas {
 
     // Member
     public static final String MEMBER_SIGNUP_REQUEST = "MemberSignUpRequest";
-    public static final String MEMBER_LOGIN_REQUEST = "MemberLoginRequest";
     public static final String MEMBER_DETAIL_RESPONSE = "MemberDetailResponse";
+
+    // Auth
+    public static final String AUTH_LOGIN_REQUEST = "AuthLoginRequest";
+    public static final String AUTH_REFRESH_TOKEN_REQUEST = "AuthRefreshTokenRequest";
+    public static final String AUTH_TOKEN_RESPONSE = "AuthTokenResponse";
 
     // Category
     public static final String CATEGORY_CREATE_REQUEST = "CategoryCreateRequest";

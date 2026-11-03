@@ -17,6 +17,7 @@
 | 엔티티, 에러, DTO, 네이밍, 주석 규칙 | [docs/agents/conventions.md](docs/agents/conventions.md) |
 | 테스트 작성 | [docs/agents/testing.md](docs/agents/testing.md) |
 | 이벤트 추가/수정 | [docs/agents/events.md](docs/agents/events.md) |
+| 인증, 역할별 접근 제어, 새 API 추가 시 권한 | [docs/agents/security.md](docs/agents/security.md) |
 | 도메인 용어, 재고 상태, 식별 체계 | [docs/agents/domain-glossary.md](docs/agents/domain-glossary.md) |
 | 브랜치, 커밋, PR, 이슈 | [docs/agents/git-workflow.md](docs/agents/git-workflow.md) |
 | 설계 결정의 배경 | [docs/adr/](docs/adr/) |
@@ -63,6 +64,7 @@ Swagger UI: `http://localhost:8080/swagger-ui/index.html` (스펙은 `/docs/open
 - `BEFORE_COMMIT` 리스너 안에서 `BEFORE_COMMIT` 리스너가 필요한 이벤트를 발행하지 않는다. 리스너가 조용히 실행되지 않는다. 이 구간에서는 out port를 직접 호출한다.
 
 **보안**
+- 새 API를 추가하면 `SecurityConfig`의 역할 규칙과 `AuthorizationMatrixTest`의 `MATRIX`를 함께 갱신한다. 규칙에 없는 경로는 거부되고, 표가 컨트롤러 매핑과 다르면 CI가 실패한다 ([상세](docs/agents/security.md)).
 - 비밀번호, API 키 등 비밀 정보를 코드나 설정 기본값에 하드코딩하지 않는다. 환경변수로 주입한다 (`DB_PASSWORD`, `KAKAO_REST_API_KEY`).
 - `.env`, `*.pem`, `application-secret.*`는 커밋하지 않는다.
 

@@ -11,7 +11,7 @@ import com.kb.cosmetic_wms.product.category.domain.exception.CategoryErrorCode;
 import com.kb.cosmetic_wms.product.category.domain.exception.CategoryInUseException;
 import com.kb.cosmetic_wms.product.category.domain.exception.CategoryNotFoundException;
 import com.kb.cosmetic_wms.product.category.domain.exception.DuplicateCategoryException;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = CategoryController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 public class CategoryControllerTest extends RestDocsSupport {
 
     @Autowired

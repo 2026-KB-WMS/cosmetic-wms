@@ -3,7 +3,7 @@ package com.kb.cosmetic_wms.store;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.store.adapter.in.web.RegisterStoreRequest;
@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = StoreController.class)
 @Import({
-        SecurityConfig.class,
+        TestSecurityConfig.class,
         GlobalExceptionHandler.class
 })
 public class StoreControllerTest extends RestDocsSupport {

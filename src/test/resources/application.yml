@@ -8,3 +8,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+auth:
+  jwt:
+    # 테스트 전용 값. 운영 시크릿이 아니다
+    secret: test-only-jwt-secret-key-for-unit-tests-0123456789
