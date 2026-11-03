@@ -10,7 +10,7 @@
     "id": "F-002",
     "name": "아키텍처 규칙 자동 검증 (ArchUnit)",
     "description": "domain의 Spring/JPA import 금지, application의 adapter import 금지, 도메인 간 import 허용 경로(adapter/out→port.in, adapter/in/event→domain.event) 강제. 기존 위반(storage.adapter.out → product.domain)을 먼저 정리한다",
-    "status": "in_progress",
+    "status": "completed",
     "dependencies": [
       "F-001"
     ]
@@ -60,7 +60,7 @@
     "id": "F-008",
     "name": "통합 테스트 Testcontainers(MySQL) 전환 및 H2 제거",
     "description": "@SpringBootTest 5개와 @DataJpaTest 2개를 MySQL 8.0 컨테이너로 전환하고 H2를 제거한다. 로컬 Docker가 필요하다 (#136)",
-    "status": "pending",
+    "status": "completed",
     "dependencies": []
   }
 ]

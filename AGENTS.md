@@ -4,7 +4,7 @@
 
 단일 모듈 모놀리스다. 멀티 모듈/MSA 분리는 폐기되었으며 다시 도입하지 않는다 ([ADR-0001](docs/adr/0001-single-module-monolith.md)).
 
-- **Stack**: Java 21, Spring Boot 3.5.0, Spring Data JPA, Spring Security, Flyway, MySQL(운영), H2(테스트)
+- **Stack**: Java 21, Spring Boot 3.5.0, Spring Data JPA, Spring Security, Flyway, MySQL(운영), Testcontainers MySQL(테스트)
 - **Build**: Gradle (Groovy DSL)
 
 ## 작업 전 읽을 것
@@ -27,7 +27,7 @@
 ## 명령어
 
 ```bash
-scripts/verify.sh                  # 전체 검증 (clean build + 테스트 + OpenAPI 생성). 완료 선언 전 필수
+scripts/verify.sh                  # 전체 검증 (clean build + 테스트 + OpenAPI 생성). 완료 선언 전 필수. Docker 필요
 ./gradlew test                     # 전체 테스트
 ./gradlew test --tests "com.kb.cosmetic_wms.inventory.InventoryEntityTest"
 ./gradlew openapi3                 # REST Docs 스니펫 → build/api-spec/openapi3.yaml

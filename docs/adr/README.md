@@ -8,6 +8,7 @@
 | [0002](0002-sku-format.md) | SKU 코드를 상품 PK 기반 `P%06d`로 결정 | Accepted |
 | [0003](0003-lot-number-format.md) | 로트 번호를 입고 기반 복합 식별자로 변경 | Accepted |
 | [0004](0004-warehouse-assignment-policy.md) | 창고 배정 정책 (가중치 기반) | Accepted |
+| [0005](0005-transaction-isolation-read-committed.md) | 트랜잭션 격리 수준을 READ COMMITTED로 설정 | Accepted |
 
 ## 템플릿
 
