@@ -49,6 +49,11 @@ public enum StorageErrorCode implements ErrorCode {
             "INVALID_TARGET_TEMP",
             "창고 적정 온도 포맷이 올바르지 않습니다. (예: 10~25도)"
     ),
+    INVALID_TEMPERATURE_CODE(
+            ErrorType.INTERNAL_ERROR,
+            "INVALID_TEMPERATURE_CODE",
+            "알 수 없는 보관 온도 구분 코드입니다."
+    ),
     INVALID_CAPACITY(
             ErrorType.INVALID_REQUEST,
             "INVALID_CAPACITY",

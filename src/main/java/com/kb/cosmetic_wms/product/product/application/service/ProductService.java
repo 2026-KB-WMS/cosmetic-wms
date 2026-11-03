@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -82,6 +84,12 @@ public class ProductService implements RegisterProductUseCase, FindProductUseCas
     @Override
     public boolean allExistByIds(Collection<Long> productIds) {
         return productPort.allExistByIds(productIds);
+    }
+
+    @Override
+    public Map<Long, String> findTemperatureCodesByIds(Collection<Long> productIds) {
+        return productPort.findTemperatureTypesByIds(productIds).entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getShortCode()));
     }
 
     @Override
