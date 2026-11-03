@@ -1,8 +1,16 @@
 package com.kb.cosmetic_wms.inspection.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.global.common.BaseEntity;
-import com.kb.cosmetic_wms.inspection.application.port.out.InspectionCreationFailurePort.InspectionCreationFailure;
-import jakarta.persistence.*;
+import com.kb.cosmetic_wms.inspection.domain.enums.FailedEventStatus;
+import com.kb.cosmetic_wms.inspection.domain.model.FailedInspection;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -46,30 +54,36 @@ class FailedInspectionEventEntity extends BaseEntity {
     @Column(name = "failed_at", nullable = false)
     private LocalDateTime failedAt;
 
-    private FailedInspectionEventEntity(Long inboundId, Long lineId, Long productId, Long warehouseId,
-                                        int receivedQuantity, String manufacturerLotNumber,
-                                        LocalDate expirationDate, String errorMessage) {
-        this.inboundId = inboundId;
-        this.lineId = lineId;
-        this.productId = productId;
-        this.warehouseId = warehouseId;
-        this.receivedQuantity = receivedQuantity;
-        this.manufacturerLotNumber = manufacturerLotNumber;
-        this.expirationDate = expirationDate;
-        this.errorMessage = errorMessage;
-        this.failedAt = LocalDateTime.now();
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private FailedEventStatus status;
+
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
+    static FailedInspectionEventEntity fromDomain(FailedInspection failed) {
+        FailedInspectionEventEntity entity = new FailedInspectionEventEntity();
+        entity.id = failed.getId();
+        entity.inboundId = failed.getInboundId();
+        entity.lineId = failed.getLineId();
+        entity.productId = failed.getProductId();
+        entity.warehouseId = failed.getWarehouseId();
+        entity.receivedQuantity = failed.getReceivedQuantity();
+        entity.manufacturerLotNumber = failed.getManufacturerLotNumber();
+        entity.expirationDate = failed.getExpirationDate();
+        entity.errorMessage = failed.getErrorMessage();
+        entity.failedAt = failed.getFailedAt();
+        entity.status = failed.getStatus();
+        entity.retryCount = failed.getRetryCount();
+        entity.resolvedAt = failed.getResolvedAt();
+        return entity;
     }
 
-    static FailedInspectionEventEntity from(InspectionCreationFailure failure) {
-        return new FailedInspectionEventEntity(
-                failure.inboundId(),
-                failure.lineId(),
-                failure.productId(),
-                failure.warehouseId(),
-                failure.receivedQuantity(),
-                failure.manufacturerLotNumber(),
-                failure.expirationDate(),
-                failure.errorMessage()
-        );
+    FailedInspection toDomain() {
+        return FailedInspection.reconstitute(id, inboundId, lineId, productId, warehouseId, receivedQuantity,
+                manufacturerLotNumber, expirationDate, errorMessage, failedAt, status, retryCount, resolvedAt);
     }
 }

@@ -103,6 +103,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/orders/**")
                         .hasAnyRole(HEADQUARTERS, FRANCHISE_MANAGER)
 
+                        // 운영 관리(실패 이벤트 재처리 등): 본사만
+                        .requestMatchers("/api/v1/admin/**").hasRole(HEADQUARTERS)
+
                         .anyRequest().denyAll()
                 );
 
