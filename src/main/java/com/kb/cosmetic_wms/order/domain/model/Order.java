@@ -43,7 +43,7 @@ public class Order {
     }
 
     public void cancel() {
-        if (this.orderStatus != OrderStatus.PENDING) throw new OrderCancelNotAllowedException();
+        if (!isCancellable()) throw new OrderCancelNotAllowedException();
         this.orderStatus = OrderStatus.CANCELED;
     }
 
@@ -58,6 +58,10 @@ public class Order {
             throw new OrderWarehouseAssignNotAllowedException();
         }
         this.warehouseId = warehouseId;
+    }
+
+    private boolean isCancellable() {
+        return this.orderStatus == OrderStatus.PENDING || isAwaitingWarehouseAssignment();
     }
 
     public boolean isAwaitingWarehouseAssignment() {

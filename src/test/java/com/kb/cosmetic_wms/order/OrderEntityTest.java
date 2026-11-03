@@ -86,9 +86,33 @@ public class OrderEntityTest {
     }
 
     @Test
-    void 발주_확정_상태에서_취소하면_예외를_던진다() {
+    void 발주_확정_상태이고_창고가_배정되지_않았으면_발주를_취소할_수_있다() {
         Order order = new OrderTestBuilder().build();
         order.confirm();
+
+        order.cancel();
+
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.CANCELED);
+        assertThat(order.getWarehouseId()).isNull();
+    }
+
+    @Test
+    void 창고가_배정된_확정_발주를_취소하면_예외를_던진다() {
+        Order order = new OrderTestBuilder().build();
+        order.confirm();
+        order.assignWarehouse(10L);
+
+        assertThatThrownBy(order::cancel)
+                .isInstanceOf(OrderCancelNotAllowedException.class);
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    }
+
+    @Test
+    void 출고_준비_중_상태에서_취소하면_예외를_던진다() {
+        Order order = new OrderTestBuilder().build();
+        order.confirm();
+        order.assignWarehouse(10L);
+        order.startPreparation();
 
         assertThatThrownBy(order::cancel)
                 .isInstanceOf(OrderCancelNotAllowedException.class);

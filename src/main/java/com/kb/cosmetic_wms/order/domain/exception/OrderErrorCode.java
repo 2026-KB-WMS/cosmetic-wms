@@ -69,7 +69,7 @@ public enum OrderErrorCode implements ErrorCode {
     ORDER_CANCEL_NOT_ALLOWED(
             ErrorType.CONFLICT,
             "ORDER_CANCEL_NOT_ALLOWED",
-            "발주 신청(PENDING) 상태에서만 취소가 가능합니다."
+            "발주 신청 상태이거나, 확정되었으나 창고가 아직 배정되지 않은 발주만 취소할 수 있습니다."
     );
 
     private final ErrorType type;

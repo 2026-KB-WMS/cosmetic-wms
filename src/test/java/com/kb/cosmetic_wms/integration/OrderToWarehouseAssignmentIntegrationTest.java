@@ -317,6 +317,27 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
         assertThat(findFailedAssignmentUseCase.findByStatus(FailedEventStatus.PENDING)).isEmpty();
     }
 
+    @Test
+    void 창고_배정에_실패한_확정_발주를_취소하면_취소되고_이후_재처리는_사유를_남기며_폐기할_수_있다() {
+        // given — 재고 부족으로 배정에 실패해 CONFIRMED에 머문 발주
+        FailedOrder failed = createFailedAssignment();
+
+        // when
+        orderLifecycleUseCase.cancelOrder(failed.orderId());
+        FailedAssignmentResult retried = resolveFailedAssignmentUseCase.retry(failed.failedEventId());
+        FailedAssignmentResult discarded = resolveFailedAssignmentUseCase.discard(failed.failedEventId());
+
+        // then
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT order_status FROM orders WHERE orders_id = ?", String.class, failed.orderId()))
+                .isEqualTo("CANCELED");
+        assertThat(retried.status()).isEqualTo(FailedEventStatus.PENDING);
+        assertThat(retried.errorMessage()).isEqualTo(OmsErrorCode.ORDER_NOT_AWAITING_ASSIGNMENT.getMessage());
+        assertThat(discarded.status()).isEqualTo(FailedEventStatus.DISCARDED);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM outbound WHERE orders_id = ?", Integer.class, failed.orderId())).isZero();
+    }
+
     private long lotSeq = 1;
 
     private void insertInventory(Long warehouseId, Long productId, int quantity, String expiryDate) {

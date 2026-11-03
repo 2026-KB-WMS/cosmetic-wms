@@ -317,16 +317,35 @@ public class OrderServiceTest {
         }
 
         @Test
-        void 발주_확정_이후_단계의_전표는_취소할_수_없고_예외가_발생한다() {
+        void 창고가_배정되지_않은_확정_발주는_취소할_수_있다() {
             // given
             Long orderId = 1L;
             Order order = new OrderTestBuilder().build();
             order.confirm();
             given(orderPort.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
+            given(orderPort.save(order)).willReturn(order);
+
+            // when
+            OrderResult response = orderService.cancelOrder(orderId);
+
+            // then
+            assertThat(response.orderStatus()).isEqualTo(OrderStatus.CANCELED);
+            verify(orderPort).save(order);
+        }
+
+        @Test
+        void 창고가_배정된_발주는_취소할_수_없고_예외가_발생한다() {
+            // given
+            Long orderId = 1L;
+            Order order = new OrderTestBuilder().build();
+            order.confirm();
+            order.assignWarehouse(10L);
+            given(orderPort.findByIdForUpdate(orderId)).willReturn(Optional.of(order));
 
             // when & then
             assertThatThrownBy(() -> orderService.cancelOrder(orderId))
                     .isInstanceOf(OrderCancelNotAllowedException.class);
+            verify(orderPort, never()).save(any());
         }
 
         @Test
