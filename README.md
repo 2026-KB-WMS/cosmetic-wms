@@ -121,7 +121,17 @@ src
 
 ## 실행 방법
 
-> 추후 작성 예정
+DB 접속 정보는 환경변수로 주입한다. `DB_PASSWORD`는 기본값이 없어 반드시 지정해야 한다.
+
+| 환경변수          | 필수 | 기본값                                  |
+|:--------------|:--:|:-------------------------------------|
+| `DB_PASSWORD` | O  | -                                    |
+| `DB_USERNAME` | X  | `root`                               |
+| `DB_URL`      | X  | `jdbc:mysql://localhost:3306/cosmetic_wms?...` |
+
+```bash
+DB_PASSWORD=<password> ./gradlew bootRun
+```
 
 <br>
 
