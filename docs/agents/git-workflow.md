@@ -40,7 +40,7 @@
 
 1. **이슈 작성**: 작업 전에 이슈를 만든다. 템플릿(`.github/ISSUE_TEMPLATE/`)의 섹션을 따르고 제목은 `[FEATURE]`, `[BUG]`, `[REFACTOR]`, `[DOCS]`, `[CHORE]`, `[TEST]` 접두사를 쓴다.
 2. **브랜치**: `main`에서 분기한다.
-3. **PR**: `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고 "연관된 이슈"에 `Closes #번호`를 적는다.
+3. **PR**: `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고 "연관된 이슈"에 `- Closes #번호` 형식(앞에 `-`)으로 적는다. 여러 건이면 줄마다 `- Closes #번호`를 쓴다.
 4. **머지 후** 작업 브랜치를 삭제한다.
 
 ### Assignees와 라벨 (이슈, PR 공통)
