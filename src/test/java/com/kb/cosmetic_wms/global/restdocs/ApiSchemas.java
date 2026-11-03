@@ -27,6 +27,10 @@ public final class ApiSchemas {
     public static final String AUTH_REFRESH_TOKEN_REQUEST = "AuthRefreshTokenRequest";
     public static final String AUTH_TOKEN_RESPONSE = "AuthTokenResponse";
 
+    // Failed Event
+    public static final String FAILED_INSPECTION_RESPONSE = "FailedInspectionResponse";
+    public static final String FAILED_ASSIGNMENT_RESPONSE = "FailedAssignmentResponse";
+
     // Category
     public static final String CATEGORY_CREATE_REQUEST = "CategoryCreateRequest";
     public static final String CATEGORY_RESPONSE = "CategoryResponse";

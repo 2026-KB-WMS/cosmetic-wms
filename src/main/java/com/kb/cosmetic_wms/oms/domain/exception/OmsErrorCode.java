@@ -9,6 +9,26 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum OmsErrorCode implements ErrorCode {
 
+    FAILED_ASSIGNMENT_NOT_FOUND(
+            ErrorType.NOT_FOUND,
+            "FAILED_ASSIGNMENT_NOT_FOUND",
+            "존재하지 않는 창고 배정 실패 건입니다."
+    ),
+    FAILED_ASSIGNMENT_NOT_PENDING(
+            ErrorType.CONFLICT,
+            "FAILED_ASSIGNMENT_NOT_PENDING",
+            "이미 해결되었거나 폐기된 창고 배정 실패 건입니다."
+    ),
+    ASSIGNMENT_ORDER_NOT_FOUND(
+            ErrorType.NOT_FOUND,
+            "ASSIGNMENT_ORDER_NOT_FOUND",
+            "배정 대상 발주를 찾을 수 없습니다."
+    ),
+    ORDER_NOT_AWAITING_ASSIGNMENT(
+            ErrorType.CONFLICT,
+            "ORDER_NOT_AWAITING_ASSIGNMENT",
+            "발주가 창고 배정 대기 상태(확정됨, 창고 미배정)가 아닙니다."
+    ),
     NO_ASSIGNABLE_WAREHOUSE(
             ErrorType.CONFLICT,
             "NO_ASSIGNABLE_WAREHOUSE",

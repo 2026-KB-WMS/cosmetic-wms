@@ -3,7 +3,8 @@ package com.kb.cosmetic_wms.oms;
 import com.kb.cosmetic_wms.oms.adapter.in.event.RetryableWarehouseAssigner;
 import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseCommand;
 import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseUseCase;
-import com.kb.cosmetic_wms.oms.application.port.out.AssignmentFailurePort;
+import com.kb.cosmetic_wms.oms.application.port.in.RecordAssignmentFailureCommand;
+import com.kb.cosmetic_wms.oms.application.port.in.RecordAssignmentFailureUseCase;
 import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +25,7 @@ class RetryableWarehouseAssignerTest {
     private AssignWarehouseUseCase assignWarehouseUseCase;
 
     @Mock
-    private AssignmentFailurePort assignmentFailurePort;
+    private RecordAssignmentFailureUseCase recordAssignmentFailureUseCase;
 
     @InjectMocks
     private RetryableWarehouseAssigner retryableWarehouseAssigner;
@@ -61,6 +62,7 @@ class RetryableWarehouseAssignerTest {
         retryableWarehouseAssigner.recover(cause, event);
 
         // then
-        verify(assignmentFailurePort).save(1L, 10L, "Routing API timeout");
+        verify(recordAssignmentFailureUseCase)
+                .record(new RecordAssignmentFailureCommand(1L, 10L, "Routing API timeout"));
     }
 }

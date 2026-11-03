@@ -3,10 +3,13 @@ package com.kb.cosmetic_wms.inspection.application.service;
 import com.kb.cosmetic_wms.inspection.application.port.in.RecordInspectionFailureCommand;
 import com.kb.cosmetic_wms.inspection.application.port.in.RecordInspectionFailureUseCase;
 import com.kb.cosmetic_wms.inspection.application.port.out.InspectionCreationFailurePort;
+import com.kb.cosmetic_wms.inspection.domain.model.FailedInspection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +23,7 @@ public class InspectionFailureService implements RecordInspectionFailureUseCase 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(RecordInspectionFailureCommand command) {
-        inspectionCreationFailurePort.save(new InspectionCreationFailurePort.InspectionCreationFailure(
+        inspectionCreationFailurePort.save(FailedInspection.record(
                 command.inboundId(),
                 command.lineId(),
                 command.productId(),
@@ -28,7 +31,8 @@ public class InspectionFailureService implements RecordInspectionFailureUseCase 
                 command.receivedQuantity(),
                 command.manufacturerLotNumber(),
                 command.expirationDate(),
-                command.errorMessage()
+                command.errorMessage(),
+                LocalDateTime.now()
         ));
     }
 }

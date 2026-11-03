@@ -14,6 +14,11 @@ public class OrderPersistenceAdapter implements OrderPort {
     private final OrderJpaRepository orderJpaRepository;
 
     @Override
+    public Optional<Order> findByIdWithItems(Long id) {
+        return orderJpaRepository.findByIdWithItems(id).map(OrderEntity::toDomain);
+    }
+
+    @Override
     public Optional<Order> findByIdForUpdate(Long id) {
         return orderJpaRepository.findByIdForUpdate(id).map(OrderEntity::toDomain);
     }

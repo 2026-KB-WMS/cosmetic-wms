@@ -196,4 +196,24 @@ public class OrderEntityTest {
         assertThatThrownBy(order::completeDelivery)
                 .isInstanceOf(OrderDeliveryCompleteNotAllowedException.class);
     }
+
+    @Test
+    void 확정되었고_창고가_배정되지_않은_발주만_창고_배정_대기_상태다() {
+        Order order = new OrderTestBuilder().build();
+        assertThat(order.isAwaitingWarehouseAssignment()).isFalse();
+
+        order.confirm();
+        assertThat(order.isAwaitingWarehouseAssignment()).isTrue();
+
+        order.assignWarehouse(10L);
+        assertThat(order.isAwaitingWarehouseAssignment()).isFalse();
+    }
+
+    @Test
+    void 취소된_발주는_창고_배정_대기_상태가_아니다() {
+        Order order = new OrderTestBuilder().build();
+        order.cancel();
+
+        assertThat(order.isAwaitingWarehouseAssignment()).isFalse();
+    }
 }

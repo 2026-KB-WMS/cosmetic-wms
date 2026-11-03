@@ -2,7 +2,8 @@ package com.kb.cosmetic_wms.oms.adapter.in.event;
 
 import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseCommand;
 import com.kb.cosmetic_wms.oms.application.port.in.AssignWarehouseUseCase;
-import com.kb.cosmetic_wms.oms.application.port.out.AssignmentFailurePort;
+import com.kb.cosmetic_wms.oms.application.port.in.RecordAssignmentFailureCommand;
+import com.kb.cosmetic_wms.oms.application.port.in.RecordAssignmentFailureUseCase;
 import com.kb.cosmetic_wms.oms.domain.exception.NoAssignableWarehouseException;
 import com.kb.cosmetic_wms.oms.domain.exception.OmsValidationException;
 import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class RetryableWarehouseAssigner {
 
     private final AssignWarehouseUseCase assignWarehouseUseCase;
-    private final AssignmentFailurePort assignmentFailurePort;
+    private final RecordAssignmentFailureUseCase recordAssignmentFailureUseCase;
 
     @Retryable(
             retryFor = Exception.class,
@@ -38,6 +39,7 @@ public class RetryableWarehouseAssigner {
 
     @Recover
     public void recover(Exception ex, OrderConfirmedEvent event) {
-        assignmentFailurePort.save(event.orderId(), event.storeId(), ex.getMessage());
+        recordAssignmentFailureUseCase.record(
+                new RecordAssignmentFailureCommand(event.orderId(), event.storeId(), ex.getMessage()));
     }
 }

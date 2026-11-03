@@ -14,6 +14,16 @@ public enum InspectionErrorCode implements ErrorCode {
             "INSPECTION_NOT_FOUND",
             "존재하지 않는 품질 검사 전표입니다."
     ),
+    FAILED_INSPECTION_NOT_FOUND(
+            ErrorType.NOT_FOUND,
+            "FAILED_INSPECTION_NOT_FOUND",
+            "존재하지 않는 검사 전표 생성 실패 건입니다."
+    ),
+    FAILED_INSPECTION_NOT_PENDING(
+            ErrorType.CONFLICT,
+            "FAILED_INSPECTION_NOT_PENDING",
+            "이미 해결되었거나 폐기된 검사 전표 생성 실패 건입니다."
+    ),
     INSPECTION_SOURCE_TYPE_REQUIRED(
             ErrorType.INVALID_REQUEST,
             "INSPECTION_SOURCE_TYPE_REQUIRED",

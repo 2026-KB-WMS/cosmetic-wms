@@ -22,7 +22,7 @@
 | 브랜치, 커밋, PR, 이슈 | [docs/agents/git-workflow.md](docs/agents/git-workflow.md) |
 | 설계 결정의 배경 | [docs/adr/](docs/adr/) |
 | 이미 겪은 문제, 에러 메시지로 원인 찾기 | [docs/troubleshooting.md](docs/troubleshooting.md) |
-| DB 스키마 | [docs/db/v1.5.0_database.md](docs/db/v1.5.0_database.md) (최신 버전) |
+| DB 스키마 | [docs/db/v1.6.0_database.md](docs/db/v1.6.0_database.md) (최신 버전) |
 
 문서와 코드가 다르면 **코드가 사실**이다. 불일치를 발견하면 문서를 고치거나 사용자에게 알린다.
 

@@ -24,7 +24,7 @@
 | SKU 코드 | `P%06d` (상품 PK 기반) | `P000001` | [ADR-0002](../adr/0002-sku-format.md) |
 | 로트 번호 | `YYMMDD-{입고ID}-{제조사 로트 번호}` | `260629-1042-LOT0001` | [ADR-0003](../adr/0003-lot-number-format.md) |
 | 섹션 코드 | `WH{NN}-{구역타입}-{온도}-{순번NN}` | `WH01-STR-R-01` | `SectionCode` |
-| 재고 식별키 | `Product + Lot + Section + InventoryStatusSet` | DB 복합 UK | [DB 설계서](../db/v1.5.0_database.md) |
+| 재고 식별키 | `Product + Lot + Section + InventoryStatusSet` | DB 복합 UK | [DB 설계서](../db/v1.6.0_database.md) |
 
 - 섹션 코드 패턴: `^WH\d{2}-(DOCK|STR|QUAR)-[RC]-\d{2}$`
 - 구역 타입(`SectionType`): `DOCKING`(DOCK, 반입/반출·검수), `STORAGE`(STR, 일반 보관), `QUARANTINE`(QUAR, 격리/폐기)

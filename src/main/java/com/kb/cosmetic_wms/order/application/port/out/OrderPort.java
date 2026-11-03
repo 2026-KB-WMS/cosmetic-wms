@@ -6,6 +6,8 @@ import java.util.Optional;
 
 public interface OrderPort {
 
+    Optional<Order> findByIdWithItems(Long id);
+
     Optional<Order> findByIdForUpdate(Long id);
 
     Optional<Order> findByIdWithItemsForUpdate(Long id);

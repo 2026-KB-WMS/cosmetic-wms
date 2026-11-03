@@ -5,7 +5,13 @@ import com.kb.cosmetic_wms.support.MySqlContainerSupport;
 import com.kb.cosmetic_wms.support.TestAuthentication;
 import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
+import com.kb.cosmetic_wms.oms.application.port.in.FailedAssignmentResult;
+import com.kb.cosmetic_wms.oms.application.port.in.FindFailedAssignmentUseCase;
+import com.kb.cosmetic_wms.oms.application.port.in.ResolveFailedAssignmentUseCase;
 import com.kb.cosmetic_wms.oms.application.port.out.RoutingPort;
+import com.kb.cosmetic_wms.oms.domain.enums.FailedEventStatus;
+import com.kb.cosmetic_wms.oms.domain.exception.FailedAssignmentNotPendingException;
+import com.kb.cosmetic_wms.oms.domain.exception.OmsErrorCode;
 import com.kb.cosmetic_wms.oms.domain.service.HaversineDistanceCalculator;
 import com.kb.cosmetic_wms.order.application.port.in.CreateOrderCommand;
 import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
@@ -27,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -69,6 +76,12 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     private OrderLifecycleUseCase orderLifecycleUseCase;
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private FindFailedAssignmentUseCase findFailedAssignmentUseCase;
+
+    @Autowired
+    private ResolveFailedAssignmentUseCase resolveFailedAssignmentUseCase;
 
     private Long nearWarehouseId;
     private Long farWarehouseId;
@@ -189,6 +202,119 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
         Integer outboundCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM outbound WHERE orders_id = ?", Integer.class, order.id());
         assertThat(outboundCount).isZero();
+    }
+
+    private record FailedOrder(Long orderId, Long failedEventId) {
+    }
+
+    /**
+     * 재고가 부족한 상태에서 발주를 확정해 창고 배정 실패 건을 만든다.
+     */
+    private FailedOrder createFailedAssignment() {
+        insertInventory(nearWarehouseId, PRODUCT_ID, 10, "2026-12-31");
+        OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
+                List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
+        orderLifecycleUseCase.confirmOrder(order.id());
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM failed_assignment_event WHERE orders_id = ?", Integer.class, order.id())).isEqualTo(1));
+
+        Long failedEventId = jdbcTemplate.queryForObject(
+                "SELECT failed_event_id FROM failed_assignment_event WHERE orders_id = ?", Long.class, order.id());
+        return new FailedOrder(order.id(), failedEventId);
+    }
+
+    @Test
+    void 기록된_실패_건은_처리_대기_상태로_조회된다() {
+        FailedOrder failed = createFailedAssignment();
+
+        List<FailedAssignmentResult> pending = findFailedAssignmentUseCase.findByStatus(FailedEventStatus.PENDING);
+
+        assertThat(pending).extracting(FailedAssignmentResult::id).containsExactly(failed.failedEventId());
+        assertThat(pending.get(0).retryCount()).isZero();
+    }
+
+    @Test
+    void 재고를_보충한_뒤_재처리하면_창고_배정과_출고_전표_생성과_재고_할당까지_완료되고_해결_처리된다() {
+        // given
+        FailedOrder failed = createFailedAssignment();
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, "2026-12-31");
+
+        // when
+        FailedAssignmentResult result = resolveFailedAssignmentUseCase.retry(failed.failedEventId());
+
+        // then
+        assertThat(result.status()).isEqualTo(FailedEventStatus.RESOLVED);
+        assertThat(result.retryCount()).isEqualTo(1);
+
+        Map<String, Object> orderRow = jdbcTemplate.queryForMap(
+                "SELECT order_status, warehouse_id FROM orders WHERE orders_id = ?", failed.orderId());
+        assertThat(orderRow.get("order_status")).isEqualTo("PREPARING");
+        assertThat(((Number) orderRow.get("warehouse_id")).longValue()).isEqualTo(nearWarehouseId);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT outbound_status FROM outbound WHERE orders_id = ?", String.class, failed.orderId()))
+                .isEqualTo("ALLOCATED");
+
+        Map<String, Object> failedRow = jdbcTemplate.queryForMap(
+                "SELECT status, retry_count, resolved_at FROM failed_assignment_event WHERE failed_event_id = ?",
+                failed.failedEventId());
+        assertThat(failedRow.get("status")).isEqualTo("RESOLVED");
+        assertThat(((Number) failedRow.get("retry_count")).intValue()).isEqualTo(1);
+        assertThat(failedRow.get("resolved_at")).isNotNull();
+    }
+
+    @Test
+    void 해결된_건을_다시_재처리하면_예외를_던지고_출고_전표를_중복_생성하지_않는다() {
+        // given
+        FailedOrder failed = createFailedAssignment();
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, "2026-12-31");
+        resolveFailedAssignmentUseCase.retry(failed.failedEventId());
+
+        // when & then
+        assertThatThrownBy(() -> resolveFailedAssignmentUseCase.retry(failed.failedEventId()))
+                .isInstanceOf(FailedAssignmentNotPendingException.class);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM outbound WHERE orders_id = ?", Integer.class, failed.orderId())).isEqualTo(1);
+    }
+
+    @Test
+    void 재고가_여전히_부족하면_재처리가_실패해도_예외_없이_대기_상태로_시도_횟수와_사유가_남고_발주는_그대로다() {
+        // given
+        FailedOrder failed = createFailedAssignment();
+
+        // when
+        FailedAssignmentResult result = resolveFailedAssignmentUseCase.retry(failed.failedEventId());
+
+        // then — 별도 트랜잭션의 롤백이 실패 기록까지 되돌리지 않는다
+        assertThat(result.status()).isEqualTo(FailedEventStatus.PENDING);
+        assertThat(result.retryCount()).isEqualTo(1);
+        assertThat(result.errorMessage()).isEqualTo(OmsErrorCode.NO_ASSIGNABLE_WAREHOUSE.getMessage());
+
+        Map<String, Object> failedRow = jdbcTemplate.queryForMap(
+                "SELECT status, retry_count FROM failed_assignment_event WHERE failed_event_id = ?",
+                failed.failedEventId());
+        assertThat(failedRow.get("status")).isEqualTo("PENDING");
+        assertThat(((Number) failedRow.get("retry_count")).intValue()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT order_status FROM orders WHERE orders_id = ?", String.class, failed.orderId()))
+                .isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    void 이미_창고가_배정된_발주는_배정을_시도하지_않고_사유를_남기며_폐기할_수_있다() {
+        // given — 실패 후 다른 경로로 창고가 먼저 배정된 발주
+        FailedOrder failed = createFailedAssignment();
+        orderLifecycleUseCase.assignWarehouse(failed.orderId(), nearWarehouseId);
+
+        // when
+        FailedAssignmentResult retried = resolveFailedAssignmentUseCase.retry(failed.failedEventId());
+        FailedAssignmentResult discarded = resolveFailedAssignmentUseCase.discard(failed.failedEventId());
+
+        // then
+        assertThat(retried.status()).isEqualTo(FailedEventStatus.PENDING);
+        assertThat(retried.errorMessage()).isEqualTo(OmsErrorCode.ORDER_NOT_AWAITING_ASSIGNMENT.getMessage());
+        assertThat(discarded.status()).isEqualTo(FailedEventStatus.DISCARDED);
+        assertThat(findFailedAssignmentUseCase.findByStatus(FailedEventStatus.PENDING)).isEmpty();
     }
 
     private long lotSeq = 1;
