@@ -31,18 +31,6 @@ public final class MemberDocumentUtils {
     }
 
     /**
-     * 로그인 요청 필드 명세
-     */
-    public static RequestFieldsSnippet getLoginRequestFields() {
-        return requestFields(
-                fieldWithPath("loginId").description("로그인 아이디")
-                        .attributes(key("example").value("admin01")),
-                fieldWithPath("password").description("비밀번호")
-                        .attributes(key("example").value("password123!"))
-        );
-    }
-
-    /**
      * 회원 상세 정보 응답 필드 명세 (가입/로그인 공통 재사용)
      */
     public static ResponseFieldsSnippet getMemberDetailResponseFields() {

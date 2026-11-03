@@ -13,10 +13,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class MemberService implements RegisterMemberUseCase, LoginMemberUseCase, FindMemberUseCase {
+public class MemberService implements RegisterMemberUseCase, MemberIdentityUseCase, FindMemberUseCase {
 
     private final MemberPort memberPort;
     private final PasswordEncoder passwordEncoder;
@@ -57,7 +59,7 @@ public class MemberService implements RegisterMemberUseCase, LoginMemberUseCase,
     }
 
     @Override
-    public MemberResult login(LoginMemberCommand command) {
+    public MemberIdentityResult authenticate(LoginMemberCommand command) {
         Member member = memberPort.findByLoginId(command.loginId())
                 .orElseThrow(LoginFailedException::new);
 
@@ -65,6 +67,16 @@ public class MemberService implements RegisterMemberUseCase, LoginMemberUseCase,
             throw new LoginFailedException();
         }
 
-        return MemberResult.from(member);
+        return toIdentity(member);
+    }
+
+    @Override
+    public Optional<MemberIdentityResult> findIdentity(Long memberId) {
+        return memberPort.findById(memberId)
+                .map(MemberService::toIdentity);
+    }
+
+    private static MemberIdentityResult toIdentity(Member member) {
+        return new MemberIdentityResult(member.getMemberId(), member.getRole().name());
     }
 }

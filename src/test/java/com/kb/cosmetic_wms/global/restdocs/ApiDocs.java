@@ -7,6 +7,7 @@ public final class ApiDocs {
 
     public static final String STORAGE = "Storage API";
     public static final String MEMBER = "Member API";
+    public static final String AUTH = "Auth API";
     public static final String PARTNER = "Partner API";
     public static final String STORE = "Store API";
     public static final String CATEGORY = "Category API";
