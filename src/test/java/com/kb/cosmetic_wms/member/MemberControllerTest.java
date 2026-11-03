@@ -11,6 +11,7 @@ import com.kb.cosmetic_wms.member.adapter.in.web.MemberSignUpRequest;
 import com.kb.cosmetic_wms.member.application.port.in.LoginMemberUseCase;
 import com.kb.cosmetic_wms.member.application.port.in.MemberResult;
 import com.kb.cosmetic_wms.member.application.port.in.RegisterMemberUseCase;
+import com.kb.cosmetic_wms.member.domain.exception.RoleNotAllowedForSignUpException;
 import com.kb.cosmetic_wms.member.domain.model.Role;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,6 +66,25 @@ public class MemberControllerTest extends RestDocsSupport {
                         buildParams(MEMBER, "WMS 사원(회원) 등록", MEMBER_SIGNUP_REQUEST, MEMBER_DETAIL_RESPONSE),
                         getSignupRequestFields(),
                         getMemberDetailResponseFields()
+                ));
+    }
+
+    @Test
+    @WithMockUser
+    void 회원가입_실패_본사_관리자_권한으로_가입하면_422_UNPROCESSABLE_ENTITY를_반환한다() throws Exception {
+        MemberSignUpRequest request = MemberDtoBuilder.signUpRequest()
+                .role(Role.ROLE_HEADQUARTERS)
+                .build();
+
+        given(registerMemberUseCase.register(any())).willThrow(new RoleNotAllowedForSignUpException());
+
+        mockMvc.perform(post("/api/v1/members/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("ROLE_NOT_ALLOWED_FOR_SIGN_UP"))
+                .andDo(document("member-signup-fail-headquarters-role",
+                        buildErrorParams(MEMBER, "회원 가입 실패 - 본사 관리자 권한 직접 가입 불가")
                 ));
     }
 
