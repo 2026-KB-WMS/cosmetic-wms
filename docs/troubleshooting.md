@@ -6,12 +6,34 @@
 
 | 날짜 | 항목 |
 |---|---|
+| 2026-11-03 | [CI에서 의존성 다운로드가 403 Forbidden으로 실패](#ci에서-의존성-다운로드가-403-forbidden으로-실패) |
 | 2026-11-03 | [동시 입고 시 DOCKING 용량 갱신 유실 (MySQL REPEATABLE READ)](#동시-입고-시-docking-용량-갱신-유실-mysql-repeatable-read) |
 | 2026-11-03 | [Testcontainers가 Docker에 접속하지 못함 (client version 1.32 is too old)](#testcontainers가-docker에-접속하지-못함-client-version-132-is-too-old) |
 | 2026-11-03 | [H2의 SET REFERENTIAL_INTEGRITY가 MySQL에서 동작하지 않음](#h2의-set-referential_integrity가-mysql에서-동작하지-않음) |
 | 2026-11-03 | [import 검색으로 찾지 못한 도메인 간 의존 위반](#import-검색으로-찾지-못한-도메인-간-의존-위반) |
 | 2026-07-04 | [BEFORE_COMMIT 리스너 안에서 발행한 이벤트의 리스너가 실행되지 않음](#before_commit-리스너-안에서-발행한-이벤트의-리스너가-실행되지-않음) |
 | 2026-07-04 | [도메인 객체를 수정했는데 DB에 반영되지 않음](#도메인-객체를-수정했는데-db에-반영되지-않음) |
+
+---
+
+## CI에서 의존성 다운로드가 403 Forbidden으로 실패
+
+PR #141
+
+**증상**
+- CI의 `verify`가 30초대에 실패한다. 테스트까지 가지 못하고 `compileJava`에서 멈춘다.
+- 로그: `Could not resolve all files for configuration ':compileClasspath'`, `Could not GET 'https://repo.maven.apache.org/maven2/...'. Received status code 403 from server: Forbidden`
+
+**원인**
+- 코드나 설정 문제가 아니라 러너가 Maven Central에서 파일을 받을 때 403을 받았다. 일시적인 차단이나 속도 제한으로 보인다. 확정한 원인은 아니다.
+- 근거: 같은 커밋을 재실행하자 통과했다 (`verify` 1분 51초).
+
+**해결**
+- 실패한 잡만 재실행한다: `gh run rerun <run-id> --failed`
+
+**재발 방지**
+- 로그가 의존성 해석 단계의 403이면 코드를 의심하기 전에 재실행한다.
+- 자주 반복되면 Gradle 의존성 캐시 구성이나 미러 사용을 검토한다.
 
 ---
 
