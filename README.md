@@ -121,7 +121,17 @@ src
 
 ## 실행 방법
 
-> 추후 작성 예정
+DB 접속 정보는 환경변수로 주입한다. `DB_PASSWORD`는 기본값이 없어 반드시 지정해야 한다.
+
+| 환경변수          | 필수 | 기본값                                  |
+|:--------------|:--:|:-------------------------------------|
+| `DB_PASSWORD` | O  | -                                    |
+| `DB_USERNAME` | X  | `root`                               |
+| `DB_URL`      | X  | `jdbc:mysql://localhost:3306/cosmetic_wms?...` |
+
+```bash
+DB_PASSWORD=<password> ./gradlew bootRun
+```
 
 <br>
 
@@ -129,14 +139,13 @@ src
 
 ### 🌿 브랜치 전략
 
-- **main**: 프로덕션 환경에 배포되는 최상위 브랜치.
-- **develop**: 다음 버전을 위한 개발 브랜치. 모든 기능 개발의 통합 지점.
+- **main**: 기본 브랜치. 프로덕션 환경에 배포되며 모든 기능 개발의 통합 지점.
 - **feat/[domain name]-[feature name]**: 신규 기능 개발 브랜치. (예: `feat/inventory-fefo-allocation-logic`)
 - **fix**: 버그 수정 브랜치. (예: `fix/recall-status-mismatch`)
 
 **Merge 규칙**:
 
-- 모든 기능 개발 브랜치는 `develop` 브랜치에서 분기하며, 개발 완료 후 Pull Request(PR)를 통해 리뷰 후 머지한다.
+- 모든 작업 브랜치는 `main` 브랜치에서 분기하며, 개발 완료 후 Pull Request(PR)를 `main`으로 올려 리뷰 후 머지한다.
 
 ### 💬 커밋 컨벤션 (Commit Convention)
 
