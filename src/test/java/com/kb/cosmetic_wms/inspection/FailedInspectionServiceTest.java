@@ -14,6 +14,8 @@ import com.kb.cosmetic_wms.inspection.domain.exception.FailedInspectionNotPendin
 import com.kb.cosmetic_wms.inspection.domain.exception.InspectionLotNotFoundException;
 import com.kb.cosmetic_wms.inspection.domain.model.FailedInspection;
 import com.kb.cosmetic_wms.inspection.domain.model.Inspection;
+import com.kb.cosmetic_wms.support.LogCapture;
+import ch.qos.logback.classic.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -187,5 +189,57 @@ class FailedInspectionServiceTest {
 
         // when & then
         assertThatThrownBy(() -> service.discard(1L)).isInstanceOf(FailedInspectionNotPendingException.class);
+    }
+
+    @Test
+    void 재처리에_성공하면_결과를_INFO_로그로_남긴다() {
+        // given
+        given(failurePort.findByIdForUpdate(1L)).willReturn(Optional.of(pending()));
+        given(inspectionPort.findBySourceTypeAndSourceId(InspectionSourceType.INBOUND, 20L)).willReturn(Optional.empty());
+        givenSaveReturnsArgument();
+
+        try (LogCapture logs = LogCapture.of(FailedInspectionService.class)) {
+            // when
+            service.retry(1L);
+
+            // then
+            assertThat(logs.messages(Level.INFO)).singleElement().satisfies(message ->
+                    assertThat(message).contains("failedEventId=1").contains("lineId=20").contains("RESOLVED"));
+        }
+    }
+
+    @Test
+    void 재처리가_실패하면_사유와_함께_WARN_로그로_남긴다() {
+        // given
+        given(failurePort.findByIdForUpdate(1L)).willReturn(Optional.of(pending()));
+        given(inspectionPort.findBySourceTypeAndSourceId(InspectionSourceType.INBOUND, 20L)).willReturn(Optional.empty());
+        doThrow(new InspectionLotNotFoundException()).when(createInspectionUseCase).create(any());
+        givenSaveReturnsArgument();
+
+        try (LogCapture logs = LogCapture.of(FailedInspectionService.class)) {
+            // when
+            service.retry(1L);
+
+            // then
+            assertThat(logs.messages(Level.WARN)).singleElement().satisfies(message ->
+                    assertThat(message).contains("failedEventId=1").contains("retryCount=1")
+                            .contains(new InspectionLotNotFoundException().getMessage()));
+        }
+    }
+
+    @Test
+    void 폐기하면_INFO_로그로_남긴다() {
+        // given
+        given(failurePort.findByIdForUpdate(1L)).willReturn(Optional.of(pending()));
+        givenSaveReturnsArgument();
+
+        try (LogCapture logs = LogCapture.of(FailedInspectionService.class)) {
+            // when
+            service.discard(1L);
+
+            // then
+            assertThat(logs.messages(Level.INFO)).singleElement().satisfies(message ->
+                    assertThat(message).contains("failedEventId=1").contains("DISCARDED"));
+        }
     }
 }

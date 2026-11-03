@@ -10,6 +10,8 @@ import com.kb.cosmetic_wms.auth.application.port.out.MemberIdentityPort;
 import com.kb.cosmetic_wms.auth.application.port.out.RefreshTokenPort;
 import com.kb.cosmetic_wms.auth.application.service.AuthService;
 import com.kb.cosmetic_wms.auth.domain.exception.InvalidRefreshTokenException;
+import com.kb.cosmetic_wms.support.LogCapture;
+import ch.qos.logback.classic.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -113,5 +115,38 @@ class AuthServiceTest {
 
         // then
         verify(refreshTokenPort).revoke("refresh-token");
+    }
+
+    @Test
+    void 유효하지_않은_리프레시_토큰으로_재발급하면_WARN_로그를_남기되_토큰_값은_남기지_않는다() {
+        // given
+        given(refreshTokenPort.consume("secret-refresh-value")).willReturn(Optional.empty());
+
+        try (LogCapture logs = LogCapture.of(AuthService.class)) {
+            // when
+            assertThatThrownBy(() -> authService.reissue(new RefreshTokenCommand("secret-refresh-value")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
+
+            // then
+            assertThat(logs.messages(Level.WARN)).hasSize(1);
+            assertThat(logs.allMessages()).noneMatch(message -> message.contains("secret-refresh-value"));
+        }
+    }
+
+    @Test
+    void 토큰은_유효하지만_회원이_사라졌으면_회원_ID와_함께_WARN_로그를_남긴다() {
+        // given
+        given(refreshTokenPort.consume("orphan")).willReturn(Optional.of(99L));
+        given(memberIdentityPort.findById(99L)).willReturn(Optional.empty());
+
+        try (LogCapture logs = LogCapture.of(AuthService.class)) {
+            // when
+            assertThatThrownBy(() -> authService.reissue(new RefreshTokenCommand("orphan")))
+                    .isInstanceOf(InvalidRefreshTokenException.class);
+
+            // then
+            assertThat(logs.messages(Level.WARN)).singleElement().satisfies(message ->
+                    assertThat(message).contains("memberId=99").doesNotContain("orphan"));
+        }
     }
 }

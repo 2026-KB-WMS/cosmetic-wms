@@ -1,6 +1,9 @@
 package com.kb.cosmetic_wms.integration;
 
+import ch.qos.logback.classic.Level;
 import com.kb.cosmetic_wms.global.config.JwtConfig;
+import com.kb.cosmetic_wms.global.config.RestAccessDeniedHandler;
+import com.kb.cosmetic_wms.support.LogCapture;
 import com.kb.cosmetic_wms.support.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,5 +141,19 @@ class SecurityBehaviorIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/actuator/env")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/actuator/env").header("Authorization", "Bearer " + hq))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void 접근이_거부되면_회원_ID와_요청을_WARN_로그로_남기되_토큰은_남기지_않는다() throws Exception {
+        String franchise = token("ROLE_FRANCHISE_MANAGER", Instant.now().plusSeconds(600));
+
+        try (LogCapture logs = LogCapture.of(RestAccessDeniedHandler.class)) {
+            mockMvc.perform(get("/api/v1/admin/failed-assignments").header("Authorization", "Bearer " + franchise))
+                    .andExpect(status().isForbidden());
+
+            assertThat(logs.messages(Level.WARN)).singleElement().satisfies(message ->
+                    assertThat(message).contains("memberId=1").contains("GET").contains("/api/v1/admin/failed-assignments")
+                            .doesNotContain(franchise));
+        }
     }
 }

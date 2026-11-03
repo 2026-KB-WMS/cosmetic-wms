@@ -15,6 +15,8 @@ import com.kb.cosmetic_wms.member.domain.exception.MemberNotFoundException;
 import com.kb.cosmetic_wms.member.domain.exception.RoleNotAllowedForSignUpException;
 import com.kb.cosmetic_wms.member.domain.model.Member;
 import com.kb.cosmetic_wms.member.domain.model.Role;
+import com.kb.cosmetic_wms.support.LogCapture;
+import ch.qos.logback.classic.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -196,5 +198,41 @@ public class MemberServiceTest {
 
         // when & then
         assertThat(memberService.findIdentity(999L)).isEmpty();
+    }
+
+    @Test
+    void 비밀번호가_틀리면_회원_ID와_함께_WARN_로그를_남기되_입력한_비밀번호는_남기지_않는다() {
+        // given
+        LoginMemberCommand command = new LoginMemberCommand("admin01", "wrong-password1!");
+        Member existingMember = new MemberTestBuilder()
+                .loginId(command.loginId())
+                .password(passwordEncoder.encode("password123!"))
+                .buildWithId(7L);
+        given(memberPort.findByLoginId(command.loginId())).willReturn(Optional.of(existingMember));
+
+        try (LogCapture logs = LogCapture.of(MemberService.class)) {
+            // when
+            assertThatThrownBy(() -> memberService.authenticate(command)).isInstanceOf(LoginFailedException.class);
+
+            // then
+            assertThat(logs.messages(Level.WARN)).singleElement().satisfies(message ->
+                    assertThat(message).contains("memberId=7").doesNotContain("wrong-password1!"));
+        }
+    }
+
+    @Test
+    void 존재하지_않는_로그인_ID로_인증하면_WARN_로그를_남기되_입력한_값은_남기지_않는다() {
+        // given
+        LoginMemberCommand command = new LoginMemberCommand("nobody-injected\nFAKE LOG", "password123!");
+        given(memberPort.findByLoginId(command.loginId())).willReturn(Optional.empty());
+
+        try (LogCapture logs = LogCapture.of(MemberService.class)) {
+            // when
+            assertThatThrownBy(() -> memberService.authenticate(command)).isInstanceOf(LoginFailedException.class);
+
+            // then
+            assertThat(logs.messages(Level.WARN)).singleElement().satisfies(message ->
+                    assertThat(message).doesNotContain("nobody-injected").doesNotContain("FAKE LOG"));
+        }
     }
 }

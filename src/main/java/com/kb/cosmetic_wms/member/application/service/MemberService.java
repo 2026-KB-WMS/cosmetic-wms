@@ -9,12 +9,14 @@ import com.kb.cosmetic_wms.member.domain.exception.RoleNotAllowedForSignUpExcept
 import com.kb.cosmetic_wms.member.domain.model.Member;
 import com.kb.cosmetic_wms.member.domain.valueobject.RawPassword;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -61,9 +63,13 @@ public class MemberService implements RegisterMemberUseCase, MemberIdentityUseCa
     @Override
     public MemberIdentityResult authenticate(LoginMemberCommand command) {
         Member member = memberPort.findByLoginId(command.loginId())
-                .orElseThrow(LoginFailedException::new);
+                .orElseThrow(() -> {
+                    log.warn("로그인에 실패했습니다. 존재하지 않는 로그인 ID입니다.");
+                    return new LoginFailedException();
+                });
 
         if (!passwordEncoder.matches(command.password(), member.getEncodedPassword())) {
+            log.warn("로그인에 실패했습니다. 비밀번호가 일치하지 않습니다. memberId={}", member.getMemberId());
             throw new LoginFailedException();
         }
 
