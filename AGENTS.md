@@ -75,6 +75,7 @@ Swagger UI: `http://localhost:8080/swagger-ui/index.html` (스펙은 `/docs/open
 - 브랜치: `feat/[domain]-[feature]`, `fix/[description]`, `refactor/...`, `docs/...`, `chore/...`
 - 커밋: `<type>(<scope>): <description>` — 제목은 명령문/명사형, 끝에 마침표 없음, 본문은 `-` 항목. 하나의 커밋은 하나의 논리적 변경만 담는다.
 - **모든 작업은 이슈로 시작한다.** 작업 전에 이슈를 작성하고, PR 본문의 연관 이슈에 `- Closes #번호` 형식(앞에 `-`)으로 연결한다. 이슈와 PR에는 **Assignees와 라벨(작업 Type별)을 반드시 지정**한다. 매핑은 [git-workflow.md](docs/agents/git-workflow.md#assignees와-라벨-이슈-pr-공통)에 있다.
+- **이슈 체크박스를 작업과 함께 갱신한다.** 항목을 끝내는 대로 `- [x]`로 바꾸고, 범위가 바뀌면 항목을 고치며 사유를 코멘트로 남긴다. 상세는 [git-workflow.md](docs/agents/git-workflow.md#이슈-체크박스-관리).
 - 커밋, 이슈, PR 어디에도 Claude-Session 트레일러/링크를 넣지 않는다.
 - 사용자가 요청하기 전에는 커밋하거나 push하지 않는다. `main`에 직접 커밋하지 않는다. force push는 사용자가 명시적으로 요청한 경우에만 한다.
 
