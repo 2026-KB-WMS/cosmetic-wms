@@ -1,5 +1,8 @@
 package com.kb.cosmetic_wms.inventory.adapter.out.persistence;
 
+import org.springframework.test.context.TestPropertySource;
+import com.kb.cosmetic_wms.support.MySqlContainerSupport;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import com.kb.cosmetic_wms.inventory.adapter.out.persistence.InventoryJpaRepository.ProductAvailabilityProjection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +17,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-class InventoryAvailabilityRepositoryTest {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource(properties = "spring.datasource.hikari.connection-init-sql=SET FOREIGN_KEY_CHECKS=0")
+class InventoryAvailabilityRepositoryTest extends MySqlContainerSupport {
 
     @Autowired
     private InventoryJpaRepository inventoryJpaRepository;
@@ -27,8 +32,7 @@ class InventoryAvailabilityRepositoryTest {
     @BeforeEach
     void setUp() {
         jdbcTemplate = new JdbcTemplate(dataSource);
-        // 집계 쿼리 검증이 목적이므로 마스터 데이터(FK 체인) 세팅 대신 참조 무결성을 해제한다
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
+        // 집계 쿼리 검증이 목적이므로 마스터 데이터(FK 체인) 세팅 대신 클래스의 FOREIGN_KEY_CHECKS=0 설정으로 참조 무결성을 해제한다
         jdbcTemplate.execute("DELETE FROM inventory");
     }
 

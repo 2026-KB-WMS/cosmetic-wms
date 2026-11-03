@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.integration;
 
+import com.kb.cosmetic_wms.support.MySqlContainerSupport;
 import com.kb.cosmetic_wms.member.adapter.in.bootstrap.HeadquartersBootstrapRunner;
 import com.kb.cosmetic_wms.member.application.port.out.MemberPort;
 import com.kb.cosmetic_wms.member.domain.model.Member;
@@ -20,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
         "bootstrap.headquarters.email=hq-boot@example.com",
         "bootstrap.headquarters.phone-number=010-9999-8888"
 })
-class HeadquartersBootstrapIntegrationTest {
+class HeadquartersBootstrapIntegrationTest extends MySqlContainerSupport {
 
     @Autowired
     private MemberPort memberPort;

@@ -1,5 +1,6 @@
 package com.kb.cosmetic_wms.integration;
 
+import com.kb.cosmetic_wms.support.MySqlContainerSupport;
 import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundCapacityExceededException;
@@ -61,7 +62,7 @@ import static org.awaitility.Awaitility.await;
  * </pre>
  */
 @SpringBootTest
-class InboundToInventoryIntegrationTest {
+class InboundToInventoryIntegrationTest extends MySqlContainerSupport {
 
     @MockitoBean
     private GeocodingPort geocodingPort;

@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.integration;
 
+import org.springframework.test.context.TestPropertySource;
+import com.kb.cosmetic_wms.support.MySqlContainerSupport;
 import com.kb.cosmetic_wms.inventory.application.port.in.InventoryStatusChangeCommand;
 import com.kb.cosmetic_wms.inventory.application.port.in.ManageInventoryStatusUseCase;
 import org.junit.jupiter.api.AfterEach;
@@ -19,7 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 명시적으로 save 하지 않으면 변경분이 조용히 유실된다(과거 재고 부풀림 버그).
  */
 @SpringBootTest
-class InventoryAllocationPersistenceIntegrationTest {
+@TestPropertySource(properties = "spring.datasource.hikari.connection-init-sql=SET FOREIGN_KEY_CHECKS=0")
+class InventoryAllocationPersistenceIntegrationTest extends MySqlContainerSupport {
 
     private static final Long PRODUCT_ID = 900L;
 
@@ -31,7 +34,6 @@ class InventoryAllocationPersistenceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         cleanUp();
     }
 

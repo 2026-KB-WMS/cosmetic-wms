@@ -17,6 +17,9 @@ java {
 configurations {
 }
 
+// Docker 29+는 API 1.40 미만 클라이언트를 거부한다. 1.21.0 이하는 접속에 실패하므로 1.21.4 이상을 유지한다
+ext['testcontainers.version'] = '1.21.4'
+
 repositories {
     mavenCentral()
 }
@@ -32,7 +35,6 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    testRuntimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     implementation 'org.flywaydb:flyway-core'
@@ -55,6 +57,8 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
 
     testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
+
+    testImplementation 'org.testcontainers:mysql'
 }
 
 ext {

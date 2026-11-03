@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.storage;
 
+import com.kb.cosmetic_wms.support.MySqlContainerSupport;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import com.kb.cosmetic_wms.storage.domain.model.TemperatureZone;
 import com.kb.cosmetic_wms.storage.fixture.WarehouseTestBuilder;
 import com.kb.cosmetic_wms.global.config.JpaConfig;
@@ -15,8 +17,9 @@ import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({JpaConfig.class, StoragePersistenceAdapter.class})
-public class WarehouseRepositoryTest {
+public class WarehouseRepositoryTest extends MySqlContainerSupport {
 
     @Autowired
     private StoragePersistenceAdapter storagePersistenceAdapter;
