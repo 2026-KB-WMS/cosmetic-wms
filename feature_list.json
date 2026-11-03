@@ -19,7 +19,7 @@
     "id": "F-003",
     "name": "CI에서 scripts/verify.sh 실행",
     "description": "GitHub Actions로 PR마다 clean build와 테스트 실행. main 브랜치 보호 규칙 검토",
-    "status": "in_progress",
+    "status": "completed",
     "dependencies": [
       "F-001"
     ]
@@ -28,7 +28,7 @@
     "id": "F-004",
     "name": "가입 시 ROLE_HEADQUARTERS 직접 가입 차단 (#126)",
     "description": "MemberSignUpRequest가 role을 그대로 받아 누구나 본사 권한으로 가입 가능. 가입 가능 역할을 도메인 규칙으로 제한",
-    "status": "pending",
+    "status": "in_progress",
     "dependencies": []
   },
   {

@@ -49,6 +49,12 @@ public enum MemberErrorCode implements ErrorCode {
             "이미 등록된 전화번호입니다."
     ),
 
+    ROLE_NOT_ALLOWED_FOR_SIGN_UP(
+            ErrorType.RULE_VIOLATION,
+            "ROLE_NOT_ALLOWED_FOR_SIGN_UP",
+            "해당 권한으로는 직접 가입할 수 없습니다."
+    ),
+
     LOGIN_FAILED(
             ErrorType.INVALID_REQUEST,
             "LOGIN_FAILED",

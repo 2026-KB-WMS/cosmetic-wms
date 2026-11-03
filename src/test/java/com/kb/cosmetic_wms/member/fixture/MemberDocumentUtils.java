@@ -19,7 +19,7 @@ public final class MemberDocumentUtils {
                         .attributes(key("example").value("admin01")),
                 fieldWithPath("password").description("비밀번호")
                         .attributes(key("example").value("password123!")),
-                fieldWithPath("role").description("회원 권한 (ROLE_HEADQUARTERS, ROLE_WAREHOUSE_MANAGER, ROLE_FRANCHISE_MANAGER)")
+                fieldWithPath("role").description("회원 권한 (ROLE_WAREHOUSE_MANAGER, ROLE_FRANCHISE_MANAGER). ROLE_HEADQUARTERS는 직접 가입할 수 없다")
                         .attributes(key("example").value("ROLE_WAREHOUSE_MANAGER")),
                 fieldWithPath("memberName").description("이름(성명)")
                         .attributes(key("example").value("홍길동")),

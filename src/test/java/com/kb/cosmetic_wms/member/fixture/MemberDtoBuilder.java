@@ -18,7 +18,7 @@ public final class MemberDtoBuilder {
         return new MemberSignUpRequest(
                 loginId != null ? loginId : "admin01",
                 password != null ? password : "password123!",
-                role != null ? role : Role.ROLE_HEADQUARTERS,
+                role != null ? role : Role.ROLE_FRANCHISE_MANAGER,
                 memberName != null ? memberName : "홍길동",
                 email != null ? email : "admin@example.com",
                 phoneNumber != null ? phoneNumber : "010-1234-5678"

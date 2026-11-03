@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.member.application.port.out.MemberPort;
 import com.kb.cosmetic_wms.member.domain.exception.DuplicateMemberException;
 import com.kb.cosmetic_wms.member.domain.exception.LoginFailedException;
 import com.kb.cosmetic_wms.member.domain.exception.MemberNotFoundException;
+import com.kb.cosmetic_wms.member.domain.exception.RoleNotAllowedForSignUpException;
 import com.kb.cosmetic_wms.member.domain.model.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +31,10 @@ public class MemberService implements RegisterMemberUseCase, LoginMemberUseCase,
     @Override
     @Transactional
     public MemberResult register(RegisterMemberCommand command) {
+        if (!command.role().isSelfRegistrable()) {
+            throw new RoleNotAllowedForSignUpException();
+        }
+
         if (memberPort.existsByLoginId(command.loginId())) {
             throw new DuplicateMemberException();
         }

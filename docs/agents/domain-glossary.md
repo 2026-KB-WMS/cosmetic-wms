@@ -11,7 +11,7 @@
 
 | 코드 | 설명 |
 |---|---|
-| `ROLE_HEADQUARTERS` | 본사 관리자. 전사 재고 이동, 리콜 명령, 시스템 정책 설정 |
+| `ROLE_HEADQUARTERS` | 본사 관리자. 전사 재고 이동, 리콜 명령, 시스템 정책 설정. **직접 가입 불가** (`Role.isSelfRegistrable()`, 가입 유스케이스가 거부) |
 | `ROLE_WAREHOUSE_MANAGER` | 창고 관리자. 입출고 검수, 로케이션 관리, 담당 창고 재고 처리 |
 | `ROLE_FRANCHISE_MANAGER` | 점주. 발주, 반품, 유통기한 경과 상품 폐기 신청 |
 

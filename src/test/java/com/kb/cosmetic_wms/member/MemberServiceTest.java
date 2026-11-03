@@ -10,7 +10,9 @@ import com.kb.cosmetic_wms.member.application.service.MemberService;
 import com.kb.cosmetic_wms.member.domain.exception.DuplicateMemberException;
 import com.kb.cosmetic_wms.member.domain.exception.LoginFailedException;
 import com.kb.cosmetic_wms.member.domain.exception.MemberNotFoundException;
+import com.kb.cosmetic_wms.member.domain.exception.RoleNotAllowedForSignUpException;
 import com.kb.cosmetic_wms.member.domain.model.Member;
+import com.kb.cosmetic_wms.member.domain.model.Role;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class MemberServiceTest {
@@ -83,6 +87,19 @@ public class MemberServiceTest {
 
         // then
         assertThat(result.memberId()).isEqualTo(1L);
+    }
+
+    @Test
+    void 본사_관리자_권한으로_회원_등록을_요청하면_RoleNotAllowedForSignUpException_예외를_던지고_저장하지_않는다() {
+        // given
+        MemberSignUpRequest request = MemberDtoBuilder.signUpRequest()
+                .role(Role.ROLE_HEADQUARTERS)
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> memberService.register(request.toCommand()))
+                .isInstanceOf(RoleNotAllowedForSignUpException.class);
+        verify(memberPort, never()).save(any(Member.class));
     }
 
     @Test

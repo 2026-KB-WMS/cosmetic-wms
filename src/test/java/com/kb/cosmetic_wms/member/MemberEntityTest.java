@@ -11,6 +11,7 @@ import com.kb.cosmetic_wms.member.domain.valueobject.LoginId;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class MemberEntityTest {
@@ -84,5 +85,16 @@ public class MemberEntityTest {
                 )
                 .isInstanceOf(MemberValidationException.class)
                 .hasMessage(MemberErrorCode.INVALID_MEMBER_VALIDATION.getMessage());
+    }
+
+    @Test
+    void 본사_관리자_권한은_직접_가입할_수_없다() {
+        Assertions.assertThat(Role.ROLE_HEADQUARTERS.isSelfRegistrable()).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Role.class, names = "ROLE_HEADQUARTERS", mode = EnumSource.Mode.EXCLUDE)
+    void 본사_관리자를_제외한_권한은_직접_가입할_수_있다(Role role) {
+        Assertions.assertThat(role.isSelfRegistrable()).isTrue();
     }
 }
