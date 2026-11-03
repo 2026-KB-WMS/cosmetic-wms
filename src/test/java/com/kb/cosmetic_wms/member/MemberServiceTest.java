@@ -8,6 +8,7 @@ import com.kb.cosmetic_wms.member.application.port.in.MemberResult;
 import com.kb.cosmetic_wms.member.application.port.out.MemberPort;
 import com.kb.cosmetic_wms.member.application.service.MemberService;
 import com.kb.cosmetic_wms.member.domain.exception.DuplicateMemberException;
+import com.kb.cosmetic_wms.member.domain.exception.InvalidPasswordException;
 import com.kb.cosmetic_wms.member.domain.exception.LoginFailedException;
 import com.kb.cosmetic_wms.member.domain.exception.MemberNotFoundException;
 import com.kb.cosmetic_wms.member.domain.exception.RoleNotAllowedForSignUpException;
@@ -99,6 +100,19 @@ public class MemberServiceTest {
         // when & then
         assertThatThrownBy(() -> memberService.register(request.toCommand()))
                 .isInstanceOf(RoleNotAllowedForSignUpException.class);
+        verify(memberPort, never()).save(any(Member.class));
+    }
+
+    @Test
+    void 규칙에_맞지_않는_비밀번호로_회원_등록을_요청하면_InvalidPasswordException_예외를_던지고_저장하지_않는다() {
+        // given
+        MemberSignUpRequest request = MemberDtoBuilder.signUpRequest()
+                .password("weak")
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> memberService.register(request.toCommand()))
+                .isInstanceOf(InvalidPasswordException.class);
         verify(memberPort, never()).save(any(Member.class));
     }
 

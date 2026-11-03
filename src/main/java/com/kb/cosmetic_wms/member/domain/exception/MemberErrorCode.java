@@ -32,6 +32,12 @@ public enum MemberErrorCode implements ErrorCode {
             "올바르지 않은 전화번호 형식입니다."
     ),
 
+    INVALID_PASSWORD(
+            ErrorType.INVALID_REQUEST,
+            "INVALID_PASSWORD",
+            "비밀번호는 8~50자이며 영문, 숫자, 특수문자를 포함해야 합니다."
+    ),
+
     INVALID_MEMBER_VALIDATION(
             ErrorType.INVALID_REQUEST,
             "INVALID_MEMBER_VALIDATION",
