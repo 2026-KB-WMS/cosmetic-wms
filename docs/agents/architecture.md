@@ -18,7 +18,8 @@ global/                       # 전역 설정과 공통 모듈
 ├── adapter/
 │   ├── in/
 │   │   ├── web/              # REST Controller, Request/Response DTO
-│   │   └── event/            # 다른 도메인 이벤트를 수신하는 어댑터
+│   │   ├── event/            # 다른 도메인 이벤트를 수신하는 어댑터
+│   │   └── bootstrap/        # 기동 시 실행되는 어댑터 (ApplicationRunner)
 │   └── out/
 │       ├── persistence/      # JPA Entity, JpaRepository, PersistenceAdapter
 │       └── external/         # 다른 도메인/외부 시스템 호출 어댑터

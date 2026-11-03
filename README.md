@@ -133,6 +133,20 @@ DB 접속 정보는 환경변수로 주입한다. `DB_PASSWORD`는 기본값이 
 DB_PASSWORD=<password> ./gradlew bootRun
 ```
 
+### 최초 본사 관리자 계정
+
+`ROLE_HEADQUARTERS`는 회원 가입 API로 만들 수 없다. 아래 환경변수를 **모두** 지정하고 기동하면, 본사 관리자 계정이 아직 없을 때 한 번 생성한다. 이미 있으면 건너뛴다.
+
+| 환경변수 | 설명 |
+|:--|:--|
+| `HQ_LOGIN_ID` | 로그인 ID |
+| `HQ_PASSWORD` | 비밀번호 (기본값 없음) |
+| `HQ_MEMBER_NAME` | 이름 |
+| `HQ_EMAIL` | 이메일 |
+| `HQ_PHONE_NUMBER` | 전화번호 (예: `010-1234-5678`) |
+
+모두 비워두면 건너뛰고, 일부만 지정하면 기동이 실패한다.
+
 <br>
 
 ## 브랜치 전략 및 컨벤션
