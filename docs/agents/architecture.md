@@ -54,12 +54,24 @@ global/                       # 전역 설정과 공통 모듈
 
 허용되는 방식은 두 가지이며, 둘 다 `adapter` 계층에서만 일어난다.
 
-1. **동기 호출**: `adapter/out/...`이 상대 도메인의 `application.port.in`(UseCase) 또는 `application.port.out`을 구현·호출한다. 예: `outbound.adapter.out` → `inventory.application.port`.
+1. **동기 호출**: `adapter/out/...`이 상대 도메인의 `application.port.in`(UseCase)만 호출한다. 상대의 `port.out`은 쓰지 않는다. 쓰면 상대의 도메인 모델이 새어 나온다. 예: `outbound.adapter.out` → `inventory.application.port.in`.
 2. **이벤트 구독**: `adapter/in/event`가 상대 도메인의 `domain.event`를 구독한다. 예: `inspection.adapter.in.event` → `inbound.domain.event.InboundCompletedEvent`.
 
 다른 도메인은 **ID로 참조**한다 (`Long lotId`, `Long productId`). 다른 도메인의 도메인 모델/엔티티를 필드로 갖지 않는다. 한 도메인이 다른 도메인의 `domain.model`을 import해야 한다면 경계가 잘못된 것이다.
 
-알려진 예외(정리 대상): `storage.adapter.out`이 `product`의 `domain` 패키지를 직접 import한다. 새 코드에서 따라 하지 않는다.
+상대 도메인에서 값을 받을 때는 그 도메인의 도메인 타입(enum, 모델)이 아니라 `port.in`의 Result나 기본 타입을 쓴다. 예: `product`는 보관 온도를 `TemperatureType`이 아니라 구분 코드 문자열(`R`/`C`)로 내주고, `storage`가 자기 `TemperatureZone`으로 변환한다.
+
+## 자동 검증
+
+위 규칙은 `ArchitectureTest`(ArchUnit)가 `scripts/verify.sh`와 CI에서 강제한다.
+
+- `domain`은 Spring, JPA, `application`, `adapter`에 의존하지 않는다.
+- `application`은 `adapter`에 의존하지 않는다.
+- `adapter.in`은 `adapter.out`에 의존하지 않는다.
+- 업무 도메인 간 의존은 `adapter.out → 상대 application.port.in`, `adapter.in.event → 상대 domain.event`만 허용한다.
+- `global`은 업무 도메인에 의존하지 않는다.
+
+테스트가 실패하면 **규칙을 완화하지 말고 코드를 고친다.** 예외가 꼭 필요하면 이슈로 사유를 남기고 사용자와 합의한 뒤에만 허용 목록을 추가한다. 도메인 간 허용 경로 판정 로직은 `DependencyRules`에 있고 `DependencyRulesTest`가 검증한다.
 
 ## 포트와 어댑터
 

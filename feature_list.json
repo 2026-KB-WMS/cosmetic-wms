@@ -10,7 +10,7 @@
     "id": "F-002",
     "name": "아키텍처 규칙 자동 검증 (ArchUnit)",
     "description": "domain의 Spring/JPA import 금지, application의 adapter import 금지, 도메인 간 import 허용 경로(adapter/out→port.in, adapter/in/event→domain.event) 강제. 기존 위반(storage.adapter.out → product.domain)을 먼저 정리한다",
-    "status": "pending",
+    "status": "in_progress",
     "dependencies": [
       "F-001"
     ]
@@ -35,7 +35,7 @@
     "id": "F-005",
     "name": "비밀번호 강도 규칙 도메인화 (#126)",
     "description": "RawPassword 값 객체를 도입하고 인코딩 전에 도메인에서 검증",
-    "status": "in_progress",
+    "status": "completed",
     "dependencies": []
   },
   {
