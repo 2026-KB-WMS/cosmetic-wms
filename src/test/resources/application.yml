@@ -13,3 +13,12 @@ auth:
   jwt:
     # 테스트 전용 값. 운영 시크릿이 아니다
     secret: test-only-jwt-secret-key-for-unit-tests-0123456789
+
+bootstrap:
+  headquarters:
+    # 개발자 셸의 HQ_* 환경변수가 테스트 컨텍스트로 새어 들어가 본사 계정이 만들어지는 것을 막는다
+    login-id: ""
+    password: ""
+    member-name: ""
+    email: ""
+    phone-number: ""
