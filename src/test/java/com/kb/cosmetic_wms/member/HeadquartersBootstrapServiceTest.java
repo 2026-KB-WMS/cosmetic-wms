@@ -4,6 +4,7 @@ import com.kb.cosmetic_wms.member.application.port.in.BootstrapHeadquartersComma
 import com.kb.cosmetic_wms.member.application.port.out.MemberPort;
 import com.kb.cosmetic_wms.member.application.service.HeadquartersBootstrapService;
 import com.kb.cosmetic_wms.member.domain.exception.DuplicateMemberException;
+import com.kb.cosmetic_wms.member.domain.exception.InvalidPasswordException;
 import com.kb.cosmetic_wms.member.domain.model.Member;
 import com.kb.cosmetic_wms.member.domain.model.Role;
 import org.junit.jupiter.api.Test;
@@ -81,6 +82,20 @@ class HeadquartersBootstrapServiceTest {
         // when & then
         assertThatThrownBy(() -> service.bootstrap(command))
                 .isInstanceOf(DuplicateMemberException.class);
+        verify(memberPort, never()).save(any(Member.class));
+    }
+
+    @Test
+    void 규칙에_맞지_않는_비밀번호이면_InvalidPasswordException_예외를_던지고_저장하지_않는다() {
+        // given
+        BootstrapHeadquartersCommand weak = new BootstrapHeadquartersCommand(
+                "hq-admin", "weak", "본사관리자", "hq@example.com", "010-1111-2222"
+        );
+        given(memberPort.existsByRole(Role.ROLE_HEADQUARTERS)).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> service.bootstrap(weak))
+                .isInstanceOf(InvalidPasswordException.class);
         verify(memberPort, never()).save(any(Member.class));
     }
 }

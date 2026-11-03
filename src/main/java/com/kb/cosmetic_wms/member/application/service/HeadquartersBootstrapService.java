@@ -6,6 +6,7 @@ import com.kb.cosmetic_wms.member.application.port.out.MemberPort;
 import com.kb.cosmetic_wms.member.domain.exception.DuplicateMemberException;
 import com.kb.cosmetic_wms.member.domain.model.Member;
 import com.kb.cosmetic_wms.member.domain.model.Role;
+import com.kb.cosmetic_wms.member.domain.valueobject.RawPassword;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,13 +26,15 @@ public class HeadquartersBootstrapService implements BootstrapHeadquartersUseCas
             return false;
         }
 
+        RawPassword rawPassword = new RawPassword(command.password());
+
         if (memberPort.existsByLoginId(command.loginId())) {
             throw new DuplicateMemberException();
         }
 
         memberPort.save(Member.create(
                 command.loginId(),
-                passwordEncoder.encode(command.password()),
+                passwordEncoder.encode(rawPassword.value()),
                 Role.ROLE_HEADQUARTERS,
                 command.memberName(),
                 command.email(),

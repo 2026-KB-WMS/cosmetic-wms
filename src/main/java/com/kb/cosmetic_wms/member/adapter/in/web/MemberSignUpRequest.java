@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.member.adapter.in.web;
 import com.kb.cosmetic_wms.member.application.port.in.RegisterMemberCommand;
 import com.kb.cosmetic_wms.member.domain.model.Role;
 import com.kb.cosmetic_wms.member.domain.valueobject.LoginId;
+import com.kb.cosmetic_wms.member.domain.valueobject.RawPassword;
 import jakarta.validation.constraints.*;
 
 public record MemberSignUpRequest(
@@ -15,9 +16,13 @@ public record MemberSignUpRequest(
         String loginId,
 
         @NotBlank(message = "비밀번호는 필수 입력 항목입니다.")
-        @Size(min = 8, max = 50, message = "비밀번호는 8~50자여야 합니다.")
+        @Size(
+                min = RawPassword.MIN_LENGTH,
+                max = RawPassword.MAX_LENGTH,
+                message = "비밀번호는 8~50자여야 합니다."
+        )
         @Pattern(
-                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).*$",
+                regexp = RawPassword.PATTERN,
                 message = "비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다."
         )
         String password,

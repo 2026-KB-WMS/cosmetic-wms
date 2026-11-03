@@ -7,6 +7,7 @@ import com.kb.cosmetic_wms.member.domain.exception.LoginFailedException;
 import com.kb.cosmetic_wms.member.domain.exception.MemberNotFoundException;
 import com.kb.cosmetic_wms.member.domain.exception.RoleNotAllowedForSignUpException;
 import com.kb.cosmetic_wms.member.domain.model.Member;
+import com.kb.cosmetic_wms.member.domain.valueobject.RawPassword;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,11 +36,13 @@ public class MemberService implements RegisterMemberUseCase, LoginMemberUseCase,
             throw new RoleNotAllowedForSignUpException();
         }
 
+        RawPassword rawPassword = new RawPassword(command.password());
+
         if (memberPort.existsByLoginId(command.loginId())) {
             throw new DuplicateMemberException();
         }
 
-        String encodedPassword = passwordEncoder.encode(command.password());
+        String encodedPassword = passwordEncoder.encode(rawPassword.value());
 
         Member member = Member.create(
                 command.loginId(),
