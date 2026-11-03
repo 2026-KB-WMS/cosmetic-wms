@@ -24,4 +24,22 @@ if total == 0 or failed or skipped:
     sys.exit(1)
 PY
 
+python3 - <<'PY'
+import os
+import xml.etree.ElementTree as ET
+
+path = "build/reports/jacoco/test/jacocoTestReport.xml"
+if not os.path.exists(path):
+    print("coverage: 리포트 없음")
+else:
+    counters = {c.get("type"): c for c in ET.parse(path).getroot().findall("counter")}
+    parts = []
+    for kind, label in (("LINE", "line"), ("BRANCH", "branch")):
+        c = counters.get(kind)
+        if c is not None:
+            covered, missed = int(c.get("covered")), int(c.get("missed"))
+            parts.append(f"{label} {covered / (covered + missed) * 100:.1f}% ({covered}/{covered + missed})")
+    print("coverage: " + ", ".join(parts) + "  (리포트: build/reports/jacoco/test/html/index.html)")
+PY
+
 echo "VERIFY OK"

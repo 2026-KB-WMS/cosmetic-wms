@@ -30,6 +30,14 @@ jobs:
       - name: Verify
         run: scripts/verify.sh
 
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: build/reports/jacoco/test/html
+          retention-days: 7
+
       - name: Upload test report
         if: failure()
         uses: actions/upload-artifact@v7
