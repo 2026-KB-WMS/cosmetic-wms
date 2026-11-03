@@ -5,12 +5,14 @@
 - 단일 모듈 모놀리스. `main`이 기본 브랜치이며 마지막 안정 빌드는 테스트 720개 전체 통과.
 - MSA 분리는 폐기하고 `5a48431`로 복원 완료 ([ADR-0001](docs/adr/0001-single-module-monolith.md)).
 - 에이전트 하네스 문서 체계 도입 완료 (PR #128, F-001). CI 도입 완료 (PR #130, F-003).
-- 열린 이슈: #146 (창고 미배정 확정 발주 취소 허용, 진행 중).
+- 열린 이슈: #147 (구동·운영 준비, PR 대기).
 
 ## 세션 로그
 
 ### 2026-11-03
 
+- 이슈 #147(F-012): Dockerfile, 로컬 compose(MySQL+Redis), Actuator health(liveness/readiness, DB·Redis 포함), 핵심 지점 WARN/INFO 로그, JaCoCo(라인 94%, 브랜치 84.5%, 임계값 없음), `scripts/smoke.sh`로 컨테이너 실제 구동 검증(Flyway V1~V3, 부트스트랩, 로그인, 역할 제한, 토큰 회전). 기동 로그의 경고와 반복 노이즈 제거. 작업 중 테스트가 셸 환경변수(`HQ_*`)에 영향받는 결함을 발견해 수정.
+- PR #148 머지: 창고 미배정 확정 발주 취소 허용 (#146, F-011).
 - 이슈 #146(F-011): 창고가 아직 배정되지 않은 `CONFIRMED` 발주도 취소할 수 있게 `Order.cancel()` 규칙 변경. 배정에 실패한 발주가 막다른 상태가 되는 문제 해소.
 - PR #145 머지: 실패한 이벤트 수동 재처리 API (#144, F-009).
 - 이슈 #144(F-009): 창고 배정·검사 전표 생성 실패 건을 본사 관리자가 조회·재처리·폐기하는 API(`/api/v1/admin/failed-assignments`, `/failed-inspections`). Flyway V3로 `status`/`retry_count`/`resolved_at` 추가, 실패 기록 행 잠금으로 동시 재처리 직렬화, 별도 트랜잭션 실행기로 실패해도 기록 보존, 멱등 보장(배정은 CONFIRMED·미배정일 때만, 전표는 중복 생성 안 함). DB 설계서 v1.6.0.
@@ -37,8 +39,9 @@
 
 ## 다음 세션에서 할 일
 
-1. F-011 마무리: PR 머지.
-2. 운영 준비: Dockerfile, 로컬 compose(MySQL + Redis), Actuator health, 핵심 지점 로그, JaCoCo. 실제 앱을 띄워 로그인부터 재처리까지 확인.
-3. 조회 API 페이징과 인덱스 점검.
+1. F-012(#147) PR 머지.
+2. 조회 API 페이징과 인덱스 점검 (k6 시나리오 데이터로 FEFO·재고 쿼리 `EXPLAIN`).
+3. 문서 복사(`copyOasToStatic`)를 `bootJar` 안에 직접 넣어 `-x test` 빌드 문제 해소 (troubleshooting 참고).
 4. F-010: 실패 건 자동 재시도 (수동 API 운영 후 필요성 판단).
 5. 발주 취소 시 대기 중인 실패 배정 기록을 자동으로 닫기.
+6. 메트릭 수집, 요청 상관 ID(MDC), 알림.
