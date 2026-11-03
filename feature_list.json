@@ -62,5 +62,32 @@
     "description": "@SpringBootTest 5개와 @DataJpaTest 2개를 MySQL 8.0 컨테이너로 전환하고 H2를 제거한다. 로컬 Docker가 필요하다 (#136)",
     "status": "completed",
     "dependencies": []
+  },
+  {
+    "id": "F-009",
+    "name": "실패한 이벤트 수동 재처리 API",
+    "description": "창고 배정·검사 전표 생성 실패 기록을 본사 관리자가 조회하고 재처리하거나 폐기할 수 있게 한다. 자동 재시도는 제외",
+    "status": "completed",
+    "dependencies": [
+      "F-006"
+    ]
+  },
+  {
+    "id": "F-010",
+    "name": "실패한 이벤트 자동 재시도",
+    "description": "수동 재처리 API가 있는 실패 건을 횟수·간격을 제한해 자동으로 재시도한다. 같은 실패를 반복하지 않도록 재시도 상한과 알림이 필요하다",
+    "status": "pending",
+    "dependencies": [
+      "F-009"
+    ]
+  },
+  {
+    "id": "F-011",
+    "name": "창고 배정에 실패한 확정 발주의 처리 정책",
+    "description": "CONFIRMED 발주는 취소할 수 없어서(Order.cancel은 PENDING만 허용) 창고 배정이 계속 실패하면 막다른 상태가 된다. 취소 허용 여부나 별도 보류 상태를 업무와 함께 결정한다",
+    "status": "pending",
+    "dependencies": [
+      "F-009"
+    ]
   }
 ]

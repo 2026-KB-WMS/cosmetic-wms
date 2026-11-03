@@ -27,6 +27,17 @@
 
 <br>
 
+### [1.6.0] - 2026-11-03
+
+- **[DB] 이벤트 실패 보상 테이블에 처리 상태 관리 추가 (Flyway `V3__add_failed_event_resolution.sql`)**
+
+#### Added
+
+- **[DB] `failed_inspection_event`, `failed_assignment_event`에 `status`(PENDING/RESOLVED/DISCARDED), `retry_count`, `resolved_at` 컬럼 추가** — 본사 관리자의 수동 재처리·폐기 결과를 기록. 기존 행은 `PENDING`으로 간주
+- **[DB] `(status, failed_at)` 인덱스 추가** — 처리 대기 건 조회용
+
+<br>
+
 ### [1.5.0] - 2026-07-07
 
 - **[DB] 데이터베이스 설계서(Notion)를 Flyway 마이그레이션(`V1__init_schema.sql`, `V2__add_foreign_keys.sql`) 기준으로 전면 동기화**

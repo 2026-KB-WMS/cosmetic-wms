@@ -5,12 +5,14 @@
 - 단일 모듈 모놀리스. `main`이 기본 브랜치이며 마지막 안정 빌드는 테스트 720개 전체 통과.
 - MSA 분리는 폐기하고 `5a48431`로 복원 완료 ([ADR-0001](docs/adr/0001-single-module-monolith.md)).
 - 에이전트 하네스 문서 체계 도입 완료 (PR #128, F-001). CI 도입 완료 (PR #130, F-003).
-- 열린 이슈: #142 (JWT 인증과 역할별 접근 제어, 진행 중).
+- 열린 이슈: #144 (실패한 이벤트 수동 재처리 API, 진행 중).
 
 ## 세션 로그
 
 ### 2026-11-03
 
+- 이슈 #144(F-009): 창고 배정·검사 전표 생성 실패 건을 본사 관리자가 조회·재처리·폐기하는 API(`/api/v1/admin/failed-assignments`, `/failed-inspections`). Flyway V3로 `status`/`retry_count`/`resolved_at` 추가, 실패 기록 행 잠금으로 동시 재처리 직렬화, 별도 트랜잭션 실행기로 실패해도 기록 보존, 멱등 보장(배정은 CONFIRMED·미배정일 때만, 전표는 중복 생성 안 함). DB 설계서 v1.6.0.
+- PR #143 머지: JWT 인증과 역할별 접근 제어 (#142, F-006).
 - 이슈 #142(F-006): JWT(Access/Refresh) 인증 + Redis 리프레시 토큰 + 역할별 접근 제어 구현. `auth` 도메인(로그인·재발급·로그아웃), `SecurityConfig` 역할 규칙(기본 거부), `AuthorizationMatrixTest`(컨트롤러 매핑과 정확히 일치 검사), 감사자를 로그인 사용자로 변경, `@Async` 보안 컨텍스트 전달. 기존 `POST /members/login`은 `/auth/login`으로 대체(ADR-0006).
 - PR #141 머지: Testcontainers 전환과 격리 수준 수정 (#136, #140, F-008).
 - 이슈 #136(F-008): DB 테스트 7개를 Testcontainers MySQL 8.0으로 전환하고 H2 제거. `MySqlContainerSupport`(JVM당 컨테이너 1개), `verify.sh`가 스킵 발생 시 실패. Testcontainers는 Docker 29 호환을 위해 1.21.4로 고정.
@@ -33,6 +35,8 @@
 
 ## 다음 세션에서 할 일
 
-1. F-006 마무리: PR 머지. 배포 전 `JWT_SECRET`, Redis 준비 확인.
-2. 담당 창고·소속 가맹점 단위 데이터 접근 제어 (회원-창고, 회원-가맹점 관계 설계 필요).
-3. 로그인 시도 횟수 제한, 모든 기기 로그아웃, OpenAPI 문서의 Bearer 인증 스키마 표기.
+1. F-009 마무리: PR 머지.
+2. F-011: 창고 배정 실패 발주의 처리 정책 결정. `CONFIRMED` 발주는 취소할 수 없어 배정이 계속 실패하면 막다른 상태다.
+3. F-010: 실패 건 자동 재시도 (수동 API가 쌓인 뒤 필요성을 판단).
+4. 운영 준비: Actuator health, Dockerfile, 로컬 compose(MySQL + Redis), JaCoCo.
+5. 조회 API 페이징과 인덱스 점검.
