@@ -10,6 +10,9 @@ import java.util.Optional;
 
 interface OrderJpaRepository extends JpaRepository<OrderEntity, Long> {
 
+    @Query("SELECT o FROM OrderEntity o JOIN FETCH o.orderItems WHERE o.id = :id")
+    Optional<OrderEntity> findByIdWithItems(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM OrderEntity o WHERE o.id = :id")
     Optional<OrderEntity> findByIdForUpdate(@Param("id") Long id);

@@ -1,7 +1,16 @@
 package com.kb.cosmetic_wms.oms.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.global.common.BaseEntity;
-import jakarta.persistence.*;
+import com.kb.cosmetic_wms.oms.domain.enums.FailedEventStatus;
+import com.kb.cosmetic_wms.oms.domain.model.FailedAssignment;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -29,14 +38,30 @@ class FailedAssignmentEventEntity extends BaseEntity {
     @Column(name = "failed_at", nullable = false)
     private LocalDateTime failedAt;
 
-    private FailedAssignmentEventEntity(Long orderId, Long storeId, String errorMessage) {
-        this.orderId = orderId;
-        this.storeId = storeId;
-        this.errorMessage = errorMessage;
-        this.failedAt = LocalDateTime.now();
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private FailedEventStatus status;
+
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
+    static FailedAssignmentEventEntity fromDomain(FailedAssignment failed) {
+        FailedAssignmentEventEntity entity = new FailedAssignmentEventEntity();
+        entity.id = failed.getId();
+        entity.orderId = failed.getOrderId();
+        entity.storeId = failed.getStoreId();
+        entity.errorMessage = failed.getErrorMessage();
+        entity.failedAt = failed.getFailedAt();
+        entity.status = failed.getStatus();
+        entity.retryCount = failed.getRetryCount();
+        entity.resolvedAt = failed.getResolvedAt();
+        return entity;
     }
 
-    static FailedAssignmentEventEntity of(Long orderId, Long storeId, String errorMessage) {
-        return new FailedAssignmentEventEntity(orderId, storeId, errorMessage);
+    FailedAssignment toDomain() {
+        return FailedAssignment.reconstitute(id, orderId, storeId, errorMessage, failedAt, status, retryCount, resolvedAt);
     }
 }

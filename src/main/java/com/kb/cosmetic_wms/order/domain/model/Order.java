@@ -54,10 +54,14 @@ public class Order {
 
     public void assignWarehouse(Long warehouseId) {
         if (warehouseId == null) throw new OrderWarehouseRequiredException();
-        if (this.orderStatus != OrderStatus.CONFIRMED || this.warehouseId != null) {
+        if (!isAwaitingWarehouseAssignment()) {
             throw new OrderWarehouseAssignNotAllowedException();
         }
         this.warehouseId = warehouseId;
+    }
+
+    public boolean isAwaitingWarehouseAssignment() {
+        return this.orderStatus == OrderStatus.CONFIRMED && this.warehouseId == null;
     }
 
     public void startPreparation() {

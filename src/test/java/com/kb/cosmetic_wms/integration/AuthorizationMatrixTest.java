@@ -141,6 +141,9 @@ class AuthorizationMatrixTest extends IntegrationTestSupport {
             Endpoint.of(HttpMethod.PATCH, "/api/v1/orders/{orderId}/ship", HQ, WH),
 
             // 운영 관리: 실패한 이벤트 재처리는 본사만
+            Endpoint.of(HttpMethod.GET, "/api/v1/admin/failed-assignments", HQ),
+            Endpoint.of(HttpMethod.POST, "/api/v1/admin/failed-assignments/{failedEventId}/retry", HQ),
+            Endpoint.of(HttpMethod.POST, "/api/v1/admin/failed-assignments/{failedEventId}/discard", HQ),
             Endpoint.of(HttpMethod.GET, "/api/v1/admin/failed-inspections", HQ),
             Endpoint.of(HttpMethod.POST, "/api/v1/admin/failed-inspections/{failedEventId}/retry", HQ),
             Endpoint.of(HttpMethod.POST, "/api/v1/admin/failed-inspections/{failedEventId}/discard", HQ)

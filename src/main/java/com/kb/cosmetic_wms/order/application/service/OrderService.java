@@ -3,6 +3,8 @@ package com.kb.cosmetic_wms.order.application.service;
 import com.kb.cosmetic_wms.global.event.EventPublisher;
 import com.kb.cosmetic_wms.order.domain.event.OrderConfirmedEvent;
 import com.kb.cosmetic_wms.order.application.port.in.CreateOrderCommand;
+import com.kb.cosmetic_wms.order.application.port.in.FindOrderAssignmentTargetUseCase;
+import com.kb.cosmetic_wms.order.application.port.in.OrderAssignmentTarget;
 import com.kb.cosmetic_wms.order.application.port.in.OrderLifecycleUseCase;
 import com.kb.cosmetic_wms.order.application.port.in.OrderResult;
 import com.kb.cosmetic_wms.order.application.port.out.OrderPort;
@@ -11,6 +13,7 @@ import com.kb.cosmetic_wms.order.domain.model.Order;
 import com.kb.cosmetic_wms.order.domain.model.OrderLine;
 
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class OrderService implements OrderLifecycleUseCase {
+public class OrderService implements OrderLifecycleUseCase, FindOrderAssignmentTargetUseCase {
 
     private final OrderPort orderPort;
     private final EventPublisher eventPublisher;
@@ -41,6 +44,11 @@ public class OrderService implements OrderLifecycleUseCase {
         Order saved = orderPort.save(order);
         eventPublisher.publish(toOrderConfirmedEvent(saved));
         return OrderResult.from(saved);
+    }
+
+    @Override
+    public Optional<OrderAssignmentTarget> findAssignmentTarget(Long orderId) {
+        return orderPort.findByIdWithItems(orderId).map(OrderAssignmentTarget::from);
     }
 
     @Override
