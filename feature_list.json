@@ -1,0 +1,44 @@
+[
+  {
+    "id": "F-001",
+    "name": "에이전트 하네스 문서 체계 도입",
+    "description": "AGENTS.md, CLAUDE.md(import), docs/agents, docs/adr, scripts/verify.sh, 작업 추적 파일 구성",
+    "status": "in_progress",
+    "dependencies": []
+  },
+  {
+    "id": "F-002",
+    "name": "아키텍처 규칙 자동 검증 (ArchUnit)",
+    "description": "domain의 Spring/JPA import 금지, application의 adapter import 금지, 도메인 간 import 허용 경로(adapter/out→port.in, adapter/in/event→domain.event) 강제. 기존 위반(storage.adapter.out → product.domain)을 먼저 정리한다",
+    "status": "pending",
+    "dependencies": ["F-001"]
+  },
+  {
+    "id": "F-003",
+    "name": "CI에서 scripts/verify.sh 실행",
+    "description": "GitHub Actions로 PR마다 clean build와 테스트 실행. main 브랜치 보호 규칙 검토",
+    "status": "pending",
+    "dependencies": ["F-001"]
+  },
+  {
+    "id": "F-004",
+    "name": "가입 시 ROLE_HEADQUARTERS 직접 가입 차단 (#126)",
+    "description": "MemberSignUpRequest가 role을 그대로 받아 누구나 본사 권한으로 가입 가능. 가입 가능 역할을 도메인 규칙으로 제한",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": "F-005",
+    "name": "비밀번호 강도 규칙 도메인화 (#126)",
+    "description": "RawPassword 값 객체를 도입하고 인코딩 전에 도메인에서 검증",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": "F-006",
+    "name": "API 인증/인가 체계 도입",
+    "description": "현재 /api/v1/** 전체가 permitAll. 인증 방식과 역할별 접근 제어를 설계하고 도입한다",
+    "status": "pending",
+    "dependencies": ["F-004"]
+  }
+]
