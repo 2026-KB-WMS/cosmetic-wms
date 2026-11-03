@@ -34,15 +34,41 @@
 
 예: `feat(inventory): 유통기한 기반 FEFO 할당 로직 구현`
 
-## Pull Request / 이슈
+## 이슈와 Pull Request
 
-- PR은 `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따른다 (연관 이슈, 작업 내용, 리뷰 요구사항).
-- 이슈 템플릿은 `.github/ISSUE_TEMPLATE/` (feature, bug, refactor). 제목은 `[FEATURE]`, `[BUG]`, `[REFACTOR]`, `[DOCS]` 접두사를 쓴다.
-- 머지 후 작업 브랜치는 삭제한다.
+모든 작업은 이슈로 시작한다. 이슈 없이 브랜치를 만들거나 PR을 올리지 않는다.
+
+1. **이슈 작성**: 작업 전에 이슈를 만든다. 템플릿(`.github/ISSUE_TEMPLATE/`)의 섹션을 따르고 제목은 `[FEATURE]`, `[BUG]`, `[REFACTOR]`, `[DOCS]`, `[CHORE]`, `[TEST]` 접두사를 쓴다.
+2. **브랜치**: `main`에서 분기한다.
+3. **PR**: `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고 "연관된 이슈"에 `Closes #번호`를 적는다.
+4. **머지 후** 작업 브랜치를 삭제한다.
+
+### Assignees와 라벨 (이슈, PR 공통)
+
+이슈와 PR 모두 **Assignees와 라벨을 반드시 지정**한다.
+
+- Assignees: 작업을 요청한 사용자 본인(`gh api user -q .login`). 지정 대상이 불분명하면 사용자에게 묻는다.
+- 라벨은 작업 Type에 맞춰 하나를 붙인다. 저장소의 라벨 이름은 이모지를 포함하므로 정확히 입력한다.
+
+| 작업 Type | 라벨 |
+|---|---|
+| `feat` | `🛠️ feat` |
+| `fix` | `🐞 bug` |
+| `refactor`, `perf` | `🌱 refactor` |
+| `docs` | `📝 documentation` |
+| `chore` | `⚙️ chore` |
+| `test` | `🧪 test` |
+
+```bash
+gh issue create --title "[FEATURE] ..." --body-file <파일> --label "🛠️ feat" --assignee <login>
+gh pr create --base main --title "..." --body-file <파일> --label "🛠️ feat" --assignee <login>
+```
+
+PR의 라벨은 연결된 이슈와 같게 한다.
 
 ## 에이전트 작업 규칙
 
-- 사용자가 요청하기 전에는 커밋/push/PR 생성을 하지 않는다.
+- 사용자가 요청하기 전에는 커밋/push/PR 생성을 하지 않는다. 단, 작업을 시작할 때 이슈를 먼저 만드는 것은 위 규칙에 따라 상시 허용된다 (사용자가 작업을 요청한 경우에 한한다).
 - `main`에 직접 커밋하지 않는다.
 - force push, 브랜치 삭제, 이력 재작성은 사용자가 명시적으로 요청한 경우에만 한다. 한 번의 승인이 다른 작업으로 확장되지 않는다.
 - 비밀 정보 파일(`.env`, `*.pem`)을 스테이징하지 않는다. `git add -A` 전에 `git status`로 확인한다.
