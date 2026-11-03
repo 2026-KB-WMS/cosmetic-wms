@@ -3,7 +3,7 @@
     "id": "F-001",
     "name": "에이전트 하네스 문서 체계 도입",
     "description": "AGENTS.md, CLAUDE.md(import), docs/agents, docs/adr, scripts/verify.sh, 작업 추적 파일 구성",
-    "status": "in_progress",
+    "status": "completed",
     "dependencies": []
   },
   {
@@ -11,14 +11,18 @@
     "name": "아키텍처 규칙 자동 검증 (ArchUnit)",
     "description": "domain의 Spring/JPA import 금지, application의 adapter import 금지, 도메인 간 import 허용 경로(adapter/out→port.in, adapter/in/event→domain.event) 강제. 기존 위반(storage.adapter.out → product.domain)을 먼저 정리한다",
     "status": "pending",
-    "dependencies": ["F-001"]
+    "dependencies": [
+      "F-001"
+    ]
   },
   {
     "id": "F-003",
     "name": "CI에서 scripts/verify.sh 실행",
     "description": "GitHub Actions로 PR마다 clean build와 테스트 실행. main 브랜치 보호 규칙 검토",
-    "status": "pending",
-    "dependencies": ["F-001"]
+    "status": "in_progress",
+    "dependencies": [
+      "F-001"
+    ]
   },
   {
     "id": "F-004",
@@ -39,6 +43,8 @@
     "name": "API 인증/인가 체계 도입",
     "description": "현재 /api/v1/** 전체가 permitAll. 인증 방식과 역할별 접근 제어를 설계하고 도입한다",
     "status": "pending",
-    "dependencies": ["F-004"]
+    "dependencies": [
+      "F-004"
+    ]
   }
 ]
