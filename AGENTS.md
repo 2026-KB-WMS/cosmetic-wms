@@ -39,7 +39,7 @@ Swagger UI: `http://localhost:8080/swagger-ui/index.html` (스펙은 `/docs/open
 ## 완료 기준 (Definition of Done)
 
 1. 변경하거나 추가한 동작에는 그 동작을 검증하는 테스트가 있다.
-2. `scripts/verify.sh`가 통과한다. 실패한 상태로 완료를 선언하거나 커밋하지 않는다.
+2. `scripts/verify.sh`가 통과한다. 실패한 상태로 완료를 선언하거나 커밋하지 않는다. CI(`.github/workflows/ci.yml`)가 PR마다 같은 스크립트를 실행하며, 실패한 PR은 머지하지 않는다.
 3. 건너뛴 검증이 있으면 사실 그대로 보고한다.
 4. 문서와 어긋나게 만든 부분이 있으면 같은 변경에서 문서를 갱신한다.
 
