@@ -9,7 +9,7 @@ import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryErrorCode;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNotFoundException;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryDtoBuilder;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = InventoryController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 public class InventoryControllerTest extends RestDocsSupport {
 
     @Autowired

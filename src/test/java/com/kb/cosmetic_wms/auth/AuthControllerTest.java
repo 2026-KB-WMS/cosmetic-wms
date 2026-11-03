@@ -9,7 +9,7 @@ import com.kb.cosmetic_wms.auth.application.port.in.LogoutUseCase;
 import com.kb.cosmetic_wms.auth.application.port.in.ReissueTokenUseCase;
 import com.kb.cosmetic_wms.auth.application.port.in.TokenResult;
 import com.kb.cosmetic_wms.auth.domain.exception.InvalidRefreshTokenException;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 class AuthControllerTest extends RestDocsSupport {
 
     @Autowired

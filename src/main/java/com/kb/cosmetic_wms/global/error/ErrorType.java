@@ -6,6 +6,7 @@ package com.kb.cosmetic_wms.global.error;
 public enum ErrorType {
     INVALID_REQUEST,
     UNAUTHORIZED,
+    FORBIDDEN,
     NOT_FOUND,
     CONFLICT,
     RULE_VIOLATION,

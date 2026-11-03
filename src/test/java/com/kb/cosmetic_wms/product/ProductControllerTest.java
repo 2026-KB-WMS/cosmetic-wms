@@ -9,7 +9,7 @@ import com.kb.cosmetic_wms.product.category.domain.exception.CategoryNotFoundExc
 import com.kb.cosmetic_wms.product.product.application.port.in.*;
 import com.kb.cosmetic_wms.product.product.domain.enums.TemperatureType;
 import com.kb.cosmetic_wms.product.fixture.ProductDtoBuilder;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.product.product.domain.exception.DuplicateProductException;
@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ProductController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 public class ProductControllerTest extends RestDocsSupport {
 
     @Autowired

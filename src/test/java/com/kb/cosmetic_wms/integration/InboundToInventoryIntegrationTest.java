@@ -1,6 +1,7 @@
 package com.kb.cosmetic_wms.integration;
 
 import com.kb.cosmetic_wms.support.MySqlContainerSupport;
+import com.kb.cosmetic_wms.support.TestAuthentication;
 import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
 import com.kb.cosmetic_wms.inbound.application.exception.InboundCapacityExceededException;
@@ -99,14 +100,15 @@ class InboundToInventoryIntegrationTest extends MySqlContainerSupport {
         LocalDateTime now = LocalDateTime.now();
 
         /*
-         * AuditorAwareImpl이 항상 1L을 반환하므로,
-         * inventory_transaction.member_id FK 제약 충족을 위해 member ID=1 레코드를 보장한다.
+         * 재고 이력의 행위자(inventory_transaction.member_id)는 로그인한 회원이며 FK로 member를 참조한다.
+         * 서비스를 직접 호출하는 이 테스트는 member ID=1 레코드를 보장하고 그 회원으로 인증된 상태로 실행한다.
          * INSERT IGNORE로 중복 삽입을 방지한다.
          */
         jdbcTemplate.update(
                 "INSERT IGNORE INTO member (member_id, login_id, password, role, member_name, email, phone_number, created_by, created_at)" +
                         " VALUES (1, 'testadmin', 'no_password', 'ADMIN', '테스트관리자', 'admin@wms-test.com', '010-0000-0000', 1, ?)",
                 now);
+        TestAuthentication.authenticateAs(1L);
 
         jdbcTemplate.update(
                 "INSERT INTO category (category_code, category_name, created_by, created_at) VALUES (?, ?, ?, ?)",
@@ -147,6 +149,7 @@ class InboundToInventoryIntegrationTest extends MySqlContainerSupport {
 
     @AfterEach
     void tearDown() {
+        TestAuthentication.clear();
         jdbcTemplate.execute("DELETE FROM inventory_transaction");
         jdbcTemplate.execute("DELETE FROM inventory");
         jdbcTemplate.execute("DELETE FROM quality_inspection");

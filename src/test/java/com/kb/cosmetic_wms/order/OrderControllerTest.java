@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.order;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.order.adapter.in.web.CreateOrderRequest;
@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {OrderController.class})
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 public class OrderControllerTest extends RestDocsSupport {
 
     @Autowired

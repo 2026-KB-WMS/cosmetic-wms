@@ -1,7 +1,7 @@
 package com.kb.cosmetic_wms.inbound;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kb.cosmetic_wms.global.config.SecurityConfig;
+import com.kb.cosmetic_wms.support.TestSecurityConfig;
 import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.inbound.adapter.in.web.InboundController;
@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {InboundController.class})
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({TestSecurityConfig.class, GlobalExceptionHandler.class})
 public class InboundControllerTest extends RestDocsSupport {
 
     @Autowired

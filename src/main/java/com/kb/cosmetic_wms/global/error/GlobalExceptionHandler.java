@@ -25,6 +25,7 @@ public class GlobalExceptionHandler {
         return switch (type) {
             case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
             case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
+            case FORBIDDEN -> HttpStatus.FORBIDDEN;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case CONFLICT -> HttpStatus.CONFLICT;
             case RULE_VIOLATION -> HttpStatus.UNPROCESSABLE_ENTITY;
