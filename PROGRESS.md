@@ -5,12 +5,14 @@
 - 단일 모듈 모놀리스. `main`이 기본 브랜치이며 마지막 안정 빌드는 테스트 720개 전체 통과.
 - MSA 분리는 폐기하고 `5a48431`로 복원 완료 ([ADR-0001](docs/adr/0001-single-module-monolith.md)).
 - 에이전트 하네스 문서 체계 도입 완료 (PR #128, F-001). CI 도입 완료 (PR #130, F-003).
-- 열린 이슈: #136 (Testcontainers 전환, 진행 중), #140 (격리 수준 버그, 진행 중).
+- 열린 이슈: #142 (JWT 인증과 역할별 접근 제어, 진행 중).
 
 ## 세션 로그
 
 ### 2026-11-03
 
+- 이슈 #142(F-006): JWT(Access/Refresh) 인증 + Redis 리프레시 토큰 + 역할별 접근 제어 구현. `auth` 도메인(로그인·재발급·로그아웃), `SecurityConfig` 역할 규칙(기본 거부), `AuthorizationMatrixTest`(컨트롤러 매핑과 정확히 일치 검사), 감사자를 로그인 사용자로 변경, `@Async` 보안 컨텍스트 전달. 기존 `POST /members/login`은 `/auth/login`으로 대체(ADR-0006).
+- PR #141 머지: Testcontainers 전환과 격리 수준 수정 (#136, #140, F-008).
 - 이슈 #136(F-008): DB 테스트 7개를 Testcontainers MySQL 8.0으로 전환하고 H2 제거. `MySqlContainerSupport`(JVM당 컨테이너 1개), `verify.sh`가 스킵 발생 시 실패. Testcontainers는 Docker 29 호환을 위해 1.21.4로 고정.
 - 전환 중 이슈 #140 발견: MySQL 기본 격리 수준(REPEATABLE READ)에서 동시 입고 시 DOCKING 용량 갱신 유실. 격리 수준을 READ COMMITTED로 설정해 해결(ADR-0005). H2가 가려주던 운영 버그.
 - PR #139 머지: ArchUnit 아키텍처 규칙 (#138, F-002).
@@ -31,5 +33,6 @@
 
 ## 다음 세션에서 할 일
 
-1. F-008 마무리: PR 머지. 배포 전 운영 DB의 격리 수준 설정이 이미 지정돼 있는지 확인(ADR-0005).
-2. F-006: API 인증/인가 체계 도입. 설계 결정 필요(방식, 엔드포인트별 역할).
+1. F-006 마무리: PR 머지. 배포 전 `JWT_SECRET`, Redis 준비 확인.
+2. 담당 창고·소속 가맹점 단위 데이터 접근 제어 (회원-창고, 회원-가맹점 관계 설계 필요).
+3. 로그인 시도 횟수 제한, 모든 기기 로그아웃, OpenAPI 문서의 Bearer 인증 스키마 표기.

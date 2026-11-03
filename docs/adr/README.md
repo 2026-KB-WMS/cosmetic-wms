@@ -9,6 +9,7 @@
 | [0003](0003-lot-number-format.md) | 로트 번호를 입고 기반 복합 식별자로 변경 | Accepted |
 | [0004](0004-warehouse-assignment-policy.md) | 창고 배정 정책 (가중치 기반) | Accepted |
 | [0005](0005-transaction-isolation-read-committed.md) | 트랜잭션 격리 수준을 READ COMMITTED로 설정 | Accepted |
+| [0006](0006-jwt-authentication-and-rbac.md) | JWT(Access/Refresh)와 Redis 기반 인증, 역할별 접근 제어 | Accepted |
 
 ## 템플릿
 

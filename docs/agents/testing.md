@@ -52,6 +52,8 @@ DB를 쓰는 테스트(`@SpringBootTest`, `@DataJpaTest`)는 **Testcontainers의
 - DB 테스트 클래스는 `MySqlContainerSupport`를 상속한다. 컨테이너는 JVM당 하나만 띄워 모든 테스트가 공유한다. `@DataJpaTest`는 `@AutoConfigureTestDatabase(replace = NONE)`도 붙인다.
 - 컨테이너가 공유되므로 테스트가 만든 데이터가 다른 테스트에 남는다. 테스트는 자기 데이터를 스스로 정리하거나 고유한 값을 쓴다.
 - 접속 정보와 격리 수준은 `application.yaml`의 운영 설정을 그대로 쓴다. 테스트만을 위해 격리 수준 같은 동작 설정을 바꾸지 않는다. 운영과 다른 설정으로 통과한 테스트는 의미가 없다 ([ADR-0005](../adr/0005-transaction-isolation-read-committed.md)).
+- Redis가 필요한 테스트는 `IntegrationTestSupport`를 상속한다 (MySQL과 Redis 컨테이너, 각각 JVM당 하나). Redis만 쓰는 어댑터 테스트는 `RedisTestContainer`로 직접 접속한다.
+- 컨트롤러 슬라이스 테스트는 `@Import(TestSecurityConfig.class)`로 보안을 열어 두고 API 계약만 검증한다. 인가는 `AuthorizationMatrixTest`가 검증한다 ([security.md](security.md)). 서비스를 직접 호출하는 통합 테스트는 `TestAuthentication.authenticateAs(회원ID)`로 행위자를 지정한다.
 - 마이그레이션 검증 설정은 `src/test/resources/application.yml`(Flyway 활성화, `ddl-auto: validate`)이다.
 - FK 체인을 세팅하지 않고 재고를 직접 삽입하는 테스트는 클래스에 `@TestPropertySource(properties = "spring.datasource.hikari.connection-init-sql=SET FOREIGN_KEY_CHECKS=0")`를 붙인다. MySQL의 `FOREIGN_KEY_CHECKS`는 연결 단위 설정이라 풀의 모든 연결에 적용해야 한다.
 - Testcontainers는 1.21.4 이상이어야 최신 Docker(29+)에 접속된다. 낮추지 않는다.
