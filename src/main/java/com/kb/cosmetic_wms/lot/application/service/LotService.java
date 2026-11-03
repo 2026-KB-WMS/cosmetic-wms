@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -58,6 +59,12 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
         return lotPort.findByProductId(productId).stream()
                 .map(LotResult::from)
                 .toList();
+    }
+
+    @Override
+    public Optional<LotResult> findByInboundIdAndManufacturerLotNumber(Long inboundId, String manufacturerLotNumber) {
+        return lotPort.findByInboundIdAndManufacturerLotNumber(inboundId, manufacturerLotNumber)
+                .map(LotResult::from);
     }
 
     @Override

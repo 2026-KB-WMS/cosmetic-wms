@@ -49,7 +49,7 @@ Swagger UI: `http://localhost:8080/swagger-ui/index.html` (스펙은 `/docs/open
 
 **아키텍처** ([상세](docs/agents/architecture.md))
 - 의존 방향은 `adapter → application → domain` 한 방향이다. `domain`은 Spring/JPA를 import하지 않는다. `application`은 `adapter`를 import하지 않는다.
-- 다른 도메인과의 연결은 두 가지뿐이다. (1) `adapter/out`이 상대 도메인의 `application.port.in`을 호출한다. (2) `adapter/in/event`가 상대 도메인의 `domain.event`를 구독한다. 그 외 도메인 간 import는 금지한다.
+- 다른 도메인과의 연결은 두 가지뿐이다. (1) `adapter/out`이 상대 도메인의 `application.port.in`을 호출한다. (2) `adapter/in/event`가 상대 도메인의 `domain.event`를 구독한다. 그 외 도메인 간 import는 금지한다. 이 규칙은 `ArchitectureTest`(ArchUnit)가 자동으로 검증한다. 실패하면 규칙을 완화하지 말고 코드를 고친다.
 - 다른 도메인은 객체가 아니라 **ID(`Long`)로 참조**한다.
 - 컨트롤러에 비즈니스 로직을 두지 않는다. 트랜잭션 경계는 application service에 둔다.
 
