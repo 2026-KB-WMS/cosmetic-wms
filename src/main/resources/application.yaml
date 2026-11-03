@@ -22,6 +22,14 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
 
+bootstrap:
+  headquarters:
+    login-id: ${HQ_LOGIN_ID:}
+    password: ${HQ_PASSWORD:}
+    member-name: ${HQ_MEMBER_NAME:}
+    email: ${HQ_EMAIL:}
+    phone-number: ${HQ_PHONE_NUMBER:}
+
 springdoc:
   api-docs:
     enabled: true

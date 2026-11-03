@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.member.adapter.out.persistence;
 
 import com.kb.cosmetic_wms.member.application.port.out.MemberPort;
 import com.kb.cosmetic_wms.member.domain.model.Member;
+import com.kb.cosmetic_wms.member.domain.model.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,11 @@ public class MemberPersistenceAdapter implements MemberPort {
     @Override
     public boolean existsByLoginId(String loginId) {
         return memberJpaRepository.existsByLoginId(loginId);
+    }
+
+    @Override
+    public boolean existsByRole(Role role) {
+        return memberJpaRepository.existsByRole(role);
     }
 
     @Override
