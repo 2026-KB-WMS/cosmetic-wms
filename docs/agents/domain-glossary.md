@@ -55,6 +55,8 @@
 | 품질검사 `InspectionStatus` | `WAITING` → `IN_PROGRESS` → `COMPLETED` |
 | 로트 `LotStatus` | `AVAILABLE`, `HOLD`, `EXPIRED`, `RECALLED`, `DAMAGED`, `DISPOSED` |
 | 발주 `OrderStatus` | `PENDING` → `CONFIRMED` → `PREPARING` → `SHIPPED` → `DELIVERED` / `CANCELED` |
+
+발주는 `PENDING`이거나 `CONFIRMED`이면서 창고가 아직 배정되지 않은 동안만 취소할 수 있다 (`Order.cancel()`). 창고가 배정되면 재고 할당과 출고가 시작되므로 취소할 수 없다. 창고 배정에 실패한 확정 발주는 재처리하거나 취소한다.
 | 출고 `OutboundStatus` | `PENDING` → `ALLOCATED` → `PROCESSING` → `SHIPPED` / `CANCELED` |
 
 전이 규칙은 각 도메인 모델의 메서드에 있다.

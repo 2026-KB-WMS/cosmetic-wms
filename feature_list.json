@@ -85,7 +85,7 @@
     "id": "F-011",
     "name": "창고 배정에 실패한 확정 발주의 처리 정책",
     "description": "CONFIRMED 발주는 취소할 수 없어서(Order.cancel은 PENDING만 허용) 창고 배정이 계속 실패하면 막다른 상태가 된다. 취소 허용 여부나 별도 보류 상태를 업무와 함께 결정한다",
-    "status": "pending",
+    "status": "completed",
     "dependencies": [
       "F-009"
     ]
