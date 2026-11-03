@@ -133,6 +133,8 @@ DB 접속 정보는 환경변수로 주입한다. `DB_PASSWORD`는 기본값이 
 DB_PASSWORD=<password> ./gradlew bootRun
 ```
 
+테스트(`./gradlew test`, `scripts/verify.sh`)는 Testcontainers로 MySQL 컨테이너를 띄우므로 **Docker가 실행 중이어야 한다.**
+
 ### 최초 본사 관리자 계정
 
 `ROLE_HEADQUARTERS`는 회원 가입 API로 만들 수 없다. 아래 환경변수를 **모두** 지정하고 기동하면, 본사 관리자 계정이 아직 없을 때 한 번 생성한다. 이미 있으면 건너뛴다.

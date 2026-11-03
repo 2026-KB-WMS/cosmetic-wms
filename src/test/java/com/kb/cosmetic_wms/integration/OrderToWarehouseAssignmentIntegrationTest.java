@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.integration;
 
+import org.springframework.test.context.TestPropertySource;
+import com.kb.cosmetic_wms.support.MySqlContainerSupport;
 import com.kb.cosmetic_wms.global.geocoding.GeoCoordinate;
 import com.kb.cosmetic_wms.global.geocoding.GeocodingPort;
 import com.kb.cosmetic_wms.oms.application.port.out.RoutingPort;
@@ -43,7 +45,8 @@ import static org.mockito.BDDMockito.given;
  * </pre>
  */
 @SpringBootTest
-class OrderToWarehouseAssignmentIntegrationTest {
+@TestPropertySource(properties = "spring.datasource.hikari.connection-init-sql=SET FOREIGN_KEY_CHECKS=0")
+class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
 
     private static final Long PRODUCT_ID = 100L;
     private static final GeoCoordinate STORE_SEOUL = GeoCoordinate.of(37.5665, 126.9780);
@@ -71,8 +74,7 @@ class OrderToWarehouseAssignmentIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // 마스터 FK 체인(product·lot·section) 세팅 대신 참조 무결성을 해제하고 재고를 직접 삽입한다
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
+        // 마스터 FK 체인(product·lot·section) 세팅 대신 클래스의 FOREIGN_KEY_CHECKS=0 설정으로 참조 무결성을 해제하고 재고를 직접 삽입한다
         cleanUp();
 
         Map<String, GeoCoordinate> coordinatesByAddress = Map.of(
