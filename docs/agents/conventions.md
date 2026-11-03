@@ -38,7 +38,7 @@ GlobalExceptionHandler: BusinessException → ErrorResponseDto { errorCode, mess
 - 요청/응답 DTO는 `record`다. `adapter/in/web`에 둔다.
 - UseCase 입출력은 `application/port/in`의 `Command` / `Result` record다. 웹 DTO가 `toCommand()`로 변환한다.
 - 도메인 모델을 응답으로 직접 반환하지 않는다.
-- 입력 검증은 Bean Validation으로 형식을 검사하되, 도메인 불변식은 도메인에서 다시 강제한다 (웹 DTO에만 있는 규칙은 다른 진입점에서 우회된다).
+- 입력 검증은 Bean Validation으로 형식을 검사하되, 도메인 불변식은 도메인에서 다시 강제한다 (웹 DTO에만 있는 규칙은 다른 진입점에서 우회된다). 규칙의 출처는 도메인 값 객체의 상수 하나로 두고 웹 DTO가 이를 참조한다 (`LoginId.MIN_LENGTH`, `RawPassword.PATTERN`).
 
 ## Spring
 
