@@ -1,0 +1,62 @@
+name: cosmetic-wms
+
+# 로컬 개발·검증용. 인프라만 띄우려면:  docker compose up -d
+# 앱까지 컨테이너로 띄우려면:           ./gradlew bootJar && docker compose --profile app up -d --build
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 지정하세요 (.env.example 참고)}
+      MYSQL_DATABASE: cosmetic_wms
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    profiles: ["app"]
+    build: .
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/cosmetic_wms?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET:-}
+      HQ_LOGIN_ID: ${HQ_LOGIN_ID:-}
+      HQ_PASSWORD: ${HQ_PASSWORD:-}
+      HQ_MEMBER_NAME: ${HQ_MEMBER_NAME:-}
+      HQ_EMAIL: ${HQ_EMAIL:-}
+      HQ_PHONE_NUMBER: ${HQ_PHONE_NUMBER:-}
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+volumes:
+  mysql-data:
