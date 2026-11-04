@@ -28,6 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.kb.cosmetic_wms.inventory.application.port.in.ManageLotBlockUseCase;
 import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
 import java.time.Clock;
 import java.time.Duration;
@@ -85,6 +86,9 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
 
     @Autowired
     private ShelfLifePolicy shelfLifePolicy;
+
+    @Autowired
+    private ManageLotBlockUseCase manageLotBlockUseCase;
 
     @Autowired
     private FindFailedAssignmentUseCase findFailedAssignmentUseCase;
@@ -348,6 +352,55 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     }
 
     @Test
+    void 리콜된_로트의_재고는_유통기한이_더_빨라도_출고_할당에서_제외된다() {
+        // given — 같은 창고에 리콜 로트(잔여 20일)와 정상 로트(잔여 60일)
+        long recalledLot = lotSeq;
+        insertInventory(nearWarehouseId, PRODUCT_ID, 50, expiryAfter(20));
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        manageLotBlockUseCase.block(recalledLot, "RECALLED");
+
+        OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
+                List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
+
+        // when
+        orderLifecycleUseCase.confirmOrder(order.id());
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(jdbcTemplate.queryForObject(
+                "SELECT order_status FROM orders WHERE orders_id = ?", String.class, order.id()))
+                .isEqualTo("PREPARING"));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'ALLOCATED' AND expiry_date = ?",
+                Integer.class, nearWarehouseId, expiryAfter(60))).isEqualTo(30);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND expiry_date = ? AND alloc_status = 'UNALLOCATED'",
+                Integer.class, nearWarehouseId, expiryAfter(20))).isEqualTo(50);
+    }
+
+    @Test
+    void 리콜된_로트의_재고만_있는_창고는_더_가까워도_배정_후보에서_제외된다() {
+        // given
+        long recalledLot = lotSeq;
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        insertInventory(farWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        manageLotBlockUseCase.block(recalledLot, "RECALLED");
+
+        OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
+                List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
+
+        // when
+        orderLifecycleUseCase.confirmOrder(order.id());
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Map<String, Object> orderRow = jdbcTemplate.queryForMap(
+                    "SELECT order_status, warehouse_id FROM orders WHERE orders_id = ?", order.id());
+            assertThat(orderRow.get("order_status")).isEqualTo("PREPARING");
+            assertThat(((Number) orderRow.get("warehouse_id")).longValue()).isEqualTo(farWarehouseId);
+        });
+    }
+
+    @Test
     void 운영_설정의_출고_가능_최소_잔여_유통기한은_7일이다() {
         assertThat(shelfLifePolicy.minRemainingDays()).isEqualTo(7);
     }
@@ -441,7 +494,8 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
 
     private void cleanUp() {
         for (String table : List.of("outbound_item", "outbound", "inventory_transaction", "inventory",
-                "orders_item", "orders", "failed_assignment_event", "section", "warehouse", "store")) {
+                "orders_item", "orders", "failed_assignment_event", "section", "warehouse", "store",
+                "inventory_lot_block")) {
             jdbcTemplate.execute("DELETE FROM " + table);
         }
     }

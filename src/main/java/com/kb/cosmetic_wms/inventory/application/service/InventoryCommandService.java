@@ -3,11 +3,13 @@ package com.kb.cosmetic_wms.inventory.application.service;
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
+import com.kb.cosmetic_wms.inventory.application.port.out.LotBlockPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryLotBlockedException;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNearExpiryException;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNotFoundException;
 import com.kb.cosmetic_wms.inventory.domain.model.Inventory;
@@ -37,6 +39,7 @@ public class InventoryCommandService implements
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
     private final SectionAssignmentPort sectionAssignmentPort;
+    private final LotBlockPort lotBlockPort;
     private final ShelfLifePolicy shelfLifePolicy;
     private final Clock clock;
 
@@ -46,6 +49,9 @@ public class InventoryCommandService implements
         Inventory inventory = findOrThrow(inventoryId);
         if (!shelfLifePolicy.isAllocatable(inventory.getExpiryDate(), LocalDate.now(clock))) {
             throw new InventoryNearExpiryException();
+        }
+        if (lotBlockPort.isBlocked(inventory.getLotId())) {
+            throw new InventoryLotBlockedException();
         }
         return applyAndRecord(inventory, inv -> inv.allocate(command.quantity()),
                 TransactionType.ALLOCATE, command.quantity(), command.referenceId(), command.memberId());

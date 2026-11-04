@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.inventory;
 import com.kb.cosmetic_wms.inventory.application.port.in.*;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryTransactionPort;
+import com.kb.cosmetic_wms.inventory.application.port.out.LotBlockPort;
 import com.kb.cosmetic_wms.inventory.application.port.out.SectionAssignmentPort;
 import com.kb.cosmetic_wms.inventory.application.service.InventoryCommandService;
 import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
@@ -18,6 +19,7 @@ import com.kb.cosmetic_wms.inventory.domain.model.InventoryStatusSet;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryTransaction;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryDtoBuilder;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryTestBuilder;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryLotBlockedException;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNearExpiryException;
 import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,12 +61,15 @@ class InventoryCommandServiceTest {
     @Mock
     private SectionAssignmentPort sectionAssignmentPort;
 
+    @Mock
+    private LotBlockPort lotBlockPort;
+
     private Inventory defaultInventory;
 
     @BeforeEach
     void setUp() {
         inventoryService = new InventoryCommandService(
-                inventoryPort, inventoryTransactionPort, sectionAssignmentPort, new ShelfLifePolicy(7), CLOCK);
+                inventoryPort, inventoryTransactionPort, sectionAssignmentPort, lotBlockPort, new ShelfLifePolicy(7), CLOCK);
         defaultInventory = new InventoryTestBuilder().build();
         ReflectionTestUtils.setField(defaultInventory, "id", 1L);
         lenient().when(inventoryPort.save(any(Inventory.class)))
@@ -77,6 +82,32 @@ class InventoryCommandServiceTest {
 
     @Nested
     class 출고_할당 {
+
+        @Test
+        void 차단된_로트의_재고는_할당할_수_없고_저장하지_않는다() {
+            // given
+            given(inventoryPort.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(lotBlockPort.isBlocked(defaultInventory.getLotId())).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> inventoryService.allocate(1L, new InventoryDtoBuilder().quantity(10).build()))
+                    .isInstanceOf(InventoryLotBlockedException.class);
+            verify(inventoryPort, never()).save(any(Inventory.class));
+            verify(inventoryTransactionPort, never()).save(any());
+        }
+
+        @Test
+        void 차단되지_않은_로트의_재고는_할당할_수_있다() {
+            // given
+            given(inventoryPort.findByIdForUpdate(1L)).willReturn(Optional.of(defaultInventory));
+            given(lotBlockPort.isBlocked(defaultInventory.getLotId())).willReturn(false);
+
+            // when
+            InventoryResult result = inventoryService.allocate(1L, new InventoryDtoBuilder().quantity(100).build());
+
+            // then
+            assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
+        }
 
         @Test
         void 잔여_유통기한이_7일_이하인_재고는_할당할_수_없고_저장하지_않는다() {

@@ -14,6 +14,18 @@ public abstract class MySqlContainerSupport {
         MYSQL.start();
     }
 
+    /**
+     * 컨테이너의 root 계정으로 접속하는 JDBC URL. 마이그레이션 테스트처럼 별도 데이터베이스를 만들 때 쓴다.
+     */
+    protected static String rootJdbcUrl(String database) {
+        return "jdbc:mysql://" + MYSQL.getHost() + ":" + MYSQL.getFirstMappedPort() + "/" + database
+                + "?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true";
+    }
+
+    protected static String rootPassword() {
+        return MYSQL.getPassword();
+    }
+
     @DynamicPropertySource
     static void datasourceProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url",

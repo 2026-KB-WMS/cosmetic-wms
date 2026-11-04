@@ -26,6 +26,7 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
               AND i.loc_status    = 'STORED'
               AND i.available_quantity > 0
               AND i.expiry_date > :allocatableAfter
+              AND NOT EXISTS (SELECT 1 FROM inventory_lot_block b WHERE b.lot_id = i.lot_id)
             ORDER BY i.expiry_date ASC
             """, nativeQuery = true)
     List<FefoInventoryProjection> findAvailableForFefo(@Param("productId") Long productId,
@@ -42,6 +43,7 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
               AND i.loc_status    = 'STORED'
               AND i.available_quantity > 0
               AND i.expiry_date > :allocatableAfter
+              AND NOT EXISTS (SELECT 1 FROM inventory_lot_block b WHERE b.lot_id = i.lot_id)
             GROUP BY i.warehouse_id, i.product_id
             """, nativeQuery = true)
     List<ProductAvailabilityProjection> findAvailabilityByProducts(@Param("productIds") Collection<Long> productIds,

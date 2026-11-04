@@ -7,6 +7,7 @@ import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryErrorCode;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryLotBlockedException;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNearExpiryException;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNotFoundException;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryDtoBuilder;
@@ -190,6 +191,24 @@ public class InventoryControllerTest extends RestDocsSupport {
                 .andExpect(jsonPath("$.errorCode").value("INVENTORY_NEAR_EXPIRY"))
                 .andDo(document("inventory-allocate-fail-near-expiry",
                         buildErrorParams(INVENTORY, "출고 할당 - 유통기한 임박·만료 재고 거부"),
+                        globalErrorResponseFields()
+                ));
+    }
+
+    @Test
+    @WithMockUser
+    void 리콜_보류된_로트의_재고를_출고_할당하면_422를_반환하고_에러응답이_문서화된다() throws Exception {
+        InventoryStatusChangeCommand request = new InventoryDtoBuilder().build();
+        given(manageInventoryStatusUseCase.allocate(eq(1L), any())).willThrow(new InventoryLotBlockedException());
+
+        mockMvc.perform(patch("/api/v1/inventories/{inventoryId}/allocate", 1L)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("INVENTORY_LOT_BLOCKED"))
+                .andDo(document("inventory-allocate-fail-lot-blocked",
+                        buildErrorParams(INVENTORY, "출고 할당 - 리콜·보류된 로트의 재고 거부"),
                         globalErrorResponseFields()
                 ));
     }

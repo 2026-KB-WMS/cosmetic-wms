@@ -38,6 +38,7 @@ class InventoryAvailabilityRepositoryTest extends MySqlContainerSupport {
         jdbcTemplate = new JdbcTemplate(dataSource);
         // 집계 쿼리 검증이 목적이므로 마스터 데이터(FK 체인) 세팅 대신 클래스의 FOREIGN_KEY_CHECKS=0 설정으로 참조 무결성을 해제한다
         jdbcTemplate.execute("DELETE FROM inventory");
+        jdbcTemplate.execute("DELETE FROM inventory_lot_block");
     }
 
     @Test
@@ -155,17 +156,86 @@ class InventoryAvailabilityRepositoryTest extends MySqlContainerSupport {
         assertThat(candidates).extracting(FefoInventoryProjection::getAvailableQuantity).containsExactly(10);
     }
 
+    @Test
+    void 차단된_로트의_재고는_FEFO_후보에서_제외된다() {
+        // given — 로트 1은 정상, 로트 77은 리콜(더 빨리 만료되는 재고)
+        insertInventoryOfLot(1L, 1L, 100L, 10, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventoryOfLot(77L, 1L, 100L, 99, TODAY.plusDays(20), "UNALLOCATED", "NORMAL", "STORED");
+        insertBlock(77L, "RECALLED");
+
+        // when
+        List<FefoInventoryProjection> candidates =
+                inventoryJpaRepository.findAvailableForFefo(100L, 1L, ALLOCATABLE_AFTER);
+
+        // then
+        assertThat(candidates).extracting(FefoInventoryProjection::getAvailableQuantity).containsExactly(10);
+    }
+
+    @Test
+    void 차단된_로트의_재고는_가용_재고_집계에서_제외된다() {
+        // given
+        insertInventoryOfLot(1L, 1L, 100L, 10, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventoryOfLot(77L, 1L, 100L, 99, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertBlock(77L, "HOLD");
+
+        // when
+        List<ProductAvailabilityProjection> rows =
+                inventoryJpaRepository.findAvailabilityByProducts(List.of(100L), ALLOCATABLE_AFTER);
+
+        // then
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().getAvailableQuantity()).isEqualTo(10);
+    }
+
+    @Test
+    void 차단된_로트에_나중에_생긴_재고도_자동으로_제외된다() {
+        // given — 차단이 먼저 있고, 그 뒤에 같은 로트의 재고가 만들어진다 (검사 합격 등)
+        insertBlock(77L, "RECALLED");
+        insertInventoryOfLot(77L, 1L, 100L, 50, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+
+        // when & then
+        assertThat(inventoryJpaRepository.findAvailableForFefo(100L, 1L, ALLOCATABLE_AFTER)).isEmpty();
+        assertThat(inventoryJpaRepository.findAvailabilityByProducts(List.of(100L), ALLOCATABLE_AFTER)).isEmpty();
+    }
+
+    @Test
+    void 차단이_해제된_로트의_재고는_다시_후보가_된다() {
+        // given
+        insertInventoryOfLot(77L, 1L, 100L, 50, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertBlock(77L, "HOLD");
+        assertThat(inventoryJpaRepository.findAvailableForFefo(100L, 1L, ALLOCATABLE_AFTER)).isEmpty();
+
+        // when
+        jdbcTemplate.update("DELETE FROM inventory_lot_block WHERE lot_id = ?", 77L);
+
+        // then
+        assertThat(inventoryJpaRepository.findAvailableForFefo(100L, 1L, ALLOCATABLE_AFTER)).hasSize(1);
+    }
+
     private long sectionSeq = 1;
 
     private void insertInventory(Long warehouseId, Long productId, int availableQty, LocalDate expiryDate,
                                  String allocStatus, String qualityStatus, String locStatus) {
+        insertInventoryOfLot(1L, warehouseId, productId, availableQty, expiryDate, allocStatus, qualityStatus, locStatus);
+    }
+
+    private void insertBlock(long lotId, String status) {
+        jdbcTemplate.update("""
+                INSERT INTO inventory_lot_block (lot_id, status, created_by, created_at)
+                VALUES (?, ?, 1, NOW())
+                """, lotId, status);
+    }
+
+    private void insertInventoryOfLot(Long lotId, Long warehouseId, Long productId, int availableQty,
+                                      LocalDate expiryDate, String allocStatus, String qualityStatus,
+                                      String locStatus) {
         jdbcTemplate.update("""
                         INSERT INTO inventory (product_id, lot_id, section_id, warehouse_id, quantity,
                                                available_quantity, alloc_status, quality_status, loc_status,
                                                expiry_date, created_by, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
                         """,
-                productId, 1L, sectionSeq++, warehouseId, availableQty,
+                productId, lotId, sectionSeq++, warehouseId, availableQty,
                 availableQty, allocStatus, qualityStatus, locStatus, expiryDate);
     }
 
