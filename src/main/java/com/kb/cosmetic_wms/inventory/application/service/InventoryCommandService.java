@@ -8,15 +8,18 @@ import com.kb.cosmetic_wms.inventory.domain.enums.AllocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.LocStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.QualityStatus;
 import com.kb.cosmetic_wms.inventory.domain.enums.TransactionType;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNearExpiryException;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNotFoundException;
 import com.kb.cosmetic_wms.inventory.domain.model.Inventory;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryStatusSet;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryTransaction;
+import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
 import com.kb.cosmetic_wms.inventory.domain.model.SplitResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -34,11 +37,16 @@ public class InventoryCommandService implements
     private final InventoryPort inventoryPort;
     private final InventoryTransactionPort inventoryTransactionPort;
     private final SectionAssignmentPort sectionAssignmentPort;
+    private final ShelfLifePolicy shelfLifePolicy;
+    private final Clock clock;
 
     @Override
     @Transactional
     public InventoryResult allocate(Long inventoryId, InventoryStatusChangeCommand command) {
         Inventory inventory = findOrThrow(inventoryId);
+        if (!shelfLifePolicy.isAllocatable(inventory.getExpiryDate(), LocalDate.now(clock))) {
+            throw new InventoryNearExpiryException();
+        }
         return applyAndRecord(inventory, inv -> inv.allocate(command.quantity()),
                 TransactionType.ALLOCATE, command.quantity(), command.referenceId(), command.memberId());
     }

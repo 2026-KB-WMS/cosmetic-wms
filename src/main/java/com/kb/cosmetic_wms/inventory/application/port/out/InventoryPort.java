@@ -23,9 +23,12 @@ public interface InventoryPort {
     Optional<Inventory> findMergeTargetForUpdate(Long productId, Long lotId, Long sectionId,
                                                  InventoryStatusSet statusSet, Long excludeId);
 
-    List<FefoInventoryView> findAvailableForFefo(Long productId, Long warehouseId);
+    /**
+     * @param allocatableAfter 이 날짜보다 유통기한이 늦은 재고만 조회한다
+     */
+    List<FefoInventoryView> findAvailableForFefo(Long productId, Long warehouseId, LocalDate allocatableAfter);
 
-    List<ProductAvailabilityView> findAvailabilityByProducts(Collection<Long> productIds);
+    List<ProductAvailabilityView> findAvailabilityByProducts(Collection<Long> productIds, LocalDate allocatableAfter);
 
     Inventory save(Inventory inventory);
 

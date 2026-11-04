@@ -28,7 +28,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -78,6 +81,12 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
+    private Clock clock;
+
+    @Autowired
+    private ShelfLifePolicy shelfLifePolicy;
+
+    @Autowired
     private FindFailedAssignmentUseCase findFailedAssignmentUseCase;
 
     @Autowired
@@ -124,8 +133,8 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     @Test
     void 발주_확정_시_최적_창고가_자동_배정되고_출고_전표_생성과_재고_할당까지_완료된다() {
         // given — 두 창고 모두 전량 충족 가능, 김포가 배송지에서 가까움
-        insertInventory(nearWarehouseId, PRODUCT_ID, 100, "2026-12-31");
-        insertInventory(farWarehouseId, PRODUCT_ID, 100, "2026-12-31");
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        insertInventory(farWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
 
         OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
                 List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
@@ -178,7 +187,7 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     @Test
     void 전량_충족_창고가_없으면_배정_실패가_기록되고_발주는_창고_미배정_CONFIRMED_상태로_남는다() {
         // given — 요청 수량(30)보다 적은 재고만 존재
-        insertInventory(nearWarehouseId, PRODUCT_ID, 10, "2026-12-31");
+        insertInventory(nearWarehouseId, PRODUCT_ID, 10, expiryAfter(60));
 
         OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
                 List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
@@ -211,7 +220,7 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
      * 재고가 부족한 상태에서 발주를 확정해 창고 배정 실패 건을 만든다.
      */
     private FailedOrder createFailedAssignment() {
-        insertInventory(nearWarehouseId, PRODUCT_ID, 10, "2026-12-31");
+        insertInventory(nearWarehouseId, PRODUCT_ID, 10, expiryAfter(60));
         OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
                 List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
         orderLifecycleUseCase.confirmOrder(order.id());
@@ -238,7 +247,7 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     void 재고를_보충한_뒤_재처리하면_창고_배정과_출고_전표_생성과_재고_할당까지_완료되고_해결_처리된다() {
         // given
         FailedOrder failed = createFailedAssignment();
-        insertInventory(nearWarehouseId, PRODUCT_ID, 100, "2026-12-31");
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
 
         // when
         FailedAssignmentResult result = resolveFailedAssignmentUseCase.retry(failed.failedEventId());
@@ -267,7 +276,7 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     void 해결된_건을_다시_재처리하면_예외를_던지고_출고_전표를_중복_생성하지_않는다() {
         // given
         FailedOrder failed = createFailedAssignment();
-        insertInventory(nearWarehouseId, PRODUCT_ID, 100, "2026-12-31");
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
         resolveFailedAssignmentUseCase.retry(failed.failedEventId());
 
         // when & then
@@ -336,6 +345,86 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
         assertThat(discarded.status()).isEqualTo(FailedEventStatus.DISCARDED);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM outbound WHERE orders_id = ?", Integer.class, failed.orderId())).isZero();
+    }
+
+    @Test
+    void 운영_설정의_출고_가능_최소_잔여_유통기한은_7일이다() {
+        assertThat(shelfLifePolicy.minRemainingDays()).isEqualTo(7);
+    }
+
+    private String expiryAfter(int days) {
+        return LocalDate.now(clock).plusDays(days).toString();
+    }
+
+    @Test
+    void 유통기한이_임박한_재고만_있는_창고는_더_가까워도_배정_후보에서_제외된다() {
+        // given — 가까운 창고는 잔여 3일 재고만, 먼 창고는 잔여 60일 재고
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(3));
+        insertInventory(farWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+
+        OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
+                List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
+
+        // when
+        orderLifecycleUseCase.confirmOrder(order.id());
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Map<String, Object> orderRow = jdbcTemplate.queryForMap(
+                    "SELECT order_status, warehouse_id FROM orders WHERE orders_id = ?", order.id());
+            assertThat(orderRow.get("order_status")).isEqualTo("PREPARING");
+            assertThat(((Number) orderRow.get("warehouse_id")).longValue()).isEqualTo(farWarehouseId);
+        });
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'UNALLOCATED'",
+                Integer.class, nearWarehouseId)).isEqualTo(100);
+    }
+
+    @Test
+    void 같은_창고에_임박_재고와_정상_재고가_있으면_출고_할당은_정상_재고에서만_이루어진다() {
+        // given — 임박 재고가 유통기한이 더 빠르지만 FEFO 후보에서 제외되어야 한다
+        insertInventory(nearWarehouseId, PRODUCT_ID, 50, expiryAfter(5));
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+
+        OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
+                List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
+
+        // when
+        orderLifecycleUseCase.confirmOrder(order.id());
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(jdbcTemplate.queryForObject(
+                "SELECT order_status FROM orders WHERE orders_id = ?", String.class, order.id()))
+                .isEqualTo("PREPARING"));
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'ALLOCATED' AND expiry_date = ?",
+                Integer.class, nearWarehouseId, expiryAfter(60))).isEqualTo(30);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND expiry_date = ? AND alloc_status = 'UNALLOCATED'",
+                Integer.class, nearWarehouseId, expiryAfter(5))).isEqualTo(50);
+    }
+
+    @Test
+    void 모든_재고가_만료되었거나_임박하면_배정에_실패하고_실패_기록이_남는다() {
+        // given
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(-10));
+        insertInventory(farWarehouseId, PRODUCT_ID, 100, expiryAfter(7));
+
+        OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
+                List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, 30))));
+
+        // when
+        orderLifecycleUseCase.confirmOrder(order.id());
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM failed_assignment_event WHERE orders_id = ?", Integer.class, order.id()))
+                .isEqualTo(1));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT order_status FROM orders WHERE orders_id = ?", String.class, order.id())).isEqualTo("CONFIRMED");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM outbound WHERE orders_id = ?", Integer.class, order.id())).isZero();
     }
 
     private long lotSeq = 1;

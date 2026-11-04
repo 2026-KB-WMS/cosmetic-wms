@@ -3,6 +3,7 @@ package com.kb.cosmetic_wms.inventory.adapter.out.persistence;
 import org.springframework.test.context.TestPropertySource;
 import com.kb.cosmetic_wms.support.MySqlContainerSupport;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import com.kb.cosmetic_wms.inventory.adapter.out.persistence.InventoryJpaRepository.FefoInventoryProjection;
 import com.kb.cosmetic_wms.inventory.adapter.out.persistence.InventoryJpaRepository.ProductAvailabilityProjection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class InventoryAvailabilityRepositoryTest extends MySqlContainerSupport {
     @Autowired
     private DataSource dataSource;
 
+    private static final LocalDate TODAY = LocalDate.now();
+    private static final LocalDate ALLOCATABLE_AFTER = TODAY.plusDays(7);
+
     private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
@@ -39,18 +43,19 @@ class InventoryAvailabilityRepositoryTest extends MySqlContainerSupport {
     @Test
     void 창고와_상품별로_가용_수량_합계와_최근접_유통기한을_집계한다() {
         // given — 창고 1에 상품 100 재고 2건 (유통기한 상이)
-        insertInventory(1L, 100L, 30, "2026-09-01", "UNALLOCATED", "NORMAL", "STORED");
-        insertInventory(1L, 100L, 20, "2026-08-01", "UNALLOCATED", "NORMAL", "STORED");
-        insertInventory(2L, 100L, 50, "2026-10-01", "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 30, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 20, TODAY.plusDays(30), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(2L, 100L, 50, TODAY.plusDays(90), "UNALLOCATED", "NORMAL", "STORED");
 
         // when
-        List<ProductAvailabilityProjection> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
+        List<ProductAvailabilityProjection> rows =
+                inventoryJpaRepository.findAvailabilityByProducts(List.of(100L), ALLOCATABLE_AFTER);
 
-        // then — (창고1, 상품100) 합계 50 / MIN 2026-08-01, (창고2, 상품100) 합계 50
+        // then — (창고1, 상품100) 합계 50 / MIN 30일 뒤, (창고2, 상품100) 합계 50
         assertThat(rows).hasSize(2);
         ProductAvailabilityProjection wh1 = findRow(rows, 1L);
         assertThat(wh1.getAvailableQuantity()).isEqualTo(50);
-        assertThat(wh1.getEarliestExpiryDate()).isEqualTo(LocalDate.of(2026, 8, 1));
+        assertThat(wh1.getEarliestExpiryDate()).isEqualTo(TODAY.plusDays(30));
 
         ProductAvailabilityProjection wh2 = findRow(rows, 2L);
         assertThat(wh2.getAvailableQuantity()).isEqualTo(50);
@@ -59,37 +64,100 @@ class InventoryAvailabilityRepositoryTest extends MySqlContainerSupport {
     @Test
     void 할당됐거나_비정상이거나_보관_전인_재고는_집계에서_제외된다() {
         // given — 유효 재고 1건 + 상태 조건 위반 3건
-        insertInventory(1L, 100L, 10, "2026-09-01", "UNALLOCATED", "NORMAL", "STORED");
-        insertInventory(1L, 100L, 99, "2026-01-01", "ALLOCATED", "NORMAL", "STORED");
-        insertInventory(1L, 100L, 99, "2026-01-01", "UNALLOCATED", "HOLD", "STORED");
-        insertInventory(1L, 100L, 99, "2026-01-01", "UNALLOCATED", "NORMAL", "IN_TRANSIT");
+        insertInventory(1L, 100L, 10, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 99, TODAY.plusDays(60), "ALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 99, TODAY.plusDays(60), "UNALLOCATED", "HOLD", "STORED");
+        insertInventory(1L, 100L, 99, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "IN_TRANSIT");
 
         // when
-        List<ProductAvailabilityProjection> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
+        List<ProductAvailabilityProjection> rows =
+                inventoryJpaRepository.findAvailabilityByProducts(List.of(100L), ALLOCATABLE_AFTER);
 
         // then
         assertThat(rows).hasSize(1);
         assertThat(rows.getFirst().getAvailableQuantity()).isEqualTo(10);
-        assertThat(rows.getFirst().getEarliestExpiryDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+        assertThat(rows.getFirst().getEarliestExpiryDate()).isEqualTo(TODAY.plusDays(60));
     }
 
     @Test
     void 요청하지_않은_상품의_재고는_집계되지_않는다() {
         // given
-        insertInventory(1L, 100L, 10, "2026-09-01", "UNALLOCATED", "NORMAL", "STORED");
-        insertInventory(1L, 200L, 10, "2026-09-01", "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 10, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 200L, 10, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
 
         // when
-        List<ProductAvailabilityProjection> rows = inventoryJpaRepository.findAvailabilityByProducts(List.of(100L));
+        List<ProductAvailabilityProjection> rows =
+                inventoryJpaRepository.findAvailabilityByProducts(List.of(100L), ALLOCATABLE_AFTER);
 
         // then
         assertThat(rows).hasSize(1);
         assertThat(rows.getFirst().getProductId()).isEqualTo(100L);
     }
 
+    @Test
+    void 만료되었거나_잔여_7일_이하인_재고는_가용_재고_집계에서_제외된다() {
+        // given — 만료, 오늘 만료, 잔여 7일, 잔여 8일(포함), 기본값(만료일 없음)
+        insertInventory(1L, 100L, 1, TODAY.minusDays(30), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 2, TODAY, "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 4, TODAY.plusDays(7), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 8, TODAY.plusDays(8), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 16, LocalDate.of(9999, 12, 31), "UNALLOCATED", "NORMAL", "STORED");
+
+        // when
+        List<ProductAvailabilityProjection> rows =
+                inventoryJpaRepository.findAvailabilityByProducts(List.of(100L), ALLOCATABLE_AFTER);
+
+        // then — 잔여 8일(8)과 만료일 없음(16)만 센다
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().getAvailableQuantity()).isEqualTo(24);
+        assertThat(rows.getFirst().getEarliestExpiryDate()).isEqualTo(TODAY.plusDays(8));
+    }
+
+    @Test
+    void 임박_재고만_있는_창고는_가용_재고_집계에_나타나지_않는다() {
+        // given
+        insertInventory(1L, 100L, 100, TODAY.plusDays(3), "UNALLOCATED", "NORMAL", "STORED");
+
+        // when & then
+        assertThat(inventoryJpaRepository.findAvailabilityByProducts(List.of(100L), ALLOCATABLE_AFTER)).isEmpty();
+    }
+
+    @Test
+    void FEFO_후보는_유통기한이_빠른_순서이되_만료되었거나_잔여_7일_이하인_재고는_제외한다() {
+        // given — 만료(먼저 나가면 안 됨), 잔여 7일(제외), 잔여 8일, 잔여 60일, 다른 창고의 재고
+        insertInventory(1L, 100L, 11, TODAY.minusDays(5), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 22, TODAY.plusDays(7), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 33, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 44, TODAY.plusDays(8), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(2L, 100L, 55, TODAY.plusDays(20), "UNALLOCATED", "NORMAL", "STORED");
+
+        // when
+        List<FefoInventoryProjection> candidates =
+                inventoryJpaRepository.findAvailableForFefo(100L, 1L, ALLOCATABLE_AFTER);
+
+        // then — 잔여 8일(44) → 잔여 60일(33) 순서
+        assertThat(candidates).extracting(FefoInventoryProjection::getAvailableQuantity)
+                .containsExactly(44, 33);
+    }
+
+    @Test
+    void FEFO_후보도_할당됐거나_비정상인_재고는_제외한다() {
+        // given
+        insertInventory(1L, 100L, 10, TODAY.plusDays(60), "UNALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 20, TODAY.plusDays(60), "ALLOCATED", "NORMAL", "STORED");
+        insertInventory(1L, 100L, 30, TODAY.plusDays(60), "UNALLOCATED", "HOLD", "STORED");
+
+        // when
+        List<FefoInventoryProjection> candidates =
+                inventoryJpaRepository.findAvailableForFefo(100L, 1L, ALLOCATABLE_AFTER);
+
+        // then
+        assertThat(candidates).extracting(FefoInventoryProjection::getAvailableQuantity).containsExactly(10);
+    }
+
     private long sectionSeq = 1;
 
-    private void insertInventory(Long warehouseId, Long productId, int availableQty, String expiryDate,
+    private void insertInventory(Long warehouseId, Long productId, int availableQty, LocalDate expiryDate,
                                  String allocStatus, String qualityStatus, String locStatus) {
         jdbcTemplate.update("""
                         INSERT INTO inventory (product_id, lot_id, section_id, warehouse_id, quantity,

@@ -45,6 +45,11 @@ bootstrap:
     email: ${HQ_EMAIL:}
     phone-number: ${HQ_PHONE_NUMBER:}
 
+inventory:
+  shelf-life:
+    # 잔여 유통기한이 이 일수 이하인 재고는 출고하지 않는다 (7이면 잔여 7일은 제외, 8일부터 출고 가능)
+    min-remaining-days: 7
+
 management:
   endpoints:
     web:

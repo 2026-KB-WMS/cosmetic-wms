@@ -18,6 +18,8 @@ import com.kb.cosmetic_wms.inventory.domain.model.InventoryStatusSet;
 import com.kb.cosmetic_wms.inventory.domain.model.InventoryTransaction;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryDtoBuilder;
 import com.kb.cosmetic_wms.inventory.fixture.InventoryTestBuilder;
+import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNearExpiryException;
+import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,7 +46,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class InventoryCommandServiceTest {
 
-    @InjectMocks
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-03T15:30:00Z"), ZoneId.of("Asia/Seoul"));
+
     private InventoryCommandService inventoryService;
 
     @Mock
@@ -57,6 +63,8 @@ class InventoryCommandServiceTest {
 
     @BeforeEach
     void setUp() {
+        inventoryService = new InventoryCommandService(
+                inventoryPort, inventoryTransactionPort, sectionAssignmentPort, new ShelfLifePolicy(7), CLOCK);
         defaultInventory = new InventoryTestBuilder().build();
         ReflectionTestUtils.setField(defaultInventory, "id", 1L);
         lenient().when(inventoryPort.save(any(Inventory.class)))
@@ -69,6 +77,48 @@ class InventoryCommandServiceTest {
 
     @Nested
     class 출고_할당 {
+
+        @Test
+        void 잔여_유통기한이_7일_이하인_재고는_할당할_수_없고_저장하지_않는다() {
+            // given — 업무 시간대 기준 오늘은 2026-11-04, 2026-11-11은 잔여 7일
+            Inventory nearExpiry = new InventoryTestBuilder().expiryDate(LocalDate.of(2026, 11, 11)).build();
+            ReflectionTestUtils.setField(nearExpiry, "id", 1L);
+            given(inventoryPort.findByIdForUpdate(1L)).willReturn(Optional.of(nearExpiry));
+
+            // when & then
+            assertThatThrownBy(() -> inventoryService.allocate(1L,
+                    new InventoryDtoBuilder().quantity(10).build()))
+                    .isInstanceOf(InventoryNearExpiryException.class);
+            verify(inventoryPort, never()).save(any(Inventory.class));
+            verify(inventoryTransactionPort, never()).save(any());
+        }
+
+        @Test
+        void 이미_만료된_재고는_할당할_수_없다() {
+            // given
+            Inventory expired = new InventoryTestBuilder().expiryDate(LocalDate.of(2026, 10, 1)).build();
+            ReflectionTestUtils.setField(expired, "id", 1L);
+            given(inventoryPort.findByIdForUpdate(1L)).willReturn(Optional.of(expired));
+
+            // when & then
+            assertThatThrownBy(() -> inventoryService.allocate(1L,
+                    new InventoryDtoBuilder().quantity(10).build()))
+                    .isInstanceOf(InventoryNearExpiryException.class);
+        }
+
+        @Test
+        void 잔여_유통기한이_8일이면_할당할_수_있다() {
+            // given
+            Inventory enough = new InventoryTestBuilder().expiryDate(LocalDate.of(2026, 11, 12)).build();
+            ReflectionTestUtils.setField(enough, "id", 1L);
+            given(inventoryPort.findByIdForUpdate(1L)).willReturn(Optional.of(enough));
+
+            // when
+            InventoryResult result = inventoryService.allocate(1L, new InventoryDtoBuilder().quantity(100).build());
+
+            // then
+            assertThat(result.allocStatus()).isEqualTo(AllocStatus.ALLOCATED);
+        }
 
         @Test
         void 전체_수량을_할당하면_해당_재고가_ALLOCATED_상태로_변경되어_반환된다() {

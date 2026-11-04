@@ -22,6 +22,7 @@
 | `JWT_REFRESH_TOKEN_TTL` | | `14d` | |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | | `localhost` / `6379` / 없음 | |
 | `HQ_LOGIN_ID`, `HQ_PASSWORD`, `HQ_MEMBER_NAME`, `HQ_EMAIL`, `HQ_PHONE_NUMBER` | | 없음 | 5개를 모두 지정하면 본사 관리자가 없을 때 한 번 생성. 일부만 지정하면 기동 실패 |
+| `INVENTORY_SHELF_LIFE_MIN_REMAINING_DAYS` | | `7` | 잔여 유통기한이 이 일수 이하인 재고는 출고하지 않는다 ([ADR-0007](../adr/0007-minimum-remaining-shelf-life.md)) |
 | `KAKAO_REST_API_KEY` | | 없음 | 지오코딩·라우팅. 없으면 창고·가맹점 등록이 502로 실패한다 |
 
 비밀 값(`DB_PASSWORD`, `JWT_SECRET`, `HQ_PASSWORD`, `REDIS_PASSWORD`, `KAKAO_REST_API_KEY`)은 코드나 설정 기본값에 넣지 않는다. 로컬은 `.env`(gitignore 대상)에, 운영은 비밀 관리 서비스에서 주입한다. `.env.example`은 값을 비워 둔 템플릿이다.
@@ -95,5 +96,8 @@ SMOKE_SHOW_LOGS=1 scripts/smoke.sh    # 성공해도 앱 로그 출력
 - 최초 본사 관리자를 만들려면 `HQ_*` 5개를 지정해 한 번 기동한 뒤 제거해도 된다.
 
 ## 아직 없는 것
+
+로트 상태(리콜 등)의 재고 반영, 유통기한이 지난 로트의 자동 만료 처리, 출고 불가가 된 임박 재고의 처리 흐름(폐기·할인·반품).
+
 
 메트릭 수집(Prometheus), 분산 추적, 요청 상관 ID(MDC), 알림, 배포 파이프라인.
