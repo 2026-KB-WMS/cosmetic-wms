@@ -57,6 +57,7 @@ DB를 쓰는 테스트(`@SpringBootTest`, `@DataJpaTest`)는 **Testcontainers의
 - 마이그레이션 검증 설정은 `src/test/resources/application.yml`(Flyway 활성화, `ddl-auto: validate`)이다.
 - FK 체인을 세팅하지 않고 재고를 직접 삽입하는 테스트는 클래스에 `@TestPropertySource(properties = "spring.datasource.hikari.connection-init-sql=SET FOREIGN_KEY_CHECKS=0")`를 붙인다. MySQL의 `FOREIGN_KEY_CHECKS`는 연결 단위 설정이라 풀의 모든 연결에 적용해야 한다.
 - 테스트는 개발자 셸의 환경변수에 영향받으면 안 된다. 예를 들어 `HQ_*`가 새어 들어가면 모든 컨텍스트가 본사 계정을 만들어 부트스트랩 테스트가 깨진다. 환경변수로 켜지는 기능은 `src/test/resources/application.yml`에서 값을 비워 둔다.
+- 유통기한처럼 날짜에 의존하는 테스트 데이터는 고정 날짜(`"2026-12-31"`)가 아니라 오늘 기준 상대 날짜로 만든다. 고정 날짜는 시간이 지나면 정책(잔여 7일 이하 출고 제외)에 걸려 어느 날 갑자기 테스트가 실패한다. 통합 테스트는 `Clock` 빈으로, 서비스 테스트는 고정 `Clock`으로 "오늘"을 정한다.
 - 로그가 요구사항인 지점은 `LogCapture`로 레벨, 핵심 정보, 비밀 값이 남지 않는 것까지 검증한다.
 - 단위·통합 테스트가 잡지 못하는 구동 문제는 `scripts/smoke.sh`로 확인한다 ([operations.md](operations.md)).
 - Testcontainers는 1.21.4 이상이어야 최신 Docker(29+)에 접속된다. 낮추지 않는다.

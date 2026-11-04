@@ -99,5 +99,30 @@
       "F-006",
       "F-009"
     ]
+  },
+  {
+    "id": "F-013",
+    "name": "유통기한 임박·만료 재고 출고 제외 (재고 안전성 1단계)",
+    "description": "잔여 유통기한이 7일 이하인 재고는 FEFO 후보와 창고 배정 가용 재고에서 제외하고 수동 할당도 거부한다",
+    "status": "completed",
+    "dependencies": []
+  },
+  {
+    "id": "F-014",
+    "name": "로트 상태의 재고 전파 (재고 안전성 2단계)",
+    "description": "로트가 HOLD/RECALLED/DAMAGED/EXPIRED가 되면 해당 로트의 보관 중 재고 할당을 막고, 복구하면 되돌린다. 이미 ALLOCATED된 재고는 건드리지 않고 영향받는 출고 전표를 조회할 수 있게 한다",
+    "status": "pending",
+    "dependencies": [
+      "F-013"
+    ]
+  },
+  {
+    "id": "F-015",
+    "name": "유통기한 만료 로트 자동 처리 스케줄러 (재고 안전성 3단계)",
+    "description": "매일 유통기한이 지난 로트를 EXPIRED로 처리하고 재고에 반영한다",
+    "status": "pending",
+    "dependencies": [
+      "F-014"
+    ]
   }
 ]

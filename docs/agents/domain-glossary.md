@@ -47,6 +47,15 @@
 
 모든 재고 변동은 `InventoryTransaction`(`TransactionType`: `ALLOCATE`, `UNALLOCATE`, `SHIP`, `LOCATION_MOVE`, `INSPECTION_PASS`, `INSPECTION_FAIL`, `DISCARD`, `SPLIT_DEDUCT` 등)으로 기록된다.
 
+## 출고 가능 재고와 유통기한 정책
+
+재고는 상태(`NORMAL`, `UNALLOCATED`, `STORED`)가 맞아도 **잔여 유통기한이 7일 이하이면 출고할 수 없다** ([ADR-0007](../adr/0007-minimum-remaining-shelf-life.md)). 이미 만료된 재고도 마찬가지다. 잔여 7일은 제외하고 8일부터 출고할 수 있다.
+
+- 기준 값은 `inventory.shelf-life.min-remaining-days`(기본 7), 환경변수로는 `INVENTORY_SHELF_LIFE_MIN_REMAINING_DAYS`이다.
+- 같은 기준이 FEFO 출고 후보 조회, 창고 배정용 가용 재고 집계, 수동 할당에 모두 적용된다. 한 곳이라도 빠지면 "배정은 되는데 출고 할당은 실패"하는 불일치가 생긴다.
+- "오늘"은 업무 시간대 `Asia/Seoul` 기준이다.
+- 이미 할당(`ALLOCATED`)된 재고는 영향받지 않는다.
+
 ## 문서별 상태 흐름
 
 | 문서 | 상태 |
