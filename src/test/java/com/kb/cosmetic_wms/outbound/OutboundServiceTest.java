@@ -303,4 +303,53 @@ public class OutboundServiceTest {
                     .isInstanceOf(OutboundCancelNotAllowedException.class);
         }
     }
+
+    @Nested
+    class 피킹_수량_기록 {
+
+        @Test
+        void 출고_준비_중_전표의_품목_피킹_수량을_설정하고_저장한다() {
+            Outbound outbound = new OutboundTestBuilder().buildProcessing();
+            given(outboundPort.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(outbound));
+            given(outboundPort.save(outbound)).willReturn(outbound);
+
+            var result = outboundService.recordPicking(1L, 1L, 6);
+
+            assertThat(result.items()).singleElement().satisfies(item -> {
+                assertThat(item.outboundItemId()).isEqualTo(1L);
+                assertThat(item.pickedQuantity()).isEqualTo(6);
+            });
+            verify(outboundPort).save(outbound);
+        }
+
+        @Test
+        void 출고_준비_중이_아니면_예외가_발생하고_저장하지_않는다() {
+            Outbound outbound = new OutboundTestBuilder().buildAllocated();
+            given(outboundPort.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(outbound));
+
+            assertThatThrownBy(() -> outboundService.recordPicking(1L, 1L, 6))
+                    .isInstanceOf(OutboundPickingNotAllowedException.class);
+            verify(outboundPort, never()).save(any());
+        }
+
+        @Test
+        void 존재하지_않는_출고면_예외가_발생한다() {
+            given(outboundPort.findByIdWithItemsForUpdate(9L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> outboundService.recordPicking(9L, 1L, 6))
+                    .isInstanceOf(OutboundNotFoundException.class);
+        }
+
+        @Test
+        void 일부만_피킹한_전표는_출하할_수_없다() {
+            Outbound outbound = new OutboundTestBuilder().buildProcessing();
+            given(outboundPort.findByIdWithItemsForUpdate(1L)).willReturn(Optional.of(outbound));
+            given(outboundPort.save(outbound)).willReturn(outbound);
+            outboundService.recordPicking(1L, 1L, 9);
+            given(outboundPort.findByIdForUpdate(1L)).willReturn(Optional.of(outbound));
+
+            assertThatThrownBy(() -> outboundService.ship(1L))
+                    .isInstanceOf(OutboundIncompletePickingException.class);
+        }
+    }
 }

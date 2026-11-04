@@ -87,6 +87,17 @@ SMOKE_SHOW_LOGS=1 scripts/smoke.sh    # 성공해도 앱 로그 출력
 
 `scripts/verify.sh`가 끝에 라인·브랜치 커버리지를 출력하고, 리포트는 `build/reports/jacoco/test/html/index.html`에 생긴다. CI는 같은 리포트를 `coverage-report` 아티팩트로 올린다. 아직 임계값은 없다 (측정만).
 
+## 출고 작업 흐름
+
+발주 확정 후 창고 배정이 끝나면 출고 전표가 `ALLOCATED`로 만들어진다. 이후 작업은 모두 본사·창고 관리자 API로 한다.
+
+1. `PATCH /api/v1/outbounds/{id}/process` — 출고 준비 시작(`PROCESSING`)
+2. `GET /api/v1/outbounds/{id}` — 품목 목록에서 `outboundItemId`와 `targetQuantity` 확인
+3. `PATCH /api/v1/outbounds/{id}/items/{outboundItemId}/picking` 본문 `{"pickedQuantity": n}` — 실제 피킹 수량 기록. **누적이 아니라 절대값 설정**이라 같은 요청을 다시 보내도 결과가 같다. 0 이상, 지시 수량 이하여야 하고 `PROCESSING`에서만 가능하다.
+4. `PATCH /api/v1/outbounds/{id}/ship` — 모든 품목이 지시 수량만큼 피킹돼야 한다. 출하되면 할당분이 재고에서 차감되고 발주가 `SHIPPED`가 된다.
+
+피킹이 지시 수량에 못 미치면 출하할 수 없고(409), `PROCESSING` 출고는 취소 API도 없다. 이 막다른 상태를 푸는 것은 F-018이다.
+
 ## 리콜·보류 대응 절차
 
 로트에 문제가 생겼을 때의 순서. 시스템은 새 출고를 막아 주고, 이미 할당된 출고는 사람이 확인해 처리한다.
@@ -123,7 +134,7 @@ WHERE (l.status <> 'AVAILABLE') <> (b.lot_id IS NOT NULL)
 
 ## 아직 없는 것
 
-이미 할당된 재고의 영향받는 출고 조회, 유통기한이 지난 로트의 자동 만료 처리, 출고 불가가 된 임박 재고의 처리 흐름(폐기·할인·반품).
+`PROCESSING` 출고의 취소(F-018), 유통기한이 지난 로트의 자동 만료 처리, 출고 불가가 된 임박 재고의 처리 흐름(폐기·할인·반품).
 
 
 메트릭 수집(Prometheus), 분산 추적, 요청 상관 ID(MDC), 알림, 배포 파이프라인.

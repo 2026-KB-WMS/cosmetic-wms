@@ -2,9 +2,11 @@ package com.kb.cosmetic_wms.outbound.fixture;
 
 import com.kb.cosmetic_wms.outbound.domain.enums.OutboundType;
 import com.kb.cosmetic_wms.outbound.domain.model.Outbound;
+import com.kb.cosmetic_wms.outbound.domain.model.OutboundItem;
 import com.kb.cosmetic_wms.outbound.domain.model.OutboundLine;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OutboundTestBuilder {
@@ -24,7 +26,18 @@ public class OutboundTestBuilder {
     }
 
     public Outbound build() {
-        return Outbound.create(ordersId, warehouseId, outboundType, List.of(new OutboundLine(1L, 1L, 10)));
+        return withItemIds(Outbound.create(ordersId, warehouseId, outboundType, List.of(new OutboundLine(1L, 1L, 10))));
+    }
+
+    /** 영속화된 것처럼 품목에 1부터 순차 ID를 부여한다. */
+    public static Outbound withItemIds(Outbound outbound) {
+        List<OutboundItem> items = new ArrayList<>();
+        for (OutboundItem item : outbound.getOutboundItems()) {
+            items.add(OutboundItem.reconstitute(items.size() + 1L, item.getOrderItemId(), item.getInventoryId(),
+                    item.getTargetQuantity(), item.getPickedQuantity()));
+        }
+        return Outbound.reconstitute(1L, outbound.getOrdersId(), outbound.getWarehouseId(), outbound.getOutboundType(),
+                outbound.getOutboundStatus(), outbound.getOutboundDate(), items);
     }
 
     public Outbound buildAllocated() {
@@ -42,7 +55,7 @@ public class OutboundTestBuilder {
     public Outbound buildFullyPickedProcessing() {
         Outbound outbound = buildProcessing();
         outbound.getOutboundItems().forEach(item ->
-                outbound.changeItemPickedQuantity(item.getInventoryId(), item.getTargetQuantity()));
+                outbound.changeItemPickedQuantity(item.getId(), item.getTargetQuantity()));
         return outbound;
     }
 

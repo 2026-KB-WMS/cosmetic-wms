@@ -138,7 +138,7 @@
     "id": "F-017",
     "name": "출고 피킹 수량 기록 API",
     "description": "Outbound.changeItemPickedQuantity가 테스트에서만 호출되고 이를 호출하는 유스케이스·API가 없어, ship이 요구하는 '모든 품목 피킹 완료'를 API로 만족시킬 수 없다. 출고를 API로 출하할 수 없는 상태를 해소한다",
-    "status": "pending",
+    "status": "completed",
     "dependencies": []
   },
   {

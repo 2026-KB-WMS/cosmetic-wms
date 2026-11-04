@@ -72,6 +72,8 @@ public final class ApiSchemas {
     // Outbound
     public static final String OUTBOUND_CREATE_REQUEST = "OutboundCreateRequest";
     public static final String OUTBOUND_RESPONSE = "OutboundResponse";
+    public static final String OUTBOUND_DETAIL_RESPONSE = "OutboundDetailResponse";
+    public static final String RECORD_PICKING_REQUEST = "RecordPickingRequest";
 
     // Global
     public static final String GLOBAL_ERROR_RESPONSE = "GlobalErrorResponse";

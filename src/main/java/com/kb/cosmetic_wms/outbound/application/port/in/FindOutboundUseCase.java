@@ -9,4 +9,6 @@ public interface FindOutboundUseCase {
      * 리콜·보류된 로트의 영향을 받는 출고를 사람이 확인하기 위한 조회이며, 자동으로 취소하지 않는다.
      */
     List<OutboundResult> findInProgressByLotId(Long lotId);
+
+    OutboundDetailResult findById(Long outboundId);
 }

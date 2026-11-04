@@ -8,7 +8,9 @@ import com.kb.cosmetic_wms.outbound.adapter.in.web.CreateOutboundRequest;
 import com.kb.cosmetic_wms.outbound.adapter.in.web.OutboundController;
 import com.kb.cosmetic_wms.outbound.application.port.in.FindOutboundUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundLifecycleUseCase;
+import com.kb.cosmetic_wms.outbound.application.port.in.OutboundDetailResult;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundResult;
+import com.kb.cosmetic_wms.outbound.application.port.in.RecordPickingUseCase;
 import com.kb.cosmetic_wms.outbound.domain.enums.OutboundStatus;
 import com.kb.cosmetic_wms.outbound.domain.enums.OutboundType;
 import com.kb.cosmetic_wms.outbound.domain.exception.*;
@@ -27,7 +29,9 @@ import java.util.List;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.kb.cosmetic_wms.global.restdocs.ApiDocs.OUTBOUND;
 import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.OUTBOUND_CREATE_REQUEST;
+import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.OUTBOUND_DETAIL_RESPONSE;
 import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.OUTBOUND_RESPONSE;
+import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.RECORD_PICKING_REQUEST;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -51,6 +55,133 @@ public class OutboundControllerTest extends RestDocsSupport {
 
     @MockitoBean
     private FindOutboundUseCase findOutboundUseCase;
+
+    @MockitoBean
+    private RecordPickingUseCase recordPickingUseCase;
+
+    @Nested
+    class 출고_상세_조회 {
+
+        @Test
+        @WithMockUser
+        void 품목을_포함한_출고_상세를_반환하고_API_문서가_생성된다() throws Exception {
+            given(findOutboundUseCase.findById(1L)).willReturn(detailResult(OutboundStatus.PROCESSING, 4));
+
+            mockMvc.perform(get("/api/v1/outbounds/{outboundId}", 1L))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.outboundStatus").value("PROCESSING"))
+                    .andExpect(jsonPath("$.items[0].outboundItemId").value(11L))
+                    .andExpect(jsonPath("$.items[0].inventoryId").value(5L))
+                    .andExpect(jsonPath("$.items[0].targetQuantity").value(10))
+                    .andExpect(jsonPath("$.items[0].pickedQuantity").value(4))
+                    .andDo(document("outbound-detail-success",
+                            buildParams(OUTBOUND, "출고 상세 조회", null, OUTBOUND_DETAIL_RESPONSE),
+                            createResponseFields(getOutboundDetailResponseFields())
+                    ));
+        }
+
+        @Test
+        @WithMockUser
+        void 존재하지_않는_출고_ID로_조회하면_404를_반환한다() throws Exception {
+            given(findOutboundUseCase.findById(anyLong())).willThrow(new OutboundNotFoundException());
+
+            mockMvc.perform(get("/api/v1/outbounds/{outboundId}", 999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("OUTBOUND_NOT_FOUND"))
+                    .andDo(document("outbound-detail-fail-not-found",
+                            buildErrorParams(OUTBOUND, "출고 상세 조회"),
+                            globalErrorResponseFields()
+                    ));
+        }
+    }
+
+    @Nested
+    class 피킹_수량_기록 {
+
+        @Test
+        @WithMockUser
+        void 피킹_수량을_설정하면_갱신된_출고_상세를_반환하고_API_문서가_생성된다() throws Exception {
+            given(recordPickingUseCase.recordPicking(1L, 11L, 7)).willReturn(detailResult(OutboundStatus.PROCESSING, 7));
+
+            mockMvc.perform(patch("/api/v1/outbounds/{outboundId}/items/{outboundItemId}/picking", 1L, 11L)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"pickedQuantity\": 7}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[0].pickedQuantity").value(7))
+                    .andDo(document("outbound-picking-success",
+                            buildParams(OUTBOUND, "피킹 수량 기록", RECORD_PICKING_REQUEST, OUTBOUND_DETAIL_RESPONSE),
+                            createRequestFields(fieldWithPath("pickedQuantity")
+                                    .description("실제 피킹 수량. 누적이 아니라 절대값으로 설정된다 (0 이상, 출고 지시 수량 이하)")),
+                            createResponseFields(getOutboundDetailResponseFields())
+                    ));
+        }
+
+        @Test
+        @WithMockUser
+        void 피킹_수량이_없으면_400을_반환한다() throws Exception {
+            mockMvc.perform(patch("/api/v1/outbounds/{outboundId}/items/{outboundItemId}/picking", 1L, 11L)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_INPUT"));
+        }
+
+        @Test
+        @WithMockUser
+        void 출고_준비_중이_아니면_409를_반환한다() throws Exception {
+            given(recordPickingUseCase.recordPicking(anyLong(), anyLong(), org.mockito.ArgumentMatchers.anyInt()))
+                    .willThrow(new OutboundPickingNotAllowedException());
+
+            mockMvc.perform(patch("/api/v1/outbounds/{outboundId}/items/{outboundItemId}/picking", 1L, 11L)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"pickedQuantity\": 7}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.errorCode").value("OUTBOUND_PICKING_NOT_ALLOWED"))
+                    .andDo(document("outbound-picking-fail-not-allowed",
+                            buildErrorParams(OUTBOUND, "피킹 수량 기록"),
+                            globalErrorResponseFields()
+                    ));
+        }
+
+        @Test
+        @WithMockUser
+        void 지시_수량을_초과하면_400을_반환한다() throws Exception {
+            given(recordPickingUseCase.recordPicking(anyLong(), anyLong(), org.mockito.ArgumentMatchers.anyInt()))
+                    .willThrow(new OutboundExceedPickedQuantityException());
+
+            mockMvc.perform(patch("/api/v1/outbounds/{outboundId}/items/{outboundItemId}/picking", 1L, 11L)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"pickedQuantity\": 99}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("OUTBOUND_EXCEED_PICKED_QUANTITY"))
+                    .andDo(document("outbound-picking-fail-exceed",
+                            buildErrorParams(OUTBOUND, "피킹 수량 기록"),
+                            globalErrorResponseFields()
+                    ));
+        }
+
+        @Test
+        @WithMockUser
+        void 존재하지_않는_품목이면_404를_반환한다() throws Exception {
+            given(recordPickingUseCase.recordPicking(anyLong(), anyLong(), org.mockito.ArgumentMatchers.anyInt()))
+                    .willThrow(new OutboundItemNotFoundException(999L));
+
+            mockMvc.perform(patch("/api/v1/outbounds/{outboundId}/items/{outboundItemId}/picking", 1L, 999L)
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"pickedQuantity\": 1}"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("OUTBOUND_ITEM_NOT_FOUND"))
+                    .andDo(document("outbound-picking-fail-item-not-found",
+                            buildErrorParams(OUTBOUND, "피킹 수량 기록"),
+                            globalErrorResponseFields()
+                    ));
+        }
+    }
 
     @Nested
     class 로트별_진행_중_출고_조회 {
@@ -407,7 +538,29 @@ public class OutboundControllerTest extends RestDocsSupport {
         return new OutboundResult(id, 1L, 10L, OutboundType.ORDER, status, null);
     }
 
+    private static OutboundDetailResult detailResult(OutboundStatus status, int picked) {
+        return new OutboundDetailResult(1L, 1L, 10L, OutboundType.ORDER, status, null,
+                List.of(new OutboundDetailResult.Item(11L, 3L, 5L, 10, picked)));
+    }
+
     // ── Field Descriptors ──
+
+    private static FieldDescriptor[] getOutboundDetailResponseFields() {
+        return new FieldDescriptor[]{
+                fieldWithPath("outboundId").description("출고 전표 ID"),
+                fieldWithPath("ordersId").description("발주 전표 ID"),
+                fieldWithPath("warehouseId").description("출고 창고 ID"),
+                fieldWithPath("outboundType").description("출고 유형 (ORDER)"),
+                fieldWithPath("outboundStatus").description("출고 상태 (PENDING / ALLOCATED / PROCESSING / SHIPPED / CANCELED)"),
+                fieldWithPath("outboundDate").description("출하 완료 일시 (출하 전 null)").optional(),
+                fieldWithPath("items").description("출고 품목 목록"),
+                fieldWithPath("items[].outboundItemId").description("출고 품목 ID (피킹 수량 기록 시 사용)"),
+                fieldWithPath("items[].orderItemId").description("발주 품목 ID"),
+                fieldWithPath("items[].inventoryId").description("할당 재고 ID"),
+                fieldWithPath("items[].targetQuantity").description("출고 지시 수량"),
+                fieldWithPath("items[].pickedQuantity").description("실제 피킹 수량")
+        };
+    }
 
     private static FieldDescriptor[] getCreateOutboundRequestFields() {
         return new FieldDescriptor[]{

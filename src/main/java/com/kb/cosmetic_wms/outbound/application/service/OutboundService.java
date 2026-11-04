@@ -7,7 +7,9 @@ import com.kb.cosmetic_wms.outbound.domain.event.OutboundShippedEvent;
 import com.kb.cosmetic_wms.outbound.domain.event.OutboundStockReleaseRequestedEvent;
 import com.kb.cosmetic_wms.outbound.application.port.in.CreateOutboundCommand;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundLifecycleUseCase;
+import com.kb.cosmetic_wms.outbound.application.port.in.OutboundDetailResult;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundResult;
+import com.kb.cosmetic_wms.outbound.application.port.in.RecordPickingUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.out.OutboundPort;
 import com.kb.cosmetic_wms.outbound.domain.exception.OutboundNotFoundException;
 import com.kb.cosmetic_wms.outbound.domain.model.Outbound;
@@ -20,7 +22,7 @@ import java.time.LocalDateTime;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class OutboundService implements OutboundLifecycleUseCase {
+public class OutboundService implements OutboundLifecycleUseCase, RecordPickingUseCase {
 
     private final OutboundPort outboundPort;
     private final EventPublisher eventPublisher;
@@ -72,6 +74,14 @@ public class OutboundService implements OutboundLifecycleUseCase {
             eventPublisher.publish(new OutboundStockReleaseRequestedEvent(saved.getId(), saved.getOrdersId()));
         }
         return OutboundResult.from(saved);
+    }
+
+    @Override
+    @Transactional
+    public OutboundDetailResult recordPicking(Long outboundId, Long outboundItemId, int pickedQuantity) {
+        Outbound outbound = findByIdWithItemsForUpdateOrThrow(outboundId);
+        outbound.changeItemPickedQuantity(outboundItemId, pickedQuantity);
+        return OutboundDetailResult.from(outboundPort.save(outbound));
     }
 
     private Outbound findByIdForUpdateOrThrow(Long outboundId) {

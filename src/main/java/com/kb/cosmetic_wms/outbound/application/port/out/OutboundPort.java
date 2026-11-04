@@ -13,6 +13,8 @@ public interface OutboundPort {
 
     Optional<Outbound> findByIdWithItemsForUpdate(Long id);
 
+    Optional<Outbound> findByIdWithItems(Long id);
+
     List<Outbound> findByIdsAndStatuses(Collection<Long> ids, Collection<OutboundStatus> statuses);
 
     Outbound save(Outbound outbound);
