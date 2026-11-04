@@ -6,6 +6,7 @@ import com.kb.cosmetic_wms.global.error.GlobalExceptionHandler;
 import com.kb.cosmetic_wms.global.restdocs.RestDocsSupport;
 import com.kb.cosmetic_wms.outbound.adapter.in.web.CreateOutboundRequest;
 import com.kb.cosmetic_wms.outbound.adapter.in.web.OutboundController;
+import com.kb.cosmetic_wms.outbound.application.port.in.FindOutboundUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundLifecycleUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundResult;
 import com.kb.cosmetic_wms.outbound.domain.enums.OutboundStatus;
@@ -30,6 +31,7 @@ import static com.kb.cosmetic_wms.global.restdocs.ApiSchemas.OUTBOUND_RESPONSE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.patch;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -46,6 +48,57 @@ public class OutboundControllerTest extends RestDocsSupport {
 
     @MockitoBean
     private OutboundLifecycleUseCase outboundLifecycleUseCase;
+
+    @MockitoBean
+    private FindOutboundUseCase findOutboundUseCase;
+
+    @Nested
+    class 로트별_진행_중_출고_조회 {
+
+        @Test
+        @WithMockUser
+        void 로트에_할당된_진행_중_출고_전표_목록을_반환하고_API_문서가_생성된다() throws Exception {
+            // given
+            given(findOutboundUseCase.findInProgressByLotId(10L)).willReturn(List.of(
+                    outboundResult(101L, OutboundStatus.ALLOCATED),
+                    outboundResult(102L, OutboundStatus.PROCESSING)));
+
+            // when & then
+            mockMvc.perform(get("/api/v1/outbounds").param("lotId", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].outboundId").value(101L))
+                    .andExpect(jsonPath("$[0].outboundStatus").value("ALLOCATED"))
+                    .andExpect(jsonPath("$[1].outboundStatus").value("PROCESSING"))
+                    .andDo(document("outbound-list-by-lot",
+                            buildParams(OUTBOUND, "로트에 할당된 진행 중 출고 전표 조회 (리콜·보류 대응)", null, OUTBOUND_RESPONSE),
+                            createListResponseFields(getOutboundResponseFields())
+                    ));
+        }
+
+        @Test
+        @WithMockUser
+        void 할당된_출고가_없으면_빈_목록을_반환한다() throws Exception {
+            given(findOutboundUseCase.findInProgressByLotId(10L)).willReturn(List.of());
+
+            mockMvc.perform(get("/api/v1/outbounds").param("lotId", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isEmpty());
+        }
+
+        @Test
+        @WithMockUser
+        void 로트_ID가_없으면_400을_반환한다() throws Exception {
+            mockMvc.perform(get("/api/v1/outbounds"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser
+        void 로트_ID가_숫자가_아니면_400을_반환한다() throws Exception {
+            mockMvc.perform(get("/api/v1/outbounds").param("lotId", "abc"))
+                    .andExpect(status().isBadRequest());
+        }
+    }
 
     @Nested
     class 출고_의뢰_등록 {

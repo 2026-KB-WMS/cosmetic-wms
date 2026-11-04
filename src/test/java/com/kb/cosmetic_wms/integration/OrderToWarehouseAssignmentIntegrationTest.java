@@ -29,6 +29,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.kb.cosmetic_wms.inventory.application.port.in.ManageLotBlockUseCase;
+import com.kb.cosmetic_wms.outbound.application.port.in.FindOutboundUseCase;
+import com.kb.cosmetic_wms.outbound.application.port.in.OutboundLifecycleUseCase;
+import com.kb.cosmetic_wms.outbound.application.port.in.OutboundResult;
 import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
 import java.time.Clock;
 import java.time.Duration;
@@ -89,6 +92,12 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
 
     @Autowired
     private ManageLotBlockUseCase manageLotBlockUseCase;
+
+    @Autowired
+    private FindOutboundUseCase findOutboundUseCase;
+
+    @Autowired
+    private OutboundLifecycleUseCase outboundLifecycleUseCase;
 
     @Autowired
     private FindFailedAssignmentUseCase findFailedAssignmentUseCase;
@@ -398,6 +407,88 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
             assertThat(orderRow.get("order_status")).isEqualTo("PREPARING");
             assertThat(((Number) orderRow.get("warehouse_id")).longValue()).isEqualTo(farWarehouseId);
         });
+    }
+
+    private Long confirmAndAwaitPreparing(int quantity) {
+        OrderResult order = orderLifecycleUseCase.createOrder(new CreateOrderCommand(storeId,
+                List.of(new CreateOrderCommand.OrderLineCommand(PRODUCT_ID, quantity))));
+        orderLifecycleUseCase.confirmOrder(order.id());
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(jdbcTemplate.queryForObject(
+                "SELECT order_status FROM orders WHERE orders_id = ?", String.class, order.id()))
+                .isEqualTo("PREPARING"));
+        return jdbcTemplate.queryForObject(
+                "SELECT outbound_id FROM outbound WHERE orders_id = ?", Long.class, order.id());
+    }
+
+    private List<Long> affectedOutboundIds(long lotId) {
+        return findOutboundUseCase.findInProgressByLotId(lotId).stream().map(OutboundResult::outboundId).toList();
+    }
+
+    @Test
+    void 같은_로트의_할당이_한_재고_행으로_병합되어도_영향받는_출고를_모두_찾고_출하_취소된_출고는_제외한다() {
+        // given — 한 로트에서 두 발주가 연달아 할당되어 ALLOCATED 재고 행이 하나로 병합된다
+        long lot = lotSeq;
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        Long first = confirmAndAwaitPreparing(30);
+        Long second = confirmAndAwaitPreparing(20);
+
+        assertThat(jdbcTemplate.queryForList(
+                "SELECT quantity FROM inventory WHERE warehouse_id = ? AND alloc_status = 'ALLOCATED'",
+                Integer.class, nearWarehouseId)).containsExactly(50);
+
+        // when & then — 병합되어 행은 하나지만 두 출고 모두 영향받는 전표로 나온다
+        assertThat(affectedOutboundIds(lot)).containsExactly(first, second);
+
+        // 첫 출고를 취소하면 할당이 풀려 영향받는 목록에서 빠진다
+        outboundLifecycleUseCase.cancel(first);
+        assertThat(affectedOutboundIds(lot)).containsExactly(second);
+
+        // 출고 준비 중에도 재고를 점유하므로 계속 영향받는다
+        outboundLifecycleUseCase.startProcessing(second);
+        assertThat(affectedOutboundIds(lot)).containsExactly(second);
+
+        // 출하가 끝나면 더 이상 영향받지 않는다. 피킹 수량을 기록하는 API가 없어 피킹 완료 상태는 DB로 만든다
+        jdbcTemplate.update("UPDATE outbound_item SET picked_quantity = target_quantity WHERE outbound_id = ?", second);
+        outboundLifecycleUseCase.ship(second);
+        assertThat(affectedOutboundIds(lot)).isEmpty();
+    }
+
+    @Test
+    void 한_출고가_여러_로트를_썼으면_각_로트에서_모두_조회되고_쓰지_않은_로트는_조회되지_않는다() {
+        // given — 로트 A(20개, 유통기한 빠름)를 모두 쓰고 로트 B에서 10개를 더 쓴다
+        long lotA = lotSeq;
+        insertInventory(nearWarehouseId, PRODUCT_ID, 20, expiryAfter(20));
+        long lotB = lotSeq;
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        long untouchedLot = lotSeq;
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(90));
+
+        Long outbound = confirmAndAwaitPreparing(30);
+
+        // then
+        assertThat(affectedOutboundIds(lotA)).containsExactly(outbound);
+        assertThat(affectedOutboundIds(lotB)).containsExactly(outbound);
+        assertThat(affectedOutboundIds(untouchedLot)).isEmpty();
+        assertThat(affectedOutboundIds(999_999L)).isEmpty();
+    }
+
+    @Test
+    void 리콜된_로트의_할당은_자동으로_풀리지_않고_영향받는_출고로_조회된다() {
+        // given — 할당이 끝난 뒤에 로트가 리콜된다
+        long lot = lotSeq;
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        Long outbound = confirmAndAwaitPreparing(30);
+
+        // when
+        manageLotBlockUseCase.block(lot, "RECALLED");
+
+        // then — 이미 할당된 재고는 그대로 두고, 사람이 확인할 수 있게 조회만 된다
+        assertThat(affectedOutboundIds(lot)).containsExactly(outbound);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'ALLOCATED'",
+                Integer.class, nearWarehouseId)).isEqualTo(30);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT outbound_status FROM outbound WHERE outbound_id = ?", String.class, outbound)).isEqualTo("ALLOCATED");
     }
 
     @Test

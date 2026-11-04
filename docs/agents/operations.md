@@ -87,6 +87,20 @@ SMOKE_SHOW_LOGS=1 scripts/smoke.sh    # 성공해도 앱 로그 출력
 
 `scripts/verify.sh`가 끝에 라인·브랜치 커버리지를 출력하고, 리포트는 `build/reports/jacoco/test/html/index.html`에 생긴다. CI는 같은 리포트를 `coverage-report` 아티팩트로 올린다. 아직 임계값은 없다 (측정만).
 
+## 리콜·보류 대응 절차
+
+로트에 문제가 생겼을 때의 순서. 시스템은 새 출고를 막아 주고, 이미 할당된 출고는 사람이 확인해 처리한다.
+
+1. **로트 상태 변경** — `PATCH /api/v1/lots/{lotId}/status` (`RECALLED`, `HOLD`, `DAMAGED`, `EXPIRED`). 변경과 함께 그 로트의 재고가 FEFO 후보, 창고 배정 집계, 수동 할당에서 즉시 제외된다 ([ADR-0008](../adr/0008-inventory-lot-block.md)).
+2. **영향받는 출고 확인** — `GET /api/v1/outbounds?lotId={lotId}` (본사·창고 관리자). 이 로트의 재고가 이미 할당된 `ALLOCATED`, `PROCESSING` 출고 전표 목록이 나온다.
+3. **출고 처리**
+   - `ALLOCATED`: `PATCH /api/v1/outbounds/{id}/cancel`로 취소하면 할당이 풀린다. 풀린 재고는 로트가 차단되어 있으므로 다시 할당되지 않는다. 발주는 창고 배정이 이미 끝난 상태라 다시 배정하려면 별도 조치가 필요하다.
+   - `PROCESSING`(피킹 중): **취소 API가 없다**(취소는 `PENDING`, `ALLOCATED`만 가능). 현장에서 피킹을 멈추게 하고 별도로 처리해야 한다. 아직 시스템에 이 단계를 처리하는 방법이 없다.
+   - 이미 `SHIPPED`된 출고는 이 조회에 나오지 않는다. 출하된 물량의 회수는 이 시스템 범위 밖이다.
+4. **확인** — 같은 조회가 빈 목록이면 이 로트의 할당 재고에 영향받는 출고가 남아 있지 않다.
+
+조회는 읽기 전용이며 자동으로 취소하거나 재고를 바꾸지 않는다. 같은 로트·구역의 할당은 재고 행이 하나로 병합되므로, 어떤 출고인지는 재고 행이 아니라 `inventory_transaction`의 `ALLOCATE` 이력(`reference_id`=출고 ID)으로 찾고, 출하·취소된 출고는 출고 쪽 상태로 걸러낸다.
+
 ## 로트 차단 목록 점검
 
 로트 상태와 `inventory_lot_block`이 어긋나지 않았는지 확인한다. 아무 행도 나오지 않아야 정상이다. 행이 나오면 로트 상태를 `updateStatus`를 거치지 않고 바꾼 경로가 있다는 뜻이다 ([ADR-0008](../adr/0008-inventory-lot-block.md)).

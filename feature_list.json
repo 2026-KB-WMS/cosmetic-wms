@@ -129,9 +129,26 @@
     "id": "F-016",
     "name": "영향받는 출고 전표 조회 (재고 안전성 2단계 - 조회)",
     "description": "로트가 리콜·보류되었을 때 그 로트의 재고가 이미 할당된 진행 중 출고 전표를 조회한다. 자동으로 취소·해제하지 않고 사람이 확인해 기존 API로 처리한다",
-    "status": "pending",
+    "status": "completed",
     "dependencies": [
       "F-014"
+    ]
+  },
+  {
+    "id": "F-017",
+    "name": "출고 피킹 수량 기록 API",
+    "description": "Outbound.changeItemPickedQuantity가 테스트에서만 호출되고 이를 호출하는 유스케이스·API가 없어, ship이 요구하는 '모든 품목 피킹 완료'를 API로 만족시킬 수 없다. 출고를 API로 출하할 수 없는 상태를 해소한다",
+    "status": "pending",
+    "dependencies": []
+  },
+  {
+    "id": "F-018",
+    "name": "피킹 중(PROCESSING) 출고의 리콜 대응",
+    "description": "출고 취소는 PENDING, ALLOCATED만 허용되어 PROCESSING 출고는 리콜된 로트가 담겨 있어도 취소할 수 없다. 피킹 중단·취소 정책을 업무와 함께 정한다",
+    "status": "pending",
+    "dependencies": [
+      "F-016",
+      "F-017"
     ]
   }
 ]
