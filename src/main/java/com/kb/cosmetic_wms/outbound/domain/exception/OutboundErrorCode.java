@@ -67,7 +67,7 @@ public enum OutboundErrorCode implements ErrorCode {
     OUTBOUND_ITEM_NOT_FOUND(
             ErrorType.NOT_FOUND,
             "OUTBOUND_ITEM_NOT_FOUND",
-            "해당 재고 ID의 출고 품목이 없습니다."
+            "해당 ID의 출고 품목이 없습니다."
     ),
     OUTBOUND_PICKING_NOT_ALLOWED(
             ErrorType.CONFLICT,

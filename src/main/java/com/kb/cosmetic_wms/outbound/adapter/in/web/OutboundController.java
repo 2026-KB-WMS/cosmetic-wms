@@ -2,6 +2,7 @@ package com.kb.cosmetic_wms.outbound.adapter.in.web;
 
 import com.kb.cosmetic_wms.outbound.application.port.in.FindOutboundUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundLifecycleUseCase;
+import com.kb.cosmetic_wms.outbound.application.port.in.RecordPickingUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ public class OutboundController {
 
     private final OutboundLifecycleUseCase outboundLifecycleUseCase;
     private final FindOutboundUseCase findOutboundUseCase;
+    private final RecordPickingUseCase recordPickingUseCase;
 
     @PostMapping
     public ResponseEntity<OutboundResponse> createOutbound(
@@ -30,6 +32,20 @@ public class OutboundController {
         return ResponseEntity.ok(findOutboundUseCase.findInProgressByLotId(lotId).stream()
                 .map(OutboundResponse::from)
                 .toList());
+    }
+
+    @GetMapping("/{outboundId}")
+    public ResponseEntity<OutboundDetailResponse> getOutbound(@PathVariable("outboundId") Long outboundId) {
+        return ResponseEntity.ok(OutboundDetailResponse.from(findOutboundUseCase.findById(outboundId)));
+    }
+
+    @PatchMapping("/{outboundId}/items/{outboundItemId}/picking")
+    public ResponseEntity<OutboundDetailResponse> recordPicking(
+            @PathVariable("outboundId") Long outboundId,
+            @PathVariable("outboundItemId") Long outboundItemId,
+            @Valid @RequestBody RecordPickingRequest request) {
+        return ResponseEntity.ok(OutboundDetailResponse.from(
+                recordPickingUseCase.recordPicking(outboundId, outboundItemId, request.pickedQuantity())));
     }
 
     @PatchMapping("/{outboundId}/allocate")

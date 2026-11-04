@@ -27,6 +27,11 @@ public class OutboundPersistenceAdapter implements OutboundPort {
     }
 
     @Override
+    public Optional<Outbound> findByIdWithItems(Long id) {
+        return outboundJpaRepository.findByIdWithItems(id).map(OutboundEntity::toDomain);
+    }
+
+    @Override
     public List<Outbound> findByIdsAndStatuses(Collection<Long> ids, Collection<OutboundStatus> statuses) {
         return outboundJpaRepository.findByIdInAndOutboundStatusInOrderByIdAsc(ids, statuses).stream()
                 .map(OutboundEntity::toDomain)

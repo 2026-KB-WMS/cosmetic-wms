@@ -67,4 +67,30 @@ class OutboundPersistenceAdapterTest extends MySqlContainerSupport {
 
         assertThat(adapter.findByIdsAndStatuses(List.of(shipped), Set.of(OutboundStatus.ALLOCATED))).isEmpty();
     }
+
+    @Test
+    void 피킹_수량을_저장하면_다시_조회해도_해당_품목에만_반영된다() {
+        Outbound created = adapter.save(Outbound.create(1L, 1L, com.kb.cosmetic_wms.outbound.domain.enums.OutboundType.ORDER,
+                List.of(new com.kb.cosmetic_wms.outbound.domain.model.OutboundLine(1L, 7L, 10),
+                        new com.kb.cosmetic_wms.outbound.domain.model.OutboundLine(2L, 7L, 4))));
+        created.allocate();
+        created.startProcessing();
+        adapter.save(created);
+
+        Outbound loaded = adapter.findByIdWithItemsForUpdate(created.getId()).orElseThrow();
+        Long secondItemId = loaded.getOutboundItems().get(1).getId();
+        loaded.changeItemPickedQuantity(secondItemId, 4);
+        adapter.save(loaded);
+
+        Outbound reloaded = adapter.findByIdWithItems(created.getId()).orElseThrow();
+        assertThat(reloaded.getOutboundItems()).hasSize(2);
+        assertThat(reloaded.getOutboundItems().get(0).getPickedQuantity()).isZero();
+        assertThat(reloaded.getOutboundItems().get(1).getPickedQuantity()).isEqualTo(4);
+        assertThat(reloaded.getOutboundItems().get(1).getId()).isEqualTo(secondItemId);
+    }
+
+    @Test
+    void 존재하지_않는_출고는_상세_조회에서_비어있다() {
+        assertThat(adapter.findByIdWithItems(-1L)).isEmpty();
+    }
 }

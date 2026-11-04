@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 public class Outbound {
@@ -90,12 +91,12 @@ public class Outbound {
         return wasAllocated;
     }
 
-    public void changeItemPickedQuantity(Long inventoryId, int pickedQuantity) {
+    public void changeItemPickedQuantity(Long outboundItemId, int pickedQuantity) {
         this.outboundStatus.validatePicking();
         OutboundItem item = outboundItems.stream()
-                .filter(i -> i.getInventoryId().equals(inventoryId))
+                .filter(i -> Objects.equals(i.getId(), outboundItemId))
                 .findFirst()
-                .orElseThrow(() -> new OutboundItemNotFoundException(inventoryId));
+                .orElseThrow(() -> new OutboundItemNotFoundException(outboundItemId));
         item.changePickedQuantity(pickedQuantity);
     }
 

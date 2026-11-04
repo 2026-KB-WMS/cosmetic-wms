@@ -5,6 +5,7 @@ import com.kb.cosmetic_wms.outbound.domain.enums.OutboundType;
 import com.kb.cosmetic_wms.outbound.domain.exception.*;
 import com.kb.cosmetic_wms.outbound.domain.model.Outbound;
 import com.kb.cosmetic_wms.outbound.domain.model.OutboundLine;
+import com.kb.cosmetic_wms.outbound.fixture.OutboundTestBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -22,11 +23,15 @@ public class OutboundEntityTest {
         return Outbound.create(1L, 10L, OutboundType.ORDER, DEFAULT_LINES);
     }
 
+    private static Outbound createWithItemIds(OutboundLine... lines) {
+        return OutboundTestBuilder.withItemIds(Outbound.create(1L, 10L, OutboundType.ORDER, List.of(lines)));
+    }
+
     private static Outbound advanceToShipped() {
-        Outbound outbound = createDefault();
+        Outbound outbound = createWithItemIds(DEFAULT_LINE);
         outbound.allocate();
         outbound.startProcessing();
-        outbound.changeItemPickedQuantity(DEFAULT_LINE.inventoryId(), DEFAULT_LINE.targetQuantity());
+        outbound.changeItemPickedQuantity(1L, DEFAULT_LINE.targetQuantity());
         outbound.ship(LocalDateTime.now());
         return outbound;
     }
@@ -105,10 +110,10 @@ public class OutboundEntityTest {
 
     @Test
     void 출고_완료_시_상태가_SHIPPED로_변하고_출고일시가_현재시간으로_기록된다() {
-        Outbound outbound = createDefault();
+        Outbound outbound = createWithItemIds(DEFAULT_LINE);
         outbound.allocate();
         outbound.startProcessing();
-        outbound.changeItemPickedQuantity(DEFAULT_LINE.inventoryId(), DEFAULT_LINE.targetQuantity());
+        outbound.changeItemPickedQuantity(1L, DEFAULT_LINE.targetQuantity());
 
         outbound.ship(LocalDateTime.now());
 
@@ -159,8 +164,7 @@ public class OutboundEntityTest {
 
     @Test
     void 모든_출고_품목의_피킹이_완료되지_않은_상태에서_출고를_시도하면_예외를_던진다() {
-        OutboundLine line = new OutboundLine(1L, 1L, 10);
-        Outbound outbound = Outbound.create(1L, 10L, OutboundType.ORDER, List.of(line));
+        Outbound outbound = createWithItemIds(new OutboundLine(1L, 1L, 10));
         outbound.allocate();
         outbound.startProcessing();
         outbound.changeItemPickedQuantity(1L, 8);
@@ -171,8 +175,7 @@ public class OutboundEntityTest {
 
     @Test
     void 모든_출고_품목의_피킹이_완료된_상태에서만_출고_처리가_성공한다() {
-        Outbound outbound = Outbound.create(1L, 10L, OutboundType.ORDER,
-                List.of(new OutboundLine(1L, 1L, 10), new OutboundLine(2L, 2L, 5)));
+        Outbound outbound = createWithItemIds(new OutboundLine(1L, 1L, 10), new OutboundLine(2L, 2L, 5));
         outbound.allocate();
         outbound.startProcessing();
         outbound.changeItemPickedQuantity(1L, 10);

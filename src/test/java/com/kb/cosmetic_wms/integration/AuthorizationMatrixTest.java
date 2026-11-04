@@ -129,6 +129,8 @@ class AuthorizationMatrixTest extends IntegrationTestSupport {
             // 출고
             Endpoint.of(HttpMethod.GET, "/api/v1/outbounds", HQ, WH),
             Endpoint.of(HttpMethod.POST, "/api/v1/outbounds", HQ, WH),
+            Endpoint.of(HttpMethod.GET, "/api/v1/outbounds/{outboundId}", HQ, WH),
+            Endpoint.of(HttpMethod.PATCH, "/api/v1/outbounds/{outboundId}/items/{outboundItemId}/picking", HQ, WH),
             Endpoint.of(HttpMethod.PATCH, "/api/v1/outbounds/{outboundId}/allocate", HQ, WH),
             Endpoint.of(HttpMethod.PATCH, "/api/v1/outbounds/{outboundId}/process", HQ, WH),
             Endpoint.of(HttpMethod.PATCH, "/api/v1/outbounds/{outboundId}/ship", HQ, WH),

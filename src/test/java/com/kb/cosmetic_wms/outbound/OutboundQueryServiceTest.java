@@ -67,4 +67,27 @@ class OutboundQueryServiceTest {
         assertThat(OutboundStatus.SHIPPED.holdsAllocatedStock()).isFalse();
         assertThat(OutboundStatus.CANCELED.holdsAllocatedStock()).isFalse();
     }
+
+    @Test
+    void 출고_상세는_품목과_함께_조회한다() {
+        Outbound outbound = new com.kb.cosmetic_wms.outbound.fixture.OutboundTestBuilder().buildProcessing();
+        given(outboundPort.findByIdWithItems(1L)).willReturn(java.util.Optional.of(outbound));
+
+        var result = service.findById(1L);
+
+        assertThat(result.outboundStatus()).isEqualTo(OutboundStatus.PROCESSING);
+        assertThat(result.items()).singleElement().satisfies(item -> {
+            assertThat(item.outboundItemId()).isEqualTo(1L);
+            assertThat(item.targetQuantity()).isEqualTo(10);
+            assertThat(item.pickedQuantity()).isZero();
+        });
+    }
+
+    @Test
+    void 존재하지_않는_출고_상세를_조회하면_예외가_발생한다() {
+        given(outboundPort.findByIdWithItems(9L)).willReturn(java.util.Optional.empty());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.findById(9L))
+                .isInstanceOf(com.kb.cosmetic_wms.outbound.domain.exception.OutboundNotFoundException.class);
+    }
 }
