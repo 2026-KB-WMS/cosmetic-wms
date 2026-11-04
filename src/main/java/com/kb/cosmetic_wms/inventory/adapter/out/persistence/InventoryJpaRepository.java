@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,10 +25,12 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
               AND i.quality_status = 'NORMAL'
               AND i.loc_status    = 'STORED'
               AND i.available_quantity > 0
+              AND i.expiry_date > :allocatableAfter
             ORDER BY i.expiry_date ASC
             """, nativeQuery = true)
     List<FefoInventoryProjection> findAvailableForFefo(@Param("productId") Long productId,
-                                                       @Param("warehouseId") Long warehouseId);
+                                                       @Param("warehouseId") Long warehouseId,
+                                                       @Param("allocatableAfter") LocalDate allocatableAfter);
 
     @Query(value = """
             SELECT i.warehouse_id AS warehouseId, i.product_id AS productId,
@@ -38,9 +41,11 @@ interface InventoryJpaRepository extends JpaRepository<InventoryEntity, Long> {
               AND i.quality_status = 'NORMAL'
               AND i.loc_status    = 'STORED'
               AND i.available_quantity > 0
+              AND i.expiry_date > :allocatableAfter
             GROUP BY i.warehouse_id, i.product_id
             """, nativeQuery = true)
-    List<ProductAvailabilityProjection> findAvailabilityByProducts(@Param("productIds") Collection<Long> productIds);
+    List<ProductAvailabilityProjection> findAvailabilityByProducts(@Param("productIds") Collection<Long> productIds,
+                                                                   @Param("allocatableAfter") LocalDate allocatableAfter);
 
     List<InventoryEntity> findByLotId(Long lotId);
 

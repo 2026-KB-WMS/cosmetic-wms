@@ -9,6 +9,7 @@ import com.kb.cosmetic_wms.inventory.domain.model.InventoryTransaction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -53,15 +54,15 @@ public class InventoryPersistenceAdapter implements InventoryPort, InventoryTran
     }
 
     @Override
-    public List<FefoInventoryView> findAvailableForFefo(Long productId, Long warehouseId) {
-        return inventoryJpaRepository.findAvailableForFefo(productId, warehouseId).stream()
+    public List<FefoInventoryView> findAvailableForFefo(Long productId, Long warehouseId, LocalDate allocatableAfter) {
+        return inventoryJpaRepository.findAvailableForFefo(productId, warehouseId, allocatableAfter).stream()
                 .map(row -> new FefoInventoryView(row.getInventoryId(), row.getAvailableQuantity()))
                 .toList();
     }
 
     @Override
-    public List<ProductAvailabilityView> findAvailabilityByProducts(Collection<Long> productIds) {
-        return inventoryJpaRepository.findAvailabilityByProducts(productIds).stream()
+    public List<ProductAvailabilityView> findAvailabilityByProducts(Collection<Long> productIds, LocalDate allocatableAfter) {
+        return inventoryJpaRepository.findAvailabilityByProducts(productIds, allocatableAfter).stream()
                 .map(row -> new ProductAvailabilityView(
                         row.getWarehouseId(),
                         row.getProductId(),

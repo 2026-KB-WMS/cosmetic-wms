@@ -9,10 +9,13 @@ import com.kb.cosmetic_wms.inventory.application.port.in.ProductAvailabilitySlic
 import com.kb.cosmetic_wms.inventory.application.port.out.InventoryPort;
 import com.kb.cosmetic_wms.inventory.domain.exception.InventoryNotFoundException;
 import com.kb.cosmetic_wms.inventory.domain.model.Inventory;
+import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -25,6 +28,8 @@ public class InventoryQueryService implements
         FindProductAvailabilityUseCase {
 
     private final InventoryPort inventoryPort;
+    private final ShelfLifePolicy shelfLifePolicy;
+    private final Clock clock;
 
     @Override
     public InventoryResult findById(Long inventoryId) {
@@ -49,7 +54,7 @@ public class InventoryQueryService implements
 
     @Override
     public List<FefoInventorySlice> findAvailableForFefo(Long productId, Long warehouseId) {
-        return inventoryPort.findAvailableForFefo(productId, warehouseId).stream()
+        return inventoryPort.findAvailableForFefo(productId, warehouseId, allocatableAfter()).stream()
                 .map(view -> new FefoInventorySlice(view.inventoryId(), view.availableQuantity()))
                 .toList();
     }
@@ -59,10 +64,14 @@ public class InventoryQueryService implements
         if (productIds == null || productIds.isEmpty()) {
             return List.of();
         }
-        return inventoryPort.findAvailabilityByProducts(productIds).stream()
+        return inventoryPort.findAvailabilityByProducts(productIds, allocatableAfter()).stream()
                 .map(view -> new ProductAvailabilitySlice(
                         view.warehouseId(), view.productId(),
                         view.availableQuantity(), view.earliestExpiryDate()))
                 .toList();
+    }
+
+    private LocalDate allocatableAfter() {
+        return shelfLifePolicy.allocatableAfter(LocalDate.now(clock));
     }
 }

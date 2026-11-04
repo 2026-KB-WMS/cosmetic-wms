@@ -15,6 +15,17 @@ public enum InventoryErrorCode implements ErrorCode {
             "존재하지 않는 재고입니다."
     ),
 
+    INVENTORY_NEAR_EXPIRY(
+            ErrorType.RULE_VIOLATION,
+            "INVENTORY_NEAR_EXPIRY",
+            "유통기한이 만료되었거나 출고 가능한 최소 잔여 기간 이하인 재고는 할당할 수 없습니다."
+    ),
+    INVALID_SHELF_LIFE_POLICY(
+            ErrorType.INTERNAL_ERROR,
+            "INVALID_SHELF_LIFE_POLICY",
+            "최소 잔여 유통기한 정책은 0 이상이어야 합니다."
+    ),
+
     // --- 수량 검증 ---
     INVALID_QUANTITY(
             ErrorType.INVALID_REQUEST,

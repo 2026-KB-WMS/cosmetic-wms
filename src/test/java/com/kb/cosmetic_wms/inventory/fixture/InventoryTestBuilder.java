@@ -21,6 +21,7 @@ public class InventoryTestBuilder {
     private AllocStatus allocStatus = AllocStatus.UNALLOCATED;
     private QualityStatus qualityStatus = QualityStatus.NORMAL;
     private LocStatus locStatus = LocStatus.STORED;
+    private LocalDate expiryDate = LocalDate.of(2026, 12, 31);
 
     public InventoryTestBuilder quantity(int quantity) {
         this.quantity = quantity;
@@ -47,6 +48,11 @@ public class InventoryTestBuilder {
         return this;
     }
 
+    public InventoryTestBuilder expiryDate(LocalDate expiryDate) {
+        this.expiryDate = expiryDate;
+        return this;
+    }
+
     public Inventory build() {
         InventoryStatusSet statusSet = InventoryStatusSet.of(
                 this.allocStatus, this.qualityStatus, this.locStatus);
@@ -59,7 +65,7 @@ public class InventoryTestBuilder {
                 this.quantity,
                 this.availableQuantity,
                 statusSet,
-                LocalDate.of(2026, 12, 31)
+                this.expiryDate
         );
     }
 }
