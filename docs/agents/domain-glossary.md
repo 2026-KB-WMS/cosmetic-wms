@@ -24,7 +24,7 @@
 | SKU 코드 | `P%06d` (상품 PK 기반) | `P000001` | [ADR-0002](../adr/0002-sku-format.md) |
 | 로트 번호 | `YYMMDD-{입고ID}-{제조사 로트 번호}` | `260629-1042-LOT0001` | [ADR-0003](../adr/0003-lot-number-format.md) |
 | 섹션 코드 | `WH{NN}-{구역타입}-{온도}-{순번NN}` | `WH01-STR-R-01` | `SectionCode` |
-| 재고 식별키 | `Product + Lot + Section + InventoryStatusSet` | DB 복합 UK | [DB 설계서](../db/v1.6.0_database.md) |
+| 재고 식별키 | `Product + Lot + Section + InventoryStatusSet` | DB 복합 UK | [DB 설계서](../db/v1.7.0_database.md) |
 
 - 섹션 코드 패턴: `^WH\d{2}-(DOCK|STR|QUAR)-[RC]-\d{2}$`
 - 구역 타입(`SectionType`): `DOCKING`(DOCK, 반입/반출·검수), `STORAGE`(STR, 일반 보관), `QUARANTINE`(QUAR, 격리/폐기)
@@ -55,6 +55,8 @@
 - 같은 기준이 FEFO 출고 후보 조회, 창고 배정용 가용 재고 집계, 수동 할당에 모두 적용된다. 한 곳이라도 빠지면 "배정은 되는데 출고 할당은 실패"하는 불일치가 생긴다.
 - "오늘"은 업무 시간대 `Asia/Seoul` 기준이다.
 - 이미 할당(`ALLOCATED`)된 재고는 영향받지 않는다.
+
+로트 상태도 출고 가능 여부를 결정한다. **로트가 `AVAILABLE`이 아니면**(`HOLD`, `RECALLED`, `DAMAGED`, `EXPIRED`, `DISPOSED`) 그 로트의 재고는 위와 같은 세 지점에서 제외된다 ([ADR-0008](../adr/0008-inventory-lot-block.md)). 재고 자체의 품질 상태(`QualityStatus`)는 바뀌지 않으며, 로트가 정상으로 돌아오면 다시 후보가 된다. 검사 불합격으로 `HOLD`가 된 재고는 로트가 복구되어도 `HOLD`로 남는다.
 
 ## 문서별 상태 흐름
 

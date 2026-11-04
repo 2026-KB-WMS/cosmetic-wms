@@ -27,6 +27,16 @@
 
 <br>
 
+### [1.7.0] - 2026-11-04
+
+- **[DB] 로트 상태에 따른 출고 차단 목록 추가 (Flyway `V4__add_inventory_lot_block.sql`)**
+
+#### Added
+
+- **[DB] `inventory_lot_block` 테이블 추가** — `inventory` 도메인이 소유하는 출고 차단 로트 목록. 로트가 `AVAILABLE`이 아니면 행이 있고 복구되면 삭제된다. 마이그레이션이 이미 정상이 아닌 로트를 반영한다
+
+<br>
+
 ### [1.6.0] - 2026-11-03
 
 - **[DB] 이벤트 실패 보상 테이블에 처리 상태 관리 추가 (Flyway `V3__add_failed_event_resolution.sql`)**

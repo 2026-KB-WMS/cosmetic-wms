@@ -40,6 +40,8 @@
 OutboundAllocatedEvent → inventory: ALLOCATE / order: 준비 중 전환
 OutboundShippedEvent → inventory: 재고 차감 / order: 출하 전환
 OutboundStockReleaseRequestedEvent → inventory: 할당 해제
+
+로트 상태 변경 (LotStatusChangedEvent) → inventory: 차단 로트 목록 갱신 (BEFORE_COMMIT, 같은 트랜잭션)
 ```
 
 정확한 구독 관계는 각 도메인의 `adapter/in/event`를 확인한다 (코드가 사실이다).
@@ -63,6 +65,15 @@ OutboundStockReleaseRequestedEvent → inventory: 할당 해제
 - 실제 작업은 `NewTransactionRunner`로 **별도 트랜잭션**에서 실행한다. 작업이 롤백되어도 실패 기록(시도 횟수, 사유)은 남는다.
 - 재처리는 멱등해야 한다. 창고 배정은 발주가 `CONFIRMED`이고 창고가 비어 있을 때만 시도하고(외부 Routing API 호출 전에 확인), 검사 전표는 같은 입고 라인의 전표가 이미 있으면 만들지 않고 해결 처리한다.
 - 새 비동기 리스너에 `@Recover`를 추가할 때는 같은 구조(상태 있는 실패 기록 + 재처리 API)로 만든다.
+
+## 로트 상태와 출고 차단
+
+`LotService.updateStatus`가 상태를 바꿀 때마다 `LotStatusChangedEvent(lotId, status, allocatable)`를 발행하고, `inventory`가 같은 트랜잭션에서 `inventory_lot_block`을 갱신한다 ([ADR-0008](../adr/0008-inventory-lot-block.md)).
+
+- 로트가 `AVAILABLE`이 아니면 차단 목록에 있고, 목록에 있는 로트의 재고는 FEFO 후보, 창고 배정용 가용 재고 집계, 수동 할당에서 제외된다.
+- 이벤트에는 `Long`, `String`, `boolean`만 싣는다. 다른 도메인의 enum을 싣거나 읽으면 도메인 경계 규칙(ArchUnit)에 걸린다.
+- **로트 상태는 `updateStatus`로만 바꾼다.** 이벤트 없이 상태를 바꾸는 경로를 만들면 차단 목록이 어긋난다.
+- 이미 `ALLOCATED`된 재고는 자동으로 바뀌지 않는다. 영향받는 출고는 사람이 확인한다.
 
 ## 재고 할당 ID 추적
 

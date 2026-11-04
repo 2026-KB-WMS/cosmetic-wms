@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.lot;
 
+import com.kb.cosmetic_wms.global.event.EventPublisher;
+import com.kb.cosmetic_wms.lot.domain.event.LotStatusChangedEvent;
 import com.kb.cosmetic_wms.lot.fixture.LotCommandBuilder;
 import com.kb.cosmetic_wms.lot.fixture.LotTestBuilder;
 import com.kb.cosmetic_wms.lot.application.port.in.LotResult;
@@ -9,6 +11,7 @@ import com.kb.cosmetic_wms.lot.application.port.out.LotPort;
 import com.kb.cosmetic_wms.lot.application.service.LotService;
 import com.kb.cosmetic_wms.lot.domain.enums.LotStatus;
 import com.kb.cosmetic_wms.lot.domain.exception.DuplicateLotNumberException;
+import com.kb.cosmetic_wms.lot.domain.exception.InvalidLotStatusTransitionException;
 import com.kb.cosmetic_wms.lot.domain.exception.LotErrorCode;
 import com.kb.cosmetic_wms.lot.domain.exception.LotNotFoundException;
 import com.kb.cosmetic_wms.lot.domain.exception.LotProductNotFoundException;
@@ -31,6 +34,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +49,9 @@ class LotServiceTest {
 
     @Mock
     private ProductQueryPort productQueryPort;
+
+    @Mock
+    private EventPublisher eventPublisher;
 
     private Lot defaultLot;
 
@@ -206,6 +214,49 @@ class LotServiceTest {
             LotResult result = lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.DISPOSED));
 
             assertThat(result.status()).isEqualTo(LotStatus.DISPOSED);
+        }
+
+        @Test
+        void 정상이_아닌_상태로_변경하면_출고_불가_이벤트를_발행한다() {
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.save(any(Lot.class))).willAnswer(inv -> inv.getArgument(0));
+
+            lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.RECALLED));
+
+            verify(eventPublisher).publish(new LotStatusChangedEvent(1L, "RECALLED", false));
+        }
+
+        @Test
+        void 보류된_로트를_정상으로_복구하면_출고_가능_이벤트를_발행한다() {
+            defaultLot.changeStatus(LotStatus.HOLD);
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.save(any(Lot.class))).willAnswer(inv -> inv.getArgument(0));
+
+            lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.AVAILABLE));
+
+            verify(eventPublisher).publish(new LotStatusChangedEvent(1L, "AVAILABLE", true));
+        }
+
+        @Test
+        void 상태를_바꿀_때마다_이벤트를_정확히_한_번_발행한다() {
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
+            given(lotPort.save(any(Lot.class))).willAnswer(inv -> inv.getArgument(0));
+
+            lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.HOLD));
+
+            verify(eventPublisher, times(1)).publish(any(LotStatusChangedEvent.class));
+        }
+
+        @Test
+        void 허용되지_않는_전이이면_저장도_이벤트_발행도_하지_않는다() {
+            defaultLot.changeStatus(LotStatus.RECALLED);
+            given(lotPort.findById(1L)).willReturn(Optional.of(defaultLot));
+
+            assertThatThrownBy(() -> lotService.updateStatus(1L, new UpdateLotStatusCommand(LotStatus.AVAILABLE)))
+                    .isInstanceOf(InvalidLotStatusTransitionException.class);
+
+            verify(lotPort, never()).save(any(Lot.class));
+            verify(eventPublisher, never()).publish(any());
         }
 
         @Test

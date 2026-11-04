@@ -14,6 +14,10 @@ public enum LotStatus {
         this.description = description;
     }
 
+    public boolean isAllocatable() {
+        return this == AVAILABLE;
+    }
+
     public boolean canTransitionTo(LotStatus next) {
         return switch (this) {
             case AVAILABLE, HOLD -> next != this;

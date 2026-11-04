@@ -20,6 +20,11 @@ public enum InventoryErrorCode implements ErrorCode {
             "INVENTORY_NEAR_EXPIRY",
             "유통기한이 만료되었거나 출고 가능한 최소 잔여 기간 이하인 재고는 할당할 수 없습니다."
     ),
+    INVENTORY_LOT_BLOCKED(
+            ErrorType.RULE_VIOLATION,
+            "INVENTORY_LOT_BLOCKED",
+            "보류·리콜·파손·만료·폐기 상태인 로트의 재고는 할당할 수 없습니다."
+    ),
     INVALID_SHELF_LIFE_POLICY(
             ErrorType.INTERNAL_ERROR,
             "INVALID_SHELF_LIFE_POLICY",
