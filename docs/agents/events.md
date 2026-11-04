@@ -73,7 +73,7 @@ OutboundStockReleaseRequestedEvent → inventory: 할당 해제
 - 로트가 `AVAILABLE`이 아니면 차단 목록에 있고, 목록에 있는 로트의 재고는 FEFO 후보, 창고 배정용 가용 재고 집계, 수동 할당에서 제외된다.
 - 이벤트에는 `Long`, `String`, `boolean`만 싣는다. 다른 도메인의 enum을 싣거나 읽으면 도메인 경계 규칙(ArchUnit)에 걸린다.
 - **로트 상태는 `updateStatus`로만 바꾼다.** 이벤트 없이 상태를 바꾸는 경로를 만들면 차단 목록이 어긋난다.
-- 이미 `ALLOCATED`된 재고는 자동으로 바뀌지 않는다. 영향받는 출고는 사람이 확인한다.
+- 이미 `ALLOCATED`된 재고는 자동으로 바뀌지 않는다. 영향받는 출고는 `GET /api/v1/outbounds?lotId=`로 조회해 사람이 확인한다 ([operations.md](operations.md#리콜보류-대응-절차)).
 
 ## 재고 할당 ID 추적
 
