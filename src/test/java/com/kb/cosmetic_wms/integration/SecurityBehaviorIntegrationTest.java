@@ -1,10 +1,15 @@
 package com.kb.cosmetic_wms.integration;
 
+import ch.qos.logback.classic.Level;
 import com.kb.cosmetic_wms.global.config.JwtConfig;
+import com.kb.cosmetic_wms.global.config.RestAccessDeniedHandler;
+import com.kb.cosmetic_wms.support.LogCapture;
 import com.kb.cosmetic_wms.support.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.actuate.health.CompositeHealth;
+import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -15,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +36,9 @@ class SecurityBehaviorIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private JwtEncoder jwtEncoder;
+
+    @Autowired
+    private HealthEndpoint healthEndpoint;
 
     private String token(String role, Instant expiresAt) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -97,5 +106,54 @@ class SecurityBehaviorIntegrationTest extends IntegrationTestSupport {
     @Test
     void Swagger_문서_경로는_인증_없이_접근할_수_있다() throws Exception {
         mockMvc.perform(get("/v3/api-docs")).andExpect(status().isOk());
+    }
+
+    @Test
+    void health는_인증_없이_접근할_수_있고_세부_정보는_노출하지_않는다() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.components").doesNotExist());
+    }
+
+    @Test
+    void liveness와_readiness_프로브는_인증_없이_접근할_수_있다() throws Exception {
+        mockMvc.perform(get("/actuator/health/liveness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+        mockMvc.perform(get("/actuator/health/readiness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void 종합_health는_DB와_Redis_상태를_포함한다() {
+        CompositeHealth health = (CompositeHealth) healthEndpoint.health();
+
+        assertThat(health.getComponents()).containsKeys("db", "redis");
+        assertThat(health.getStatus().getCode()).isEqualTo("UP");
+    }
+
+    @Test
+    void health_외의_actuator_경로는_인증_없이는_401이고_본사_관리자도_거부한다() throws Exception {
+        String hq = token("ROLE_HEADQUARTERS", Instant.now().plusSeconds(600));
+
+        mockMvc.perform(get("/actuator/env")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/env").header("Authorization", "Bearer " + hq))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void 접근이_거부되면_회원_ID와_요청을_WARN_로그로_남기되_토큰은_남기지_않는다() throws Exception {
+        String franchise = token("ROLE_FRANCHISE_MANAGER", Instant.now().plusSeconds(600));
+
+        try (LogCapture logs = LogCapture.of(RestAccessDeniedHandler.class)) {
+            mockMvc.perform(get("/api/v1/admin/failed-assignments").header("Authorization", "Bearer " + franchise))
+                    .andExpect(status().isForbidden());
+
+            assertThat(logs.messages(Level.WARN)).singleElement().satisfies(message ->
+                    assertThat(message).contains("memberId=1").contains("GET").contains("/api/v1/admin/failed-assignments")
+                            .doesNotContain(franchise));
+        }
     }
 }

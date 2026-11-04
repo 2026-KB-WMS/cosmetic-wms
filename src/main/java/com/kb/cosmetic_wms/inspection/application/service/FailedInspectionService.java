@@ -13,12 +13,14 @@ import com.kb.cosmetic_wms.inspection.domain.enums.InspectionSourceType;
 import com.kb.cosmetic_wms.inspection.domain.exception.FailedInspectionNotFoundException;
 import com.kb.cosmetic_wms.inspection.domain.model.FailedInspection;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FailedInspectionService implements FindFailedInspectionUseCase, ResolveFailedInspectionUseCase {
@@ -59,7 +61,9 @@ public class FailedInspectionService implements FindFailedInspectionUseCase, Res
             failed.recordRetryFailure(describe(e));
         }
 
-        return FailedInspectionResult.from(failurePort.save(failed));
+        FailedInspection saved = failurePort.save(failed);
+        logRetryResult(saved);
+        return FailedInspectionResult.from(saved);
     }
 
     @Override
@@ -68,7 +72,20 @@ public class FailedInspectionService implements FindFailedInspectionUseCase, Res
         FailedInspection failed = failurePort.findByIdForUpdate(failedEventId)
                 .orElseThrow(FailedInspectionNotFoundException::new);
         failed.discard(LocalDateTime.now());
-        return FailedInspectionResult.from(failurePort.save(failed));
+        FailedInspection saved = failurePort.save(failed);
+        log.info("검사 전표 생성 실패 건을 폐기했습니다. failedEventId={}, lineId={}, status={}",
+                saved.getId(), saved.getLineId(), saved.getStatus());
+        return FailedInspectionResult.from(saved);
+    }
+
+    private static void logRetryResult(FailedInspection saved) {
+        if (saved.getStatus() == FailedEventStatus.RESOLVED) {
+            log.info("검사 전표 생성 재처리에 성공했습니다. failedEventId={}, lineId={}, status={}, retryCount={}",
+                    saved.getId(), saved.getLineId(), saved.getStatus(), saved.getRetryCount());
+            return;
+        }
+        log.warn("검사 전표 생성 재처리에 실패했습니다. failedEventId={}, lineId={}, retryCount={}, 사유={}",
+                saved.getId(), saved.getLineId(), saved.getRetryCount(), saved.getErrorMessage());
     }
 
     private static CreateInspectionCommand toCommand(FailedInspection failed) {

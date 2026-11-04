@@ -15,12 +15,14 @@ import com.kb.cosmetic_wms.oms.domain.exception.FailedAssignmentNotFoundExceptio
 import com.kb.cosmetic_wms.oms.domain.exception.OrderNotAwaitingAssignmentException;
 import com.kb.cosmetic_wms.oms.domain.model.FailedAssignment;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FailedAssignmentService implements FindFailedAssignmentUseCase, ResolveFailedAssignmentUseCase {
@@ -62,7 +64,9 @@ public class FailedAssignmentService implements FindFailedAssignmentUseCase, Res
             failed.recordRetryFailure(describe(e));
         }
 
-        return FailedAssignmentResult.from(failurePort.save(failed));
+        FailedAssignment saved = failurePort.save(failed);
+        logRetryResult(saved);
+        return FailedAssignmentResult.from(saved);
     }
 
     @Override
@@ -71,7 +75,20 @@ public class FailedAssignmentService implements FindFailedAssignmentUseCase, Res
         FailedAssignment failed = failurePort.findByIdForUpdate(failedEventId)
                 .orElseThrow(FailedAssignmentNotFoundException::new);
         failed.discard(LocalDateTime.now());
-        return FailedAssignmentResult.from(failurePort.save(failed));
+        FailedAssignment saved = failurePort.save(failed);
+        log.info("창고 배정 실패 건을 폐기했습니다. failedEventId={}, orderId={}, status={}",
+                saved.getId(), saved.getOrderId(), saved.getStatus());
+        return FailedAssignmentResult.from(saved);
+    }
+
+    private static void logRetryResult(FailedAssignment saved) {
+        if (saved.getStatus() == FailedEventStatus.RESOLVED) {
+            log.info("창고 배정 재처리에 성공했습니다. failedEventId={}, orderId={}, status={}, retryCount={}",
+                    saved.getId(), saved.getOrderId(), saved.getStatus(), saved.getRetryCount());
+            return;
+        }
+        log.warn("창고 배정 재처리에 실패했습니다. failedEventId={}, orderId={}, retryCount={}, 사유={}",
+                saved.getId(), saved.getOrderId(), saved.getRetryCount(), saved.getErrorMessage());
     }
 
     private static AssignWarehouseCommand toCommand(OrderForAssignment order) {

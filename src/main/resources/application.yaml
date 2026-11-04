@@ -15,6 +15,8 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
+      repositories:
+        enabled: false
 
   flyway:
     enabled: true
@@ -28,7 +30,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
 
 auth:
   jwt:
@@ -43,6 +44,20 @@ bootstrap:
     member-name: ${HQ_MEMBER_NAME:}
     email: ${HQ_EMAIL:}
     phone-number: ${HQ_PHONE_NUMBER:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db,redis
 
 springdoc:
   api-docs:

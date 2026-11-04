@@ -121,6 +121,32 @@ src
 
 ## 실행 방법
 
+필요한 것: Java 21, Docker. 환경변수의 전체 목록과 운영 절차는 [docs/agents/operations.md](docs/agents/operations.md)에 있다.
+
+```bash
+cp .env.example .env          # DB_PASSWORD, JWT_SECRET 등 비어 있는 값을 채운다 (.env는 커밋하지 않는다)
+docker compose up -d          # MySQL, Redis
+./gradlew bootRun             # 앱 (.env의 값을 셸 환경변수로 내보내야 한다: set -a; source .env; set +a)
+```
+
+앱까지 컨테이너로 띄우려면 jar를 만든 뒤 `app` profile을 켠다. 빌드는 테스트를 포함하므로 Docker가 필요하다.
+
+```bash
+./gradlew bootJar && docker compose --profile app up -d --build
+```
+
+띄운 앱이 실제로 동작하는지 확인하려면 smoke 스크립트를 실행한다. 무작위 비밀 값으로 컨테이너를 새로 띄워 로그인, 역할 제한, 토큰 회전, health를 HTTP로 확인하고 정리한다.
+
+```bash
+scripts/smoke.sh
+```
+
+상태 확인: `GET /actuator/health` (공개, 세부 정보 없음), `/actuator/health/liveness`, `/actuator/health/readiness` (DB, Redis 포함).
+
+테스트(`./gradlew test`, `scripts/verify.sh`)는 Testcontainers로 MySQL과 Redis 컨테이너를 띄우므로 **Docker가 실행 중이어야 한다.**
+
+### 환경변수
+
 DB 접속 정보는 환경변수로 주입한다. `DB_PASSWORD`는 기본값이 없어 반드시 지정해야 한다.
 
 | 환경변수          | 필수 | 기본값                                  |
@@ -128,12 +154,6 @@ DB 접속 정보는 환경변수로 주입한다. `DB_PASSWORD`는 기본값이 
 | `DB_PASSWORD` | O  | -                                    |
 | `DB_USERNAME` | X  | `root`                               |
 | `DB_URL`      | X  | `jdbc:mysql://localhost:3306/cosmetic_wms?...` |
-
-```bash
-DB_PASSWORD=<password> ./gradlew bootRun
-```
-
-테스트(`./gradlew test`, `scripts/verify.sh`)는 Testcontainers로 MySQL 컨테이너를 띄우므로 **Docker가 실행 중이어야 한다.**
 
 ### 인증 설정과 Redis
 
@@ -145,11 +165,6 @@ DB_PASSWORD=<password> ./gradlew bootRun
 | `JWT_ACCESS_TOKEN_TTL` | X | `30m` |
 | `JWT_REFRESH_TOKEN_TTL` | X | `14d` |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | X | `localhost` / `6379` / 없음 |
-
-```bash
-docker run -d --name wms-redis -p 6379:6379 redis:7.4
-DB_PASSWORD=<password> JWT_SECRET=<32바이트 이상의 비밀 문자열> ./gradlew bootRun
-```
 
 API는 `POST /api/v1/auth/login`으로 받은 액세스 토큰을 `Authorization: Bearer <토큰>` 헤더에 담아 호출한다. 역할별 접근 규칙은 [docs/agents/security.md](docs/agents/security.md)를 참고한다.
 

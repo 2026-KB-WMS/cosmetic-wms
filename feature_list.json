@@ -89,5 +89,15 @@
     "dependencies": [
       "F-009"
     ]
+  },
+  {
+    "id": "F-012",
+    "name": "구동·운영 준비",
+    "description": "Dockerfile, 로컬 compose(MySQL+Redis), Actuator health, 핵심 지점 로그와 예외 로깅, JaCoCo, 실제 구동 smoke 검증",
+    "status": "completed",
+    "dependencies": [
+      "F-006",
+      "F-009"
+    ]
   }
 ]

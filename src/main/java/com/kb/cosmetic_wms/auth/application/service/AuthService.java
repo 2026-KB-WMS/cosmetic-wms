@@ -13,8 +13,10 @@ import com.kb.cosmetic_wms.auth.application.port.out.MemberIdentityPort;
 import com.kb.cosmetic_wms.auth.application.port.out.RefreshTokenPort;
 import com.kb.cosmetic_wms.auth.domain.exception.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService implements LoginUseCase, ReissueTokenUseCase, LogoutUseCase {
@@ -32,10 +34,16 @@ public class AuthService implements LoginUseCase, ReissueTokenUseCase, LogoutUse
     @Override
     public TokenResult reissue(RefreshTokenCommand command) {
         Long memberId = refreshTokenPort.consume(command.refreshToken())
-                .orElseThrow(InvalidRefreshTokenException::new);
+                .orElseThrow(() -> {
+                    log.warn("유효하지 않은 리프레시 토큰으로 재발급이 시도되었습니다.");
+                    return new InvalidRefreshTokenException();
+                });
 
         MemberIdentity identity = memberIdentityPort.findById(memberId)
-                .orElseThrow(InvalidRefreshTokenException::new);
+                .orElseThrow(() -> {
+                    log.warn("리프레시 토큰의 회원을 찾을 수 없습니다. memberId={}", memberId);
+                    return new InvalidRefreshTokenException();
+                });
 
         return issueTokens(identity);
     }

@@ -56,5 +56,8 @@ DB를 쓰는 테스트(`@SpringBootTest`, `@DataJpaTest`)는 **Testcontainers의
 - 컨트롤러 슬라이스 테스트는 `@Import(TestSecurityConfig.class)`로 보안을 열어 두고 API 계약만 검증한다. 인가는 `AuthorizationMatrixTest`가 검증한다 ([security.md](security.md)). 서비스를 직접 호출하는 통합 테스트는 `TestAuthentication.authenticateAs(회원ID)`로 행위자를 지정한다.
 - 마이그레이션 검증 설정은 `src/test/resources/application.yml`(Flyway 활성화, `ddl-auto: validate`)이다.
 - FK 체인을 세팅하지 않고 재고를 직접 삽입하는 테스트는 클래스에 `@TestPropertySource(properties = "spring.datasource.hikari.connection-init-sql=SET FOREIGN_KEY_CHECKS=0")`를 붙인다. MySQL의 `FOREIGN_KEY_CHECKS`는 연결 단위 설정이라 풀의 모든 연결에 적용해야 한다.
+- 테스트는 개발자 셸의 환경변수에 영향받으면 안 된다. 예를 들어 `HQ_*`가 새어 들어가면 모든 컨텍스트가 본사 계정을 만들어 부트스트랩 테스트가 깨진다. 환경변수로 켜지는 기능은 `src/test/resources/application.yml`에서 값을 비워 둔다.
+- 로그가 요구사항인 지점은 `LogCapture`로 레벨, 핵심 정보, 비밀 값이 남지 않는 것까지 검증한다.
+- 단위·통합 테스트가 잡지 못하는 구동 문제는 `scripts/smoke.sh`로 확인한다 ([operations.md](operations.md)).
 - Testcontainers는 1.21.4 이상이어야 최신 Docker(29+)에 접속된다. 낮추지 않는다.
 - 성능/부하 시나리오는 `k6/scenarios/`에 있으며 `./gradlew test`에 포함되지 않는다. k6는 별도로 설치해서 쓴다.

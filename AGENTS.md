@@ -18,6 +18,7 @@
 | 테스트 작성 | [docs/agents/testing.md](docs/agents/testing.md) |
 | 이벤트 추가/수정 | [docs/agents/events.md](docs/agents/events.md) |
 | 인증, 역할별 접근 제어, 새 API 추가 시 권한 | [docs/agents/security.md](docs/agents/security.md) |
+| 실행, 환경변수, 상태 확인, 로그, 배포 전 확인 | [docs/agents/operations.md](docs/agents/operations.md) |
 | 도메인 용어, 재고 상태, 식별 체계 | [docs/agents/domain-glossary.md](docs/agents/domain-glossary.md) |
 | 브랜치, 커밋, PR, 이슈 | [docs/agents/git-workflow.md](docs/agents/git-workflow.md) |
 | 설계 결정의 배경 | [docs/adr/](docs/adr/) |
@@ -33,7 +34,8 @@ scripts/verify.sh                  # 전체 검증 (clean build + 테스트 + Op
 ./gradlew test                     # 전체 테스트
 ./gradlew test --tests "com.kb.cosmetic_wms.inventory.InventoryEntityTest"
 ./gradlew openapi3                 # REST Docs 스니펫 → build/api-spec/openapi3.yaml
-DB_PASSWORD=<password> ./gradlew bootRun
+docker compose up -d && ./gradlew bootRun   # MySQL, Redis 후 앱 (환경변수는 .env.example 참고)
+scripts/smoke.sh                   # 컨테이너로 실제 구동해 로그인·역할 제한·토큰 회전을 HTTP로 확인
 ```
 
 Swagger UI: `http://localhost:8080/swagger-ui/index.html` (스펙은 `/docs/openapi3.yaml`).

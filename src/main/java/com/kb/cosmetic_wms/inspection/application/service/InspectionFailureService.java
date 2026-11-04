@@ -5,12 +5,14 @@ import com.kb.cosmetic_wms.inspection.application.port.in.RecordInspectionFailur
 import com.kb.cosmetic_wms.inspection.application.port.out.InspectionCreationFailurePort;
 import com.kb.cosmetic_wms.inspection.domain.model.FailedInspection;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InspectionFailureService implements RecordInspectionFailureUseCase {
@@ -34,5 +36,7 @@ public class InspectionFailureService implements RecordInspectionFailureUseCase 
                 command.errorMessage(),
                 LocalDateTime.now()
         ));
+        log.warn("검사 전표 생성 실패를 기록했습니다. inboundId={}, lineId={}, 사유={}",
+                command.inboundId(), command.lineId(), command.errorMessage());
     }
 }

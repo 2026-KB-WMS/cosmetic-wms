@@ -6,6 +6,9 @@
 
 | 날짜 | 항목 |
 |---|---|
+| 2026-11-03 | [개발자 셸의 HQ_* 환경변수 때문에 부트스트랩 통합 테스트가 실패](#개발자-셸의-hq_-환경변수-때문에-부트스트랩-통합-테스트가-실패) |
+| 2026-11-03 | [`./gradlew bootJar -x test`가 copyOasToStatic 검증 오류로 실패](#gradlew-bootjar--x-test가-copyoastostatic-검증-오류로-실패) |
+| 2026-11-03 | [Actuator 추가 후 RequestMappingHandlerMapping 주입이 모호해짐](#actuator-추가-후-requestmappinghandlermapping-주입이-모호해짐) |
 | 2026-11-03 | [로그인 도입 후 비동기 배정과 재고 이력이 FK 위반으로 실패](#로그인-도입-후-비동기-배정과-재고-이력이-fk-위반으로-실패) |
 | 2026-11-03 | [CI에서 의존성 다운로드가 403 Forbidden으로 실패](#ci에서-의존성-다운로드가-403-forbidden으로-실패) |
 | 2026-11-03 | [동시 입고 시 DOCKING 용량 갱신 유실 (MySQL REPEATABLE READ)](#동시-입고-시-docking-용량-갱신-유실-mysql-repeatable-read) |
@@ -14,6 +17,68 @@
 | 2026-11-03 | [import 검색으로 찾지 못한 도메인 간 의존 위반](#import-검색으로-찾지-못한-도메인-간-의존-위반) |
 | 2026-07-04 | [BEFORE_COMMIT 리스너 안에서 발행한 이벤트의 리스너가 실행되지 않음](#before_commit-리스너-안에서-발행한-이벤트의-리스너가-실행되지-않음) |
 | 2026-07-04 | [도메인 객체를 수정했는데 DB에 반영되지 않음](#도메인-객체를-수정했는데-db에-반영되지-않음) |
+
+---
+
+## 개발자 셸의 HQ_* 환경변수 때문에 부트스트랩 통합 테스트가 실패
+
+이슈 #147
+
+**증상**
+- `scripts/smoke.sh`가 `./gradlew bootJar`(테스트 포함)를 실행하는 중 `HeadquartersBootstrapIntegrationTest` 2건이 실패했다: `NoSuchElementException: No value present`(`hq-boot` 계정을 찾지 못함).
+- 같은 테스트를 단독으로 돌리거나 셸에 `HQ_*`가 없을 때는 통과했다.
+
+**원인**
+- 스크립트가 `HQ_LOGIN_ID` 등을 `export`한 상태에서 Gradle을 실행했다. `application.yaml`의 `bootstrap.headquarters.*`가 `${HQ_LOGIN_ID:}`처럼 환경변수를 읽으므로, 모든 `@SpringBootTest` 컨텍스트가 시작될 때 본사 계정을 만들었다.
+- 부트스트랩은 "본사 관리자가 이미 있으면 건너뛴다". 먼저 뜬 컨텍스트가 계정을 만들어 두어서 이 테스트의 컨텍스트는 계정을 만들지 않았다.
+- 스크립트만의 문제가 아니라, 개발자 셸이나 `.env`에 `HQ_*`가 있으면 누구나 겪는 테스트 격리 결함이었다.
+
+**해결**
+- `src/test/resources/application.yml`에서 `bootstrap.headquarters.*`를 빈 값으로 지정했다. `HQ_LOGIN_ID`는 `bootstrap.headquarters.login-id`로 직접 매핑되는 환경변수가 아니므로 테스트 설정이 우선하고, 환경변수가 새어 들어오지 않는다.
+- `smoke.sh`는 비밀 값을 `export`하기 전에 빌드를 먼저 하도록 순서를 바꿨다.
+- 셸에 `HQ_*`를 설정한 채 부트스트랩 테스트를 돌려 통과하는 것을 확인했다.
+
+**재발 방지**
+- 환경변수로 켜지는 기능은 테스트 설정에서 값을 비워 둔다 ([testing.md](agents/testing.md)).
+
+---
+
+## `./gradlew bootJar -x test`가 copyOasToStatic 검증 오류로 실패
+
+이슈 #147
+
+**증상**
+- Docker 이미지에 담을 jar를 빠르게 만들려고 `./gradlew bootJar -x test`를 실행하면 실패한다.
+- `Task ':processResources' uses this output of task ':copyOasToStatic' without declaring an explicit or implicit dependency.`
+
+**원인**
+- `copyOasToStatic`이 `src/main/resources/static/docs`(OpenAPI 문서)에 쓰고 `processResources`가 같은 위치를 읽는데 두 태스크 사이에 의존 관계가 없다. `processResources → copyOasToStatic`으로 의존을 걸면 `copyOasToStatic → openapi3 → test → processResources`로 순환한다. 전체 `build`에서는 Gradle이 이를 문제 삼지 않는 실행 순서로 돌아가 드러나지 않았다.
+- 해결책으로 문서 복사를 `bootJar`가 jar 안에 직접 넣도록 바꾸는 방법이 있지만, 빌드 구조 변경이라 이번 범위에서 하지 않았다.
+
+**해결(우회)**
+- jar는 테스트를 포함한 `./gradlew bootJar`로 만든다 (약 1분, Docker 필요). Dockerfile은 그 jar를 담기만 한다. 이미지 안에서 빌드하지 않는 이유도 같다: 빌드가 Testcontainers 테스트를 실행하는데 컨테이너 안에서는 Docker를 쓸 수 없다.
+
+**재발 방지**
+- 빌드 시간을 줄이고 싶어 `-x test`를 붙이지 않는다. 문서 복사 구조를 바꿀 때 이 문제를 함께 해결한다.
+
+---
+
+## Actuator 추가 후 RequestMappingHandlerMapping 주입이 모호해짐
+
+이슈 #147
+
+**증상**
+- Actuator 의존성을 추가하자 `AuthorizationMatrixTest`의 모든 케이스(133건)가 실패했다: `expected single matching bean but found 2: requestMappingHandlerMapping, controllerEndpointHandlerMapping`.
+- Actuator의 health 테스트만 돌렸을 때는 드러나지 않았다.
+
+**원인**
+- Actuator가 `RequestMappingHandlerMapping`의 하위 타입인 `controllerEndpointHandlerMapping` 빈을 추가해, 타입만으로 주입하던 테스트 필드가 모호해졌다.
+
+**해결**
+- 주입할 빈을 `@Qualifier("requestMappingHandlerMapping")`로 지정했다.
+
+**재발 방지**
+- 의존성을 추가한 뒤에는 변경과 직접 관련된 테스트만이 아니라 전체 테스트를 돌려 확인한다.
 
 ---
 
