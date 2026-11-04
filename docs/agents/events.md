@@ -56,6 +56,7 @@ OutboundStockReleaseRequestedEvent → inventory: 할당 해제
 - `GET ?status=PENDING`(기본): 처리 대기 건 조회. 상태는 `PENDING` → `RESOLVED`(재처리 성공) / `DISCARDED`(폐기).
 - `POST /{id}/retry`: 실패 지점부터 다시 시도한다. **시도가 실패해도 HTTP 200**이며, `status`가 `PENDING`으로 남고 `retryCount`와 `errorMessage`(최근 사유)가 갱신된다. 이미 처리된 건은 409다.
 - `POST /{id}/discard`: 더 이상 처리할 필요가 없는 건을 닫는다.
+- 창고 배정에 계속 실패하는 발주는 재고를 채워 재처리하거나, 창고가 배정되지 않았다면 발주를 취소한다. 발주를 취소해도 대기 중인 실패 기록은 자동으로 닫히지 않는다. 재처리하면 사유(배정 대기 상태가 아님)가 남으므로 `discard`로 닫는다.
 
 구현 원칙:
 - 재처리는 실패 기록 행을 `PESSIMISTIC_WRITE`로 잠그고 시작한다. 같은 건의 동시 재처리는 직렬화되어 한 번만 처리된다.
