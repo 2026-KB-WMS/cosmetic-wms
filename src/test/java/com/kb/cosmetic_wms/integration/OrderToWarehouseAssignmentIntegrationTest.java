@@ -31,7 +31,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.kb.cosmetic_wms.inventory.application.port.in.ManageLotBlockUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.in.FindOutboundUseCase;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundLifecycleUseCase;
+import com.kb.cosmetic_wms.outbound.application.port.in.OutboundDetailResult;
 import com.kb.cosmetic_wms.outbound.application.port.in.OutboundResult;
+import com.kb.cosmetic_wms.outbound.application.port.in.RecordPickingUseCase;
+import com.kb.cosmetic_wms.outbound.domain.exception.OutboundIncompletePickingException;
 import com.kb.cosmetic_wms.inventory.domain.model.ShelfLifePolicy;
 import java.time.Clock;
 import java.time.Duration;
@@ -75,6 +78,8 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
     @MockitoBean
     private RoutingPort routingPort;
 
+    @Autowired
+    private RecordPickingUseCase recordPickingUseCase;
     @Autowired
     private RegisterWarehouseUseCase registerWarehouseUseCase;
     @Autowired
@@ -420,6 +425,56 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
                 "SELECT outbound_id FROM outbound WHERE orders_id = ?", Long.class, order.id());
     }
 
+    private void pickAll(Long outboundId) {
+        findOutboundUseCase.findById(outboundId).items().forEach(item ->
+                recordPickingUseCase.recordPicking(outboundId, item.outboundItemId(), item.targetQuantity()));
+    }
+
+    @Test
+    void 발주부터_피킹_출하까지_API_유스케이스만으로_완결되고_재고가_차감되며_발주가_출하_상태가_된다() {
+        // given — 발주 확정 후 창고 배정·출고 전표·재고 할당이 끝나 출고 준비 대기 상태
+        insertInventory(nearWarehouseId, PRODUCT_ID, 100, expiryAfter(60));
+        Long outboundId = confirmAndAwaitPreparing(30);
+        outboundLifecycleUseCase.startProcessing(outboundId);
+
+        OutboundDetailResult detail = findOutboundUseCase.findById(outboundId);
+        assertThat(detail.items()).singleElement().satisfies(item -> {
+            assertThat(item.targetQuantity()).isEqualTo(30);
+            assertThat(item.pickedQuantity()).isZero();
+        });
+        Long itemId = detail.items().getFirst().outboundItemId();
+
+        // 일부만 피킹하면 출하할 수 없고 재고는 그대로다
+        recordPickingUseCase.recordPicking(outboundId, itemId, 25);
+        assertThatThrownBy(() -> outboundLifecycleUseCase.ship(outboundId))
+                .isInstanceOf(OutboundIncompletePickingException.class);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM inventory_transaction WHERE transaction_type = 'SHIP' AND reference_id = ?",
+                Integer.class, outboundId)).isZero();
+
+        // when — 전량 피킹 후 출하
+        OutboundDetailResult picked = recordPickingUseCase.recordPicking(outboundId, itemId, 30);
+        assertThat(picked.items().getFirst().pickedQuantity()).isEqualTo(30);
+        outboundLifecycleUseCase.ship(outboundId);
+
+        // then — 출고 SHIPPED, 할당분 차감(SHIP 이력), 가용 재고 70 유지, 발주 SHIPPED
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT outbound_status FROM outbound WHERE outbound_id = ?", String.class, outboundId))
+                .isEqualTo("SHIPPED");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(transaction_qty) FROM inventory_transaction WHERE transaction_type = 'SHIP' AND reference_id = ?",
+                Integer.class, outboundId)).isEqualTo(30);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE warehouse_id = ? AND alloc_status = 'ALLOCATED'",
+                Integer.class, nearWarehouseId)).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT SUM(quantity) FROM inventory WHERE warehouse_id = ?", Integer.class, nearWarehouseId))
+                .isEqualTo(70);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(jdbcTemplate.queryForObject(
+                "SELECT order_status FROM orders WHERE orders_id = (SELECT orders_id FROM outbound WHERE outbound_id = ?)",
+                String.class, outboundId)).isEqualTo("SHIPPED"));
+    }
+
     private List<Long> affectedOutboundIds(long lotId) {
         return findOutboundUseCase.findInProgressByLotId(lotId).stream().map(OutboundResult::outboundId).toList();
     }
@@ -447,8 +502,8 @@ class OrderToWarehouseAssignmentIntegrationTest extends MySqlContainerSupport {
         outboundLifecycleUseCase.startProcessing(second);
         assertThat(affectedOutboundIds(lot)).containsExactly(second);
 
-        // 출하가 끝나면 더 이상 영향받지 않는다. 피킹 수량을 기록하는 API가 없어 피킹 완료 상태는 DB로 만든다
-        jdbcTemplate.update("UPDATE outbound_item SET picked_quantity = target_quantity WHERE outbound_id = ?", second);
+        // 출하가 끝나면 더 이상 영향받지 않는다
+        pickAll(second);
         outboundLifecycleUseCase.ship(second);
         assertThat(affectedOutboundIds(lot)).isEmpty();
     }
