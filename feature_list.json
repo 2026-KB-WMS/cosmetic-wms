@@ -111,7 +111,7 @@
     "id": "F-014",
     "name": "로트 상태의 재고 전파 (재고 안전성 2단계)",
     "description": "로트가 HOLD/RECALLED/DAMAGED/EXPIRED가 되면 해당 로트의 보관 중 재고 할당을 막고, 복구하면 되돌린다. 이미 ALLOCATED된 재고는 건드리지 않고 영향받는 출고 전표를 조회할 수 있게 한다",
-    "status": "pending",
+    "status": "completed",
     "dependencies": [
       "F-013"
     ]
@@ -120,6 +120,15 @@
     "id": "F-015",
     "name": "유통기한 만료 로트 자동 처리 스케줄러 (재고 안전성 3단계)",
     "description": "매일 유통기한이 지난 로트를 EXPIRED로 처리하고 재고에 반영한다",
+    "status": "pending",
+    "dependencies": [
+      "F-014"
+    ]
+  },
+  {
+    "id": "F-016",
+    "name": "영향받는 출고 전표 조회 (재고 안전성 2단계 - 조회)",
+    "description": "로트가 리콜·보류되었을 때 그 로트의 재고가 이미 할당된 진행 중 출고 전표를 조회한다. 자동으로 취소·해제하지 않고 사람이 확인해 기존 API로 처리한다",
     "status": "pending",
     "dependencies": [
       "F-014"

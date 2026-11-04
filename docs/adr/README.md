@@ -11,6 +11,7 @@
 | [0005](0005-transaction-isolation-read-committed.md) | 트랜잭션 격리 수준을 READ COMMITTED로 설정 | Accepted |
 | [0006](0006-jwt-authentication-and-rbac.md) | JWT(Access/Refresh)와 Redis 기반 인증, 역할별 접근 제어 | Accepted |
 | [0007](0007-minimum-remaining-shelf-life.md) | 잔여 유통기한이 7일 이하인 재고는 출고하지 않는다 | Accepted |
+| [0008](0008-inventory-lot-block.md) | 로트 상태에 따른 출고 차단은 inventory가 소유하는 차단 목록으로 구현한다 | Accepted |
 
 ## 템플릿
 

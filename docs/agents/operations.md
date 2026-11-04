@@ -87,6 +87,18 @@ SMOKE_SHOW_LOGS=1 scripts/smoke.sh    # 성공해도 앱 로그 출력
 
 `scripts/verify.sh`가 끝에 라인·브랜치 커버리지를 출력하고, 리포트는 `build/reports/jacoco/test/html/index.html`에 생긴다. CI는 같은 리포트를 `coverage-report` 아티팩트로 올린다. 아직 임계값은 없다 (측정만).
 
+## 로트 차단 목록 점검
+
+로트 상태와 `inventory_lot_block`이 어긋나지 않았는지 확인한다. 아무 행도 나오지 않아야 정상이다. 행이 나오면 로트 상태를 `updateStatus`를 거치지 않고 바꾼 경로가 있다는 뜻이다 ([ADR-0008](../adr/0008-inventory-lot-block.md)).
+
+```sql
+SELECT l.lot_id, l.status AS lot_status, b.status AS block_status
+FROM lot l
+LEFT JOIN inventory_lot_block b ON b.lot_id = l.lot_id
+WHERE (l.status <> 'AVAILABLE') <> (b.lot_id IS NOT NULL)
+   OR (b.lot_id IS NOT NULL AND b.status <> l.status);
+```
+
 ## 배포 전 확인
 
 - `JWT_SECRET`을 무작위로 만들었고(`openssl rand -hex 32`) 비밀 관리 서비스에서 주입한다.
@@ -97,7 +109,7 @@ SMOKE_SHOW_LOGS=1 scripts/smoke.sh    # 성공해도 앱 로그 출력
 
 ## 아직 없는 것
 
-로트 상태(리콜 등)의 재고 반영, 유통기한이 지난 로트의 자동 만료 처리, 출고 불가가 된 임박 재고의 처리 흐름(폐기·할인·반품).
+이미 할당된 재고의 영향받는 출고 조회, 유통기한이 지난 로트의 자동 만료 처리, 출고 불가가 된 임박 재고의 처리 흐름(폐기·할인·반품).
 
 
 메트릭 수집(Prometheus), 분산 추적, 요청 상관 ID(MDC), 알림, 배포 파이프라인.
