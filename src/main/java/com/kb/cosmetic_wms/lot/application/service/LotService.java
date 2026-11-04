@@ -1,5 +1,7 @@
 package com.kb.cosmetic_wms.lot.application.service;
 
+import com.kb.cosmetic_wms.global.event.EventPublisher;
+import com.kb.cosmetic_wms.lot.domain.event.LotStatusChangedEvent;
 import com.kb.cosmetic_wms.lot.application.port.in.*;
 import com.kb.cosmetic_wms.lot.application.port.out.LotPort;
 import com.kb.cosmetic_wms.lot.application.port.out.ProductQueryPort;
@@ -22,6 +24,7 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
 
     private final LotPort lotPort;
     private final ProductQueryPort productQueryPort;
+    private final EventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -73,7 +76,10 @@ public class LotService implements RegisterLotUseCase, FindLotUseCase,
         Lot lot = lotPort.findById(lotId)
                 .orElseThrow(LotNotFoundException::new);
         lot.changeStatus(command.status());
-        return LotResult.from(lotPort.save(lot));
+        Lot saved = lotPort.save(lot);
+        eventPublisher.publish(new LotStatusChangedEvent(
+                saved.getId(), saved.getStatus().name(), saved.getStatus().isAllocatable()));
+        return LotResult.from(saved);
     }
 
     @Override
