@@ -95,4 +95,9 @@ public class InventoryPersistenceAdapter implements InventoryPort, InventoryTran
                 .findByTransactionTypeAndReferenceId(type, referenceId).stream()
                 .map(InventoryTransactionEntity::toDomain).toList();
     }
+
+    @Override
+    public List<Long> findAllocatedReferenceIdsByLot(Long lotId) {
+        return inventoryTransactionJpaRepository.findAllocatedReferenceIdsByLot(lotId);
+    }
 }

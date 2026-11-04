@@ -7,6 +7,11 @@ import com.kb.cosmetic_wms.outbound.domain.exception.OutboundProcessingNotAllowe
 import com.kb.cosmetic_wms.outbound.domain.exception.OutboundShipNotAllowedException;
 import lombok.Getter;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Getter
 public enum OutboundStatus {
 
@@ -20,6 +25,19 @@ public enum OutboundStatus {
 
     OutboundStatus(String description) {
         this.description = description;
+    }
+
+    /**
+     * 할당된 재고를 아직 점유하고 있는 상태인가. 출하·취소된 전표는 점유하지 않는다.
+     */
+    public boolean holdsAllocatedStock() {
+        return this == ALLOCATED || this == PROCESSING;
+    }
+
+    public static Set<OutboundStatus> holdingAllocatedStock() {
+        return Arrays.stream(values())
+                .filter(OutboundStatus::holdsAllocatedStock)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(OutboundStatus.class)));
     }
 
     public void validateAllocate() {
